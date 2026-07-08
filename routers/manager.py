@@ -841,48 +841,64 @@ async def cancel_table_session(
     return {"message": f"Table {table_label} session cancelled."}
 
 
-# --- GET TABLE BILLS HISTORY ---
+# --- GET TABLE BILLS HISTORY (daily total per table) ---
 @router.get("/tables/settled-history")
 def get_settled_tables_history(
-    db: Session = Depends(get_db), authenticated: bool = Depends(verify_manager_token)
+    date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
 ):
+    try:
+        target_date = parse_target_date(date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail="Invalid date format. Use YYYY-MM-DD."
+        )
+
+    range_start, range_end = day_bounds(target_date)
+
     completed_orders = (
         db.query(models.Order)
+        .options(joinedload(models.Order.table))
         .filter(
             models.Order.status == models.OrderStatus.COMPLETED,
-            models.Order.settled_at != None,
+            models.Order.settled_at.isnot(None),
+            models.Order.settled_at.between(range_start, range_end),
         )
         .order_by(models.Order.settled_at.desc())
         .all()
     )
 
-    history_map = {}
+    table_map: dict = {}
+    session_fee_keys: set = set()
+
     for order in completed_orders:
-        iso_time = order.settled_at.isoformat()
-        key = f"{order.table_id}_{iso_time}"
-
-        if key not in history_map:
-            table_session = get_settled_session_at(db, order.table_id, order.settled_at)
-            session_fee = (
-                float(table_session.session_fee_charged or 0) if table_session else 0.0
-            )
-            history_map[key] = {
-                "table_id": order.table_id,
+        t_id = order.table_id
+        if t_id not in table_map:
+            table_map[t_id] = {
+                "table_id": t_id,
                 "table_number": get_table_label(order.table),
-                "settled_at": order.settled_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "settled_at_iso": iso_time,
+                "order_count": 0,
+                "total_amount": 0.0,
                 "order_ids": [],
-                "orders_total": 0.0,
-                "session_fee": session_fee,
-                "total_price": session_fee,
+                "date": target_date.strftime("%Y-%m-%d"),
             }
-        history_map[key]["order_ids"].append(order.id)
-        history_map[key]["orders_total"] += order.total_price
-        history_map[key]["total_price"] = (
-            history_map[key]["orders_total"] + history_map[key]["session_fee"]
-        )
+        row = table_map[t_id]
+        row["order_count"] += 1
+        row["total_amount"] += order.total_price
+        row["order_ids"].append(order.id)
 
-    return list(history_map.values())
+        fee_key = (t_id, order.settled_at.isoformat())
+        if fee_key not in session_fee_keys:
+            session_fee_keys.add(fee_key)
+            table_session = get_settled_session_at(db, t_id, order.settled_at)
+            if table_session and (table_session.session_fee_charged or 0) > 0:
+                row["total_amount"] += float(table_session.session_fee_charged)
+
+    return sorted(
+        table_map.values(),
+        key=lambda row: (-row["total_amount"], row["table_number"]),
+    )
 
 
 # --- DYNAMICALLY RECONSTRUCT COMPLETED TABLE BILLS ---
@@ -956,6 +972,92 @@ def get_historical_table_bill(
         "timestamp": settled_datetime.strftime("%Y-%m-%d %H:%M:%S"),
         "items": items_list,
         "session_fee": session_fee,
+        **bill_amounts(grand_total),
+    }
+
+
+@router.get("/tables/{table_id}/daily-bill")
+def get_daily_table_bill(
+    table_id: int,
+    date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    try:
+        target_date = parse_target_date(date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail="Invalid date format. Use YYYY-MM-DD."
+        )
+
+    range_start, range_end = day_bounds(target_date)
+    orders = (
+        db.query(models.Order)
+        .options(joinedload(models.Order.table))
+        .filter(
+            models.Order.table_id == table_id,
+            models.Order.status == models.OrderStatus.COMPLETED,
+            models.Order.settled_at.isnot(None),
+            models.Order.settled_at.between(range_start, range_end),
+        )
+        .order_by(models.Order.settled_at.asc())
+        .all()
+    )
+
+    if not orders:
+        raise HTTPException(status_code=404, detail="No settled sales for this table on that date.")
+
+    consolidated_items = {}
+    grand_total = 0.0
+    order_ids = []
+    session_fee_keys: set = set()
+    session_fee_total = 0.0
+    items_list = []
+
+    for order in orders:
+        order_ids.append(order.id)
+        for item in order.items:
+            item_unit_price = item.menu_item.price
+            for mod_assoc in item.selected_modifiers:
+                item_unit_price += mod_assoc.modifier.price
+
+            mod_key = "-".join(
+                sorted([str(m.modifier_id) for m in item.selected_modifiers])
+            )
+            item_key = f"{item.menu_item.id}_{mod_key}"
+
+            if item_key not in consolidated_items:
+                consolidated_items[item_key] = {
+                    "name": item.menu_item.name,
+                    "quantity": 0,
+                    "unit_price": item_unit_price,
+                    "modifiers": [m.modifier.name for m in item.selected_modifiers],
+                }
+
+            consolidated_items[item_key]["quantity"] += item.quantity
+            grand_total += item_unit_price * item.quantity
+
+        fee_key = order.settled_at.isoformat()
+        if fee_key not in session_fee_keys:
+            session_fee_keys.add(fee_key)
+            table_session = get_settled_session_at(db, table_id, order.settled_at)
+            if table_session and (table_session.session_fee_charged or 0) > 0:
+                session_line = session_fee_line_item(table_session)
+                items_list.append(session_line)
+                session_fee_total += session_line["unit_price"]
+                grand_total += session_line["unit_price"]
+
+    table_num = get_table_label(orders[0].table)
+    items_list.extend(consolidated_items.values())
+
+    return {
+        "restaurant_name": RESTAURANT_NAME,
+        "table_id": table_id,
+        "table_number": table_num,
+        "order_ids": order_ids,
+        "timestamp": target_date.strftime("%Y-%m-%d"),
+        "items": items_list,
+        "session_fee": session_fee_total,
         **bill_amounts(grand_total),
     }
 

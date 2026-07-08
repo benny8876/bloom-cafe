@@ -83,16 +83,32 @@ def _build_finance_summary(
     monthly_income = sum(order.total_price for order in monthly_orders)
     monthly_outcome = sum(expense.amount for expense in month_expenses)
 
+    table_income: dict = {}
+    for order in completed_orders:
+        t_id = order.table_id
+        if t_id not in table_income:
+            table_income[t_id] = {
+                "table_id": t_id,
+                "table_label": get_table_label(order.table),
+                "order_count": 0,
+                "total_amount": 0.0,
+                "order_ids": [],
+                "last_settled_at": None,
+            }
+        row = table_income[t_id]
+        row["order_count"] += 1
+        row["total_amount"] += order.total_price
+        row["order_ids"].append(order.id)
+        settled = order.settled_at or order.created_at
+        if row["last_settled_at"] is None or settled > row["last_settled_at"]:
+            row["last_settled_at"] = settled
+
     income_entries = [
-        schemas.FinanceIncomeEntry(
-            order_id=order.id,
-            table_label=get_table_label(order.table),
-            amount=order.total_price,
-            created_at=order.created_at,
-            settled_at=order.settled_at,
-            status=order.status,
+        schemas.FinanceTableIncomeEntry(**row)
+        for row in sorted(
+            table_income.values(),
+            key=lambda r: (-r["total_amount"], r["table_label"]),
         )
-        for order in completed_orders
     ]
 
     category_rows = (
@@ -344,20 +360,21 @@ def export_finance_report(
     story.extend([Spacer(1, 16), Paragraph("Bills", styles["Heading2"])])
 
     if summary.income_entries:
-        if show_date_column:
-            inc_data = [["Date", "Order", "Table", "Amount (Ks)"]]
-            col_widths = [70, 55, 100, 95]
-        else:
-            inc_data = [["Time", "Order", "Table", "Amount (Ks)"]]
-            col_widths = [55, 55, 100, 95]
+        inc_data = [["Table", "Orders", "Last settled", "Total (Ks)"]]
+        col_widths = [100, 55, 90, 95]
         for entry in summary.income_entries:
-            when = entry.settled_at or entry.created_at
+            when = entry.last_settled_at
+            time_label = (
+                when.strftime("%Y-%m-%d %H:%M")
+                if show_date_column and when
+                else (when.strftime("%H:%M") if when else "—")
+            )
             inc_data.append(
                 [
-                    when.strftime("%Y-%m-%d") if show_date_column else when.strftime("%H:%M"),
-                    f"#{entry.order_id}",
                     entry.table_label,
-                    f"{entry.amount:,.0f}",
+                    str(entry.order_count),
+                    time_label,
+                    f"{entry.total_amount:,.0f}",
                 ]
             )
         inc_data.append(

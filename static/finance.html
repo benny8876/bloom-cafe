@@ -43,6 +43,28 @@
          .theme-toggle-btn { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
          html.dark .theme-toggle-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
          html.dark #receipt-modal .bg-white { background-color: #fff !important; color: #000 !important; }
+         #receipt-modal #receipt-payload { color: #0f172a !important; }
+         #receipt-modal #receipt-payload .text-slate-400,
+         #receipt-modal #receipt-payload .text-slate-500 { color: #64748b !important; }
+         #receipt-modal .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px dashed #94a3b8;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #0f172a !important;
+         }
+         #receipt-modal .receipt-footer {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed #94a3b8;
+            text-align: center;
+            font-size: 0.625rem;
+            line-height: 1.4;
+            color: #64748b !important;
+         }
 .fin-chart-card {
             background: #fff;
             border: 1px solid #f1f5f9;
@@ -344,19 +366,18 @@
                <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                   <div class="flex items-center justify-between mb-4">
                      <div>
-                        <h2 class="text-base font-bold text-slate-800">Income — Settled Sales</h2>
-                        <p class="text-xs text-slate-400">Counted by settlement date (when bill was paid)</p>
+                        <h2 class="text-base font-bold text-slate-800">Income — Sales by Table</h2>
+                        <p class="text-xs text-slate-400">Daily total per table (counted when bill was settled)</p>
                      </div>
                   </div>
                   <div class="overflow-x-auto border border-slate-100 rounded-xl">
                      <table class="w-full text-left text-sm">
                         <thead>
                            <tr class="text-[10px] text-slate-400 uppercase border-b bg-slate-50/80">
-                              <th class="py-2.5 px-4 font-bold">Order</th>
-                              <th class="py-2.5 px-2 font-bold">Table</th>
-                              <th class="py-2.5 px-2 font-bold">Time</th>
-                              <th class="py-2.5 px-4 font-bold text-right">Amount</th>
-                              <th class="py-2.5 px-4 font-bold text-right">Receipt</th>
+                              <th class="py-2.5 px-4 font-bold">Table</th>
+                              <th class="py-2.5 px-2 font-bold text-center">Orders</th>
+                              <th class="py-2.5 px-2 font-bold">Last settled</th>
+                              <th class="py-2.5 px-4 font-bold text-right">Total sales</th>
                            </tr>
                         </thead>
                         <tbody id="finance-income-tbody" class="divide-y divide-slate-50"></tbody>
@@ -497,7 +518,7 @@ function showToast(message, type = 'info', duration = 3200) {
                          ${modsLabel}
                      </div>`;
              }).join('');
-             const total = bill.grand_total != null ? bill.grand_total : bill.subtotal;
+             const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>`
                  : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
@@ -512,10 +533,11 @@ function showToast(message, type = 'info', duration = 3200) {
                      ${orderLine}
                  </div>
                  <div class="space-y-2 my-4">${itemsStr}</div>
-                 <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
-                     <span>GRAND TOTAL</span>
+                 <div class="receipt-total-row">
+                     <span>TOTAL</span>
                      <span>${formatKs(total)}</span>
-                 </div>`;
+                 </div>
+                 <p class="receipt-footer">Thank You For Supporting BLOOM CAFÉ</p>`;
          }
 
 function getAuthHeaders() {
@@ -928,7 +950,7 @@ function renderFinanceLegend(containerId, segments) {
 
                  const periodHint = data.period_label && range !== 'day' ? data.period_label : null;
                  document.getElementById('fin-income').innerText = formatKs(data.income_total);
-                 document.getElementById('fin-income-sub').innerText = `${data.order_count} completed order${data.order_count === 1 ? '' : 's'}${periodHint ? ` · ${periodHint}` : ''}`;
+                 document.getElementById('fin-income-sub').innerText = `${data.income_entries.length} table${data.income_entries.length === 1 ? '' : 's'} · ${data.order_count} order${data.order_count === 1 ? '' : 's'}${periodHint ? ` · ${periodHint}` : ''}`;
                  document.getElementById('fin-outcome').innerText = formatKs(data.outcome_total);
                  document.getElementById('fin-outcome-sub').innerText = `${data.expense_count} expense${data.expense_count === 1 ? '' : 's'}${range === 'day' ? ' today' : ''}`;
                  document.getElementById('fin-net').innerText = formatKs(data.net_profit);
@@ -963,21 +985,20 @@ function renderFinanceLegend(containerId, segments) {
                  const incTbody = document.getElementById('finance-income-tbody');
                  incTbody.innerHTML = '';
                  if (data.income_entries.length === 0) {
-                     incTbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 italic text-sm">No completed sales on this date</td></tr>`;
+                     incTbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 italic text-sm">No completed sales on this date</td></tr>`;
                  } else {
                      data.income_entries.forEach(entry => {
-                         const when = entry.settled_at || entry.created_at;
-                         const time = new Date(when).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                         const when = entry.last_settled_at;
+                         const time = when
+                             ? new Date(when).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                             : '—';
                          const tr = document.createElement('tr');
                          tr.className = 'hover:bg-slate-50/80';
                          tr.innerHTML = `
-                             <td class="py-3 px-4 font-semibold text-slate-800">#${entry.order_id}</td>
-                             <td class="py-3 px-2 text-slate-600">Table ${entry.table_label}</td>
+                             <td class="py-3 px-4 font-semibold text-slate-800">Table ${escapeHtml(entry.table_label)}</td>
+                             <td class="py-3 px-2 text-center text-slate-600">${entry.order_count}</td>
                              <td class="py-3 px-2 text-slate-500 text-xs">${time}</td>
-                             <td class="py-3 px-4 text-right font-bold text-emerald-600">${formatKs(entry.amount)}</td>
-                             <td class="py-3 px-4 text-right">
-                                 <button onclick="loadReceipt(${entry.order_id})" class="text-[10px] font-bold border border-slate-200 hover:bg-slate-50 text-slate-700 px-2.5 py-1 rounded-lg transition">Receipt</button>
-                             </td>`;
+                             <td class="py-3 px-4 text-right font-bold text-emerald-600">${formatKs(entry.total_amount)}</td>`;
                          incTbody.appendChild(tr);
                      });
                  }

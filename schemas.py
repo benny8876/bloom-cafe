@@ -5,7 +5,7 @@ from models import OrderStatus
 
 KitchenStation = Literal["coffee", "food"]
 
-# --- NEW: Administrator Login Schema ---
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -16,7 +16,7 @@ class LoginResponse(BaseModel):
     role: str
     username: str
 
-# --- NEW: Password Change Schema ---
+
 class PasswordChangeRequest(BaseModel):
     old_password: str
     new_password: str
@@ -33,7 +33,7 @@ class MockPayRequest(BaseModel):
     table_id: int
     token: str
 
-# --- Modifiers ---
+
 class ModifierBase(BaseModel):
     name: str
     price: float = Field(..., ge=0)
@@ -46,7 +46,7 @@ class ModifierResponse(ModifierBase):
     class Config:
         from_attributes = True
 
-# --- Menu Items ---
+
 class MenuItemBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -56,7 +56,7 @@ class MenuItemBase(BaseModel):
     is_available: bool = True
     stock: Optional[int] = None
     image_url: Optional[str] = None
-    order_index: Optional[int] = None # NEW: Tracks display order index
+    order_index: Optional[int] = None 
 
 class MenuItemCreate(MenuItemBase):
     modifiers: Optional[List[ModifierCreate]] = []
@@ -78,7 +78,7 @@ class MenuItemResponse(MenuItemBase):
     class Config:
         from_attributes = True
 
-# --- Orders ---
+
 class OrderItemModifierResponse(BaseModel):
     modifier: ModifierResponse
     class Config:
@@ -92,7 +92,7 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     table_id: int
-    token: str # Security validation token
+    token: str 
     items: List[OrderItemCreate]
 
 class CounterSaleCreate(BaseModel):
@@ -172,7 +172,7 @@ class DailyAnalytics(BaseModel):
     top_selling_items: List[dict]
 
 
-# --- Finance / Expenses ---
+
 EXPENSE_CATEGORIES = [
     "Supplies",
     "Rent",
@@ -183,7 +183,7 @@ EXPENSE_CATEGORIES = [
     "Other",
 ]
 
-# English preset → Myanmar label (finance PDF & display)
+
 EXPENSE_CATEGORY_MYANMAR = {
     "Supplies": "ပစ္စည်းများ",
     "Rent": "ငှားရမ်းခ",
@@ -221,13 +221,13 @@ class ExpenseResponse(ExpenseBase):
         from_attributes = True
 
 
-class FinanceIncomeEntry(BaseModel):
-    order_id: int
+class FinanceTableIncomeEntry(BaseModel):
+    table_id: int
     table_label: str
-    amount: float
-    created_at: datetime
-    settled_at: Optional[datetime] = None
-    status: OrderStatus
+    order_count: int
+    total_amount: float
+    order_ids: List[int]
+    last_settled_at: Optional[datetime] = None
 
 
 class FinanceSummary(BaseModel):
@@ -243,6 +243,6 @@ class FinanceSummary(BaseModel):
     monthly_net: float
     order_count: int
     expense_count: int
-    income_entries: List[FinanceIncomeEntry]
+    income_entries: List[FinanceTableIncomeEntry]
     expenses: List[ExpenseResponse]
     expenses_by_category: List[dict]

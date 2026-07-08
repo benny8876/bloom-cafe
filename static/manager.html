@@ -131,6 +131,28 @@
          }
          .service-alert-banner__dismiss:hover { background: rgba(255, 255, 255, 0.22); }
          html.dark #receipt-modal .bg-white { background-color: #fff !important; color: #000 !important; }
+         #receipt-modal #receipt-payload { color: #0f172a !important; }
+         #receipt-modal #receipt-payload .text-slate-400,
+         #receipt-modal #receipt-payload .text-slate-500 { color: #64748b !important; }
+         #receipt-modal .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px dashed #94a3b8;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #0f172a !important;
+         }
+         #receipt-modal .receipt-footer {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed #94a3b8;
+            text-align: center;
+            font-size: 0.625rem;
+            line-height: 1.4;
+            color: #64748b !important;
+         }
          html.dark .table-floor-tile.border-emerald-500 { border-color: #10b981 !important; }
          html.dark .table-floor-tile.bg-emerald-50 { background-color: rgba(6, 78, 59, 0.35) !important; }
          html.dark .table-floor-tile.border-slate-200 { border-color: #475569 !important; }
@@ -296,12 +318,32 @@
             </section>
             </div>
 
-            <!-- SETTLED — closed table sessions -->
+            <!-- SETTLED — daily sales per table -->
             <div id="panel-settled" class="manager-panel hidden space-y-8">
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 w-full min-w-0">
-                  <h2 class="text-lg font-bold mb-2 text-slate-800">Settled Table Sessions</h2>
-                  <p class="text-xs text-slate-400 mb-4">Master receipts for dining sessions closed together.</p>
-                  <div class="space-y-3 overflow-y-auto max-h-[min(75vh,40rem)]" id="settled-tables-history-log"></div>
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                     <div>
+                        <h2 class="text-lg font-bold text-slate-800">Settled Table Sessions</h2>
+                        <p class="text-xs text-slate-400">Daily total per table — counted when bill was settled</p>
+                     </div>
+                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 shrink-0">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <input type="date" id="settled-date" onchange="fetchSettledTablesHistory()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
+                     </div>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                     <table class="w-full text-left text-sm">
+                        <thead>
+                           <tr class="text-[10px] text-slate-400 uppercase border-b bg-slate-50/80">
+                              <th class="py-2.5 px-4 font-bold">Table</th>
+                              <th class="py-2.5 px-2 font-bold text-center">Orders</th>
+                              <th class="py-2.5 px-4 font-bold text-right">Amount</th>
+                              <th class="py-2.5 px-4 font-bold text-right">Receipt</th>
+                           </tr>
+                        </thead>
+                        <tbody id="settled-tables-history-log" class="divide-y divide-slate-50"></tbody>
+                     </table>
+                  </div>
                </section>
             </div>
 
@@ -798,7 +840,7 @@
                          ${modsLabel}
                      </div>`;
              }).join('');
-             const total = bill.grand_total != null ? bill.grand_total : bill.subtotal;
+             const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>`
                  : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
@@ -813,10 +855,11 @@
                      ${orderLine}
                  </div>
                  <div class="space-y-2 my-4">${itemsStr}</div>
-                 <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
-                     <span>GRAND TOTAL</span>
+                 <div class="receipt-total-row">
+                     <span>TOTAL</span>
                      <span>${formatKs(total)}</span>
-                 </div>`;
+                 </div>
+                 <p class="receipt-footer">Thank You For Supporting BLOOM CAFÉ</p>`;
          }
 
          function configureReceiptModalActions(mode, tableId) {
@@ -865,6 +908,11 @@
                      loadCategories();
                  });
              } else if (activePanel === 'settled') {
+                 const analyticsDate = document.getElementById('analytics-date')?.value;
+                 const settledDate = document.getElementById('settled-date');
+                 if (settledDate && analyticsDate && !settledDate.value) {
+                     settledDate.value = analyticsDate;
+                 }
                  fetchSettledTablesHistory();
              } else if (activePanel === 'main') {
                  fetchAnalytics();
@@ -1086,6 +1134,8 @@
              document.getElementById('analytics-date').value = todayLocal;
              const ordersDate = document.getElementById('orders-filter-date');
              if (ordersDate) ordersDate.value = todayLocal;
+             const settledDate = document.getElementById('settled-date');
+             if (settledDate) settledDate.value = todayLocal;
          }
          
          async function fetchAnalytics() {
@@ -1574,42 +1624,57 @@
          
          async function fetchSettledTablesHistory() {
              try {
-                 const response = await fetch(`${API_BASE}/manager/tables/settled-history`, {
+                 const dateInput = document.getElementById('settled-date');
+                 const selectedDate = dateInput?.value || new Date().toLocaleDateString('en-CA');
+                 const response = await fetch(`${API_BASE}/manager/tables/settled-history?date=${encodeURIComponent(selectedDate)}`, {
                      headers: getAuthHeaders()
                  });
          
                  if (response.status === 401) { handleLogout(); return; }
          
                  const history = await response.json();
-                 const container = document.getElementById("settled-tables-history-log");
-                 container.innerHTML = "";
+                 const tbody = document.getElementById("settled-tables-history-log");
+                 tbody.innerHTML = "";
          
                  if (history.length === 0) {
-                     container.innerHTML = `<div class="col-span-full text-center text-slate-400 italic py-4 bg-white rounded-xl border border-slate-100">No settled table sessions recorded yet</div>`;
+                     tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 italic text-sm">No settled sales on this date</td></tr>`;
                      return;
                  }
          
-                 history.forEach(session => {
-                     const card = document.createElement("div");
-                     card.className = "bg-white p-4 border border-slate-100 rounded-xl shadow-sm flex justify-between items-center";
-                     const isoTime = session.settled_at_iso;
-                     const sessionFee = session.session_fee || 0;
-                     const ordersTotal = session.orders_total != null ? session.orders_total : session.total_price;
-                     const totalLine = sessionFee > 0
-                         ? `Orders: ${formatKs(ordersTotal)} · Room: ${formatKs(sessionFee)} · <span class="text-amber-600">Total: ${formatKs(session.total_price)}</span>`
-                         : `Total: ${formatKs(session.total_price)}`;
-                     card.innerHTML = `
-                         <div>
-                             <p class="font-bold text-[#161912]">Table ${session.table_number}</p>
-                             <p class="text-[10px] text-slate-400">Closed: ${session.settled_at}</p>
-                             <p class="text-xs text-slate-500 font-semibold mt-1">${totalLine} · Dockets: ${session.order_ids.map(id => `#${id}`).join(', ')}</p>
-                         </div>
-                         <button onclick="loadHistoricalTableBill(${session.table_id}, '${isoTime}')" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Master Receipt</button>
-                     `;
-                     container.appendChild(card);
+                 history.forEach(row => {
+                     const tr = document.createElement("tr");
+                     tr.className = "hover:bg-slate-50/80";
+                     tr.innerHTML = `
+                         <td class="py-3 px-4 font-semibold text-slate-800">Table ${row.table_number}</td>
+                         <td class="py-3 px-2 text-center text-slate-600">${row.order_count}</td>
+                         <td class="py-3 px-4 text-right font-bold text-amber-600">${formatKs(row.total_amount)}</td>
+                         <td class="py-3 px-4 text-right">
+                             <button onclick="loadDailyTableBill(${row.table_id}, '${row.date}')" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Receipt</button>
+                         </td>`;
+                     tbody.appendChild(tr);
                  });
              } catch (err) {
                  console.error("Could not fetch table history.");
+             }
+         }
+
+         async function loadDailyTableBill(tableId, billDate) {
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}/daily-bill?date=${encodeURIComponent(billDate)}`, {
+                     headers: getAuthHeaders()
+                 });
+         
+                 if (response.status === 401) { handleLogout(); return; }
+         
+                 const bill = await response.json();
+                 BluetoothPrinter.setCurrentReceipt(bill);
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
+                     title: 'DAILY TABLE RECEIPT'
+                 });
+                 configureReceiptModalActions('historical');
+                 toggleReceiptModal(true);
+             } catch (err) {
+                 showToast('Could not load receipt.', 'error');
              }
          }
          

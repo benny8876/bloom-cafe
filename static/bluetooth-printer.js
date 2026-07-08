@@ -100,7 +100,8 @@
 
 
         out += ESC + 'E' + '\x01';
-        out += padLine('GRAND TOTAL', formatMoney(receipt.subtotal));
+        const billTotal = receipt.grand_total != null ? receipt.grand_total : receipt.subtotal;
+        out += padLine('TOTAL', formatMoney(billTotal));
         out += ESC + 'E' + '\x00';
         out += dashedLine();
 
@@ -109,7 +110,7 @@
         }
 
         out += ESC + 'a' + '\x01';
-        out += '\nThank you!\n';
+        out += '\nThank You For Supporting\n';
         out += center(receipt.restaurant_name || 'BLOOM CAFÉ');
         out += '\n\n\n';
         out += GS + 'V' + '\x00';
