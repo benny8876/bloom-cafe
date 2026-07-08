@@ -1,23 +1,26 @@
-import hashlib
-import hmac
 import os
-from typing import Optional
+from typing import Optional, Set
 
-from fastapi import Header, HTTPException, Query, WebSocket
+import hmac
+import hashlib
+
+from fastapi import Depends, Header, HTTPException, Query, WebSocket
 from sqlalchemy.orm import Session
 
 import models
+from database import get_db
+from services.sessions import (
+    MANAGER_ROLES,
+    ROLE_KITCHEN,
+    ROLE_OWNER,
+    resolve_session,
+    revoke_session,
+)
 
 SECRET_KEY = os.getenv(
     "RESTAURANT_SECRET_KEY", "restaurant_super_secret_signing_key_2026"
 ).encode()
 KITCHEN_PIN = os.getenv("KITCHEN_PIN", "kitchen2026")
-KITCHEN_SESSION_TOKEN = os.getenv(
-    "KITCHEN_SESSION_TOKEN", "secure_kitchen_session_token_2026"
-)
-MANAGER_SESSION_TOKEN = os.getenv(
-    "MANAGER_SESSION_TOKEN", "secure_manager_session_token_2026_xyz"
-)
 
 KITCHEN_ALLOWED_TRANSITIONS = {
     models.OrderStatus.PENDING: {
@@ -40,32 +43,105 @@ def verify_table_token(table_id: int, token: str) -> bool:
     return hmac.compare_digest(expected, token)
 
 
-def verify_kitchen_token(authorization: Optional[str] = Header(None)) -> bool:
+def _extract_bearer_token(authorization: Optional[str]) -> str:
     if not authorization:
         raise HTTPException(
-            status_code=401, detail="Kitchen login required. Please enter staff PIN."
+            status_code=401, detail="Missing Authorization Header. Please login."
         )
     try:
-        token_type, token = authorization.split(" ")
-        if token_type.lower() != "bearer" or token != KITCHEN_SESSION_TOKEN:
+        token_type, token = authorization.split(" ", 1)
+        if token_type.lower() != "bearer" or not token.strip():
             raise ValueError()
+        return token.strip()
     except (ValueError, AttributeError):
-        raise HTTPException(status_code=401, detail="Invalid kitchen session.")
-    return True
+        raise HTTPException(
+            status_code=401, detail="Unauthorized session. Please log in."
+        )
 
 
-def verify_kitchen_ws_token(token: Optional[str] = Query(None)) -> bool:
-    if not token or token != KITCHEN_SESSION_TOKEN:
-        return False
-    return True
+def _require_session(
+    db: Session,
+    raw_token: str,
+    allowed_roles: Set[str],
+    login_hint: str = "Please log in.",
+) -> models.AuthSession:
+    session = resolve_session(db, raw_token)
+    if not session or session.role not in allowed_roles:
+        raise HTTPException(status_code=401, detail=f"Unauthorized. {login_hint}")
+    return session
 
 
-def verify_manager_ws_token(token: Optional[str]) -> bool:
-    return bool(token and token == MANAGER_SESSION_TOKEN)
+def get_current_session(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+) -> models.AuthSession:
+    token = _extract_bearer_token(authorization)
+    return _require_session(db, token, MANAGER_ROLES)
 
 
-async def reject_unauthorized_kitchen_ws(websocket: WebSocket) -> None:
-    await websocket.close(code=1008, reason="Kitchen authentication required")
+def verify_manager_token(
+    session: models.AuthSession = Depends(get_current_session),
+) -> models.AuthSession:
+    return session
+
+
+def get_owner_session(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+) -> models.AuthSession:
+    token = _extract_bearer_token(authorization)
+    return _require_session(
+        db,
+        token,
+        {ROLE_OWNER},
+        login_hint="Owner access required for finance.",
+    )
+
+
+def verify_owner_token(
+    session: models.AuthSession = Depends(get_owner_session),
+) -> models.AuthSession:
+    return session
+
+
+def get_kitchen_session(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+) -> models.AuthSession:
+    token = _extract_bearer_token(authorization)
+    return _require_session(
+        db,
+        token,
+        {ROLE_KITCHEN},
+        login_hint="Kitchen login required.",
+    )
+
+
+def verify_kitchen_token(
+    session: models.AuthSession = Depends(get_kitchen_session),
+) -> models.AuthSession:
+    return session
+
+
+def verify_ws_token(
+    db: Session,
+    token: Optional[str],
+    allowed_roles: Set[str],
+) -> bool:
+    session = resolve_session(db, token)
+    return bool(session and session.role in allowed_roles)
+
+
+async def reject_unauthorized_ws(websocket: WebSocket, reason: str) -> None:
+    await websocket.close(code=1008, reason=reason)
+
+
+def logout_token(db: Session, authorization: Optional[str]) -> None:
+    try:
+        token = _extract_bearer_token(authorization)
+    except HTTPException:
+        return
+    revoke_session(db, token)
 
 
 def validate_kitchen_status_transition(

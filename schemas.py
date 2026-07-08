@@ -1,12 +1,20 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 from models import OrderStatus
+
+KitchenStation = Literal["coffee", "food"]
 
 # --- NEW: Administrator Login Schema ---
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class LoginResponse(BaseModel):
+    token: str
+    role: str
+    username: str
 
 # --- NEW: Password Change Schema ---
 class PasswordChangeRequest(BaseModel):
@@ -15,6 +23,11 @@ class PasswordChangeRequest(BaseModel):
 
 class KitchenLoginRequest(BaseModel):
     pin: str
+
+
+class KitchenLoginResponse(BaseModel):
+    token: str
+    role: str = "kitchen"
 
 class MockPayRequest(BaseModel):
     table_id: int
@@ -39,6 +52,7 @@ class MenuItemBase(BaseModel):
     description: Optional[str] = None
     price: float = Field(..., gt=0)
     category: str
+    kitchen_station: KitchenStation = "food"
     is_available: bool = True
     stock: Optional[int] = None
     image_url: Optional[str] = None
@@ -52,11 +66,11 @@ class MenuItemUpdate(BaseModel):
     description: Optional[str] = None
     price: Optional[float] = Field(None, gt=0)
     category: Optional[str] = None
+    kitchen_station: Optional[KitchenStation] = None
     is_available: Optional[bool] = None
     stock: Optional[int] = None
-    
-    # NEW
-    image_url: Optional[str] = None 
+    image_url: Optional[str] = None
+    modifiers: Optional[List[ModifierCreate]] = None
 
 class MenuItemResponse(MenuItemBase):
     id: int
@@ -81,6 +95,9 @@ class OrderCreate(BaseModel):
     token: str # Security validation token
     items: List[OrderItemCreate]
 
+class CounterSaleCreate(BaseModel):
+    items: List[OrderItemCreate]
+
 class OrderItemResponse(BaseModel):
     id: int
     menu_item: MenuItemResponse
@@ -97,12 +114,52 @@ class TableResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class TableCreate(BaseModel):
+    label: str = Field(..., min_length=1, max_length=50)
+    is_vip_room: bool = False
+    hourly_rate: float = Field(0, ge=0)
+    minimum_minutes: int = Field(30, ge=0)
+    free_minutes: int = Field(0, ge=0)
+
+class TableUpdate(BaseModel):
+    label: Optional[str] = Field(None, min_length=1, max_length=50)
+    is_vip_room: Optional[bool] = None
+    hourly_rate: Optional[float] = Field(None, ge=0)
+    minimum_minutes: Optional[int] = Field(None, ge=0)
+    free_minutes: Optional[int] = Field(None, ge=0)
+
+class TableSessionSummary(BaseModel):
+    session_id: int
+    started_at: str
+    elapsed_minutes: int
+    elapsed_label: str
+    billable_minutes: int
+    current_fee: float
+    hourly_rate: float
+    minimum_minutes: int
+    free_minutes: int
+
+class TableManagementResponse(BaseModel):
+    id: int
+    number: int
+    label: str
+    is_active: bool
+    has_active_orders: bool = False
+    is_vip_room: bool = False
+    hourly_rate: float = 0
+    minimum_minutes: int = 30
+    free_minutes: int = 0
+    active_session: Optional[TableSessionSummary] = None
+    class Config:
+        from_attributes = True
+
 class OrderResponse(BaseModel):
     id: int
     table: TableResponse
     status: OrderStatus
     total_price: float
     created_at: datetime
+    settled_at: Optional[datetime] = None
     items: List[OrderItemResponse]
     class Config:
         from_attributes = True
@@ -110,6 +167,82 @@ class OrderResponse(BaseModel):
 class DailyAnalytics(BaseModel):
     date: str
     total_revenue: float
-    total_monthly_revenue: float # NEW: Tracks total revenue for the selected calendar month
+    total_monthly_revenue: float
     total_orders_completed: int
     top_selling_items: List[dict]
+
+
+# --- Finance / Expenses ---
+EXPENSE_CATEGORIES = [
+    "Supplies",
+    "Rent",
+    "Utilities",
+    "Staff",
+    "Equipment",
+    "Marketing",
+    "Other",
+]
+
+# English preset → Myanmar label (finance PDF & display)
+EXPENSE_CATEGORY_MYANMAR = {
+    "Supplies": "ပစ္စည်းများ",
+    "Rent": "ငှားရမ်းခ",
+    "Utilities": "အသုံးအဆောင်ခ",
+    "Staff": "ဝန်ထမ်းစရိတ်",
+    "Equipment": "စက်ပစ္စည်း",
+    "Marketing": "ကြော်ငြာစရိတ်",
+    "Other": "အခြား",
+}
+
+
+class ExpenseBase(BaseModel):
+    category: str
+    amount: float = Field(..., gt=0)
+    description: Optional[str] = None
+    recorded_at: Optional[datetime] = None
+
+
+class ExpenseCreate(ExpenseBase):
+    pass
+
+
+class ExpenseUpdate(BaseModel):
+    category: Optional[str] = None
+    amount: Optional[float] = Field(None, gt=0)
+    description: Optional[str] = None
+    recorded_at: Optional[datetime] = None
+
+
+class ExpenseResponse(ExpenseBase):
+    id: int
+    recorded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FinanceIncomeEntry(BaseModel):
+    order_id: int
+    table_label: str
+    amount: float
+    created_at: datetime
+    settled_at: Optional[datetime] = None
+    status: OrderStatus
+
+
+class FinanceSummary(BaseModel):
+    date: str
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period_label: Optional[str] = None
+    income_total: float
+    outcome_total: float
+    net_profit: float
+    monthly_income: float
+    monthly_outcome: float
+    monthly_net: float
+    order_count: int
+    expense_count: int
+    income_entries: List[FinanceIncomeEntry]
+    expenses: List[ExpenseResponse]
+    expenses_by_category: List[dict]

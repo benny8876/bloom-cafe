@@ -5,9 +5,9 @@ from fastapi.staticfiles import StaticFiles
 import models, os
 from sqlalchemy import inspect, text
 from database import engine, SessionLocal
-from table_labels import TABLE_LABELS, label_for_number
-from routers import menu, kitchen, manager
-import hashlib  # Add to imports
+from table_labels import TABLE_LABELS, label_for_number, COUNTER_TABLE_NUMBER, COUNTER_TABLE_LABEL
+from routers import menu, kitchen, manager, finance
+from services.passwords import hash_password
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -32,6 +32,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(menu.router, prefix="/api/v1")
 app.include_router(kitchen.router, prefix="/api/v1")
 app.include_router(manager.router, prefix="/api/v1")
+app.include_router(finance.router, prefix="/api/v1")
 
 # Static Frontend Routes
 @app.get("/menu")
@@ -44,14 +45,24 @@ def serve_kitchen():
     return FileResponse(os.path.join("static", "kitchen.html"))
 
 
+@app.get("/kitchen/coffee")
+def serve_coffee_kitchen():
+    return FileResponse(os.path.join("static", "kitchen.html"))
+
+
+@app.get("/kitchen/food")
+def serve_food_kitchen():
+    return FileResponse(os.path.join("static", "kitchen.html"))
+
+
 @app.get("/manager")
 def serve_manager():
     return FileResponse(os.path.join("static", "manager.html"))
 
 
-# Simple zero-dependency secure password hasher
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+@app.get("/finance")
+def serve_finance():
+    return FileResponse(os.path.join("static", "finance.html"))
 
 
 def migrate_table_labels():
@@ -75,18 +86,204 @@ def migrate_table_labels():
         db.close()
 
 
+def migrate_orders_payment_method():
+    inspector = inspect(engine)
+    if "orders" not in inspector.get_table_names():
+        return
+
+    columns = [col["name"] for col in inspector.get_columns("orders")]
+    if "payment_method" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_method VARCHAR"))
+
+
+def migrate_menu_kitchen_station():
+    from services.kitchen_stations import station_for_category
+
+    inspector = inspect(engine)
+    if "menu_items" not in inspector.get_table_names():
+        return
+
+    columns = [col["name"] for col in inspector.get_columns("menu_items")]
+    column_was_added = "kitchen_station" not in columns
+    if column_was_added:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE menu_items ADD COLUMN kitchen_station VARCHAR NOT NULL DEFAULT 'food'"
+                )
+            )
+
+    if not column_was_added:
+        return
+
+    db = SessionLocal()
+    try:
+        items = db.query(models.MenuItem).all()
+        for item in items:
+            item.kitchen_station = station_for_category(item.category)
+        db.commit()
+    finally:
+        db.close()
+
+
+def migrate_vip_table_settings():
+    inspector = inspect(engine)
+    if "tables" not in inspector.get_table_names():
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("tables")}
+    alters = []
+    if "is_vip_room" not in columns:
+        alters.append("ALTER TABLE tables ADD COLUMN is_vip_room BOOLEAN NOT NULL DEFAULT 0")
+    if "hourly_rate" not in columns:
+        alters.append("ALTER TABLE tables ADD COLUMN hourly_rate FLOAT NOT NULL DEFAULT 0")
+    if "minimum_minutes" not in columns:
+        alters.append("ALTER TABLE tables ADD COLUMN minimum_minutes INTEGER NOT NULL DEFAULT 30")
+    if "free_minutes" not in columns:
+        alters.append("ALTER TABLE tables ADD COLUMN free_minutes INTEGER NOT NULL DEFAULT 0")
+
+    if alters:
+        with engine.begin() as conn:
+            for stmt in alters:
+                conn.execute(text(stmt))
+
+    if "table_sessions" not in inspector.get_table_names():
+        models.TableSession.__table__.create(bind=engine)
+
+
+def migrate_order_status_values():
+    """Normalize legacy uppercase enum names to lowercase values in SQLite."""
+    inspector = inspect(engine)
+    if "orders" not in inspector.get_table_names():
+        return
+
+    legacy_to_value = {
+        "AWAITING_PAYMENT": "awaiting_payment",
+        "PENDING": "pending",
+        "PREPARING": "preparing",
+        "SERVED": "served",
+        "COMPLETED": "completed",
+        "CANCELLED": "cancelled",
+    }
+
+    with engine.begin() as conn:
+        for legacy, value in legacy_to_value.items():
+            conn.execute(
+                text("UPDATE orders SET status = :value WHERE status = :legacy"),
+                {"legacy": legacy, "value": value},
+            )
+
+
+def ensure_counter_table(db):
+    counter = (
+        db.query(models.RestaurantTable)
+        .filter(models.RestaurantTable.number == COUNTER_TABLE_NUMBER)
+        .first()
+    )
+    if not counter:
+        db.add(
+            models.RestaurantTable(
+                number=COUNTER_TABLE_NUMBER,
+                label=COUNTER_TABLE_LABEL,
+                is_active=True,
+            )
+        )
+        db.commit()
+    elif counter.label != COUNTER_TABLE_LABEL:
+        counter.label = COUNTER_TABLE_LABEL
+        db.commit()
+
+
+def migrate_auth_tables():
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+
+    if "admin_credentials" in table_names:
+        columns = {col["name"] for col in inspector.get_columns("admin_credentials")}
+        if "role" not in columns:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE admin_credentials ADD COLUMN role VARCHAR NOT NULL DEFAULT 'staff'"
+                    )
+                )
+            db = SessionLocal()
+            try:
+                first_admin = (
+                    db.query(models.AdminCredential)
+                    .order_by(models.AdminCredential.id.asc())
+                    .first()
+                )
+                if first_admin and first_admin.role == "staff":
+                    first_admin.role = "owner"
+                    db.commit()
+            finally:
+                db.close()
+
+    if "auth_sessions" not in table_names:
+        models.AuthSession.__table__.create(bind=engine)
+
+    db = SessionLocal()
+    try:
+        db.query(models.AdminCredential).filter(
+            models.AdminCredential.role == "staff"
+        ).update({models.AdminCredential.role: "manager"}, synchronize_session=False)
+        db.query(models.AuthSession).filter(
+            models.AuthSession.role == "staff"
+        ).update({models.AuthSession.role: "manager"}, synchronize_session=False)
+        db.commit()
+    finally:
+        db.close()
+
+
+def ensure_default_accounts(db):
+    """Owner (admin) + floor manager accounts."""
+    owner_password = os.getenv("OWNER_DEFAULT_PASSWORD", "adminpassword123")
+    manager_password = os.getenv("MANAGER_DEFAULT_PASSWORD", "manager2026")
+
+    owner = (
+        db.query(models.AdminCredential)
+        .filter(models.AdminCredential.username == "admin")
+        .first()
+    )
+    if not owner:
+        db.add(
+            models.AdminCredential(
+                username="admin",
+                password_hash=hash_password(owner_password),
+                role="owner",
+            )
+        )
+
+    manager = (
+        db.query(models.AdminCredential)
+        .filter(models.AdminCredential.username == "manager")
+        .first()
+    )
+    if not manager:
+        db.add(
+            models.AdminCredential(
+                username="manager",
+                password_hash=hash_password(manager_password),
+                role="manager",
+            )
+        )
+
+    db.commit()
+
+
 @app.on_event("startup")
 def seed_initial_data():
     migrate_table_labels()
+    migrate_orders_payment_method()
+    migrate_menu_kitchen_station()
+    migrate_vip_table_settings()
+    migrate_order_status_values()
+    migrate_auth_tables()
     db = SessionLocal()
 
-    # NEW: Seeds default manager credentials on first database creation
-    if not db.query(models.AdminCredential).first():
-        default_admin = models.AdminCredential(
-            username="admin", password_hash=hash_password("adminpassword123")
-        )
-        db.add(default_admin)
-        db.commit()
+    ensure_default_accounts(db)
 
     # Seed tables A1–A7 and B1–B6
     if not db.query(models.RestaurantTable).first():
@@ -97,19 +294,22 @@ def seed_initial_data():
         db.add_all(tables)
         db.commit()
 
+    ensure_counter_table(db)
+
     # Seed default menu items
     if not db.query(models.MenuItem).first():
         # ၁။ Item တွေကို အရင်ဆောက်ပါ
         burger = models.MenuItem(
-            name="Cheeseburger", price=8.99, category="Main", stock=25
+            name="Cheeseburger", price=8.99, category="Main", kitchen_station="food", stock=25
         )
         fries = models.MenuItem(
-            name="French Fries", price=3.49, category="Side", stock=50
+            name="French Fries", price=3.49, category="Side", kitchen_station="food", stock=50
         )
-        soda = models.MenuItem(name="Iced Soda", price=2.49, category="Drink", stock=10)
-        # Coffee ကိုလည်း အောက်မှာ ထည့်ပေးပါ
+        soda = models.MenuItem(
+            name="Iced Soda", price=2.49, category="Drink", kitchen_station="coffee", stock=10
+        )
         coffee = models.MenuItem(
-            name="Iced Coffee", price=3.00, category="Drink", stock=20
+            name="Iced Coffee", price=3.00, category="Drink", kitchen_station="coffee", stock=20
         )
 
         db.add_all([burger, fries, soda, coffee])
@@ -136,7 +336,7 @@ def seed_initial_data():
 @app.get("/")
 def root():
     return {
-        "message": "Dine Inn System backend is active. Load /menu, /kitchen or /manager."
+        "message": "Dine Inn System backend is active. Load /menu, /kitchen/coffee, /kitchen/food, /manager, or /finance."
     }
 
 

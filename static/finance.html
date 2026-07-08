@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLOOM CAFÉ — Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>(function(){const s=localStorage.getItem('manager_dark_mode');if(s==='1'||(s===null&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');})();</script>
+      <style>
+         body { font-family: 'Montserrat', 'Noto Sans Myanmar', system-ui, sans-serif; }
+         .bloom-brand { font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9b2d8c; }
+         html.dark .bloom-brand { color: #d48fcf; }
+         .bloom-logo-img { width: 3.25rem; height: 3.25rem; object-fit: contain; }
+         .stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1.25rem 1.5rem; }
+         #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 200; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+         .toast { pointer-events: auto; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; box-shadow: 0 4px 14px rgba(15,23,42,0.12); animation: toast-in 0.2s ease; max-width: 320px; }
+         .toast-success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+         .toast-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+         .toast-info { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+         @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+         html.dark body { background-color: #0f172a; color: #e2e8f0; }
+         html.dark #login-view { background-color: #020617; }
+         html.dark .bg-white { background-color: #1e293b !important; }
+         html.dark .bg-slate-50 { background-color: #0f172a !important; }
+         html.dark .bg-slate-100 { background-color: #1e293b !important; }
+         html.dark .text-slate-900, html.dark .text-slate-800 { color: #f8fafc !important; }
+         html.dark .text-slate-700, html.dark .text-slate-600 { color: #cbd5e1 !important; }
+         html.dark .text-slate-500, html.dark .text-slate-400 { color: #94a3b8 !important; }
+         html.dark .border-slate-100, html.dark .border-slate-200 { border-color: #334155 !important; }
+         html.dark header { background-color: #1e293b !important; border-color: #334155 !important; }
+         html.dark .stat-card { background: #1e293b; border-color: #334155; }
+         html.dark input:not([type="checkbox"]), html.dark select, html.dark textarea { background-color: #334155 !important; color: #f1f5f9 !important; border-color: #475569 !important; }
+         html.dark input[type="date"] { color-scheme: dark; }
+         html.dark .toast-info { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+         html.dark .toast-success { background: #064e3b; color: #a7f3d0; }
+         html.dark .toast-error { background: #4c0519; color: #fecdd3; }
+         .theme-toggle-btn { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
+         html.dark .theme-toggle-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
+         html.dark #receipt-modal .bg-white { background-color: #fff !important; color: #000 !important; }
+.fin-chart-card {
+            background: #fff;
+            border: 1px solid #f1f5f9;
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+         }
+         .fin-chart-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+         }
+         .fin-chart-header h3 {
+            font-size: 0.9375rem;
+            font-weight: 800;
+            color: #1e293b;
+            letter-spacing: -0.01em;
+         }
+         .fin-chart-header p {
+            font-size: 0.6875rem;
+            color: #94a3b8;
+            margin-top: 0.125rem;
+         }
+         .fin-chart-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            min-height: 220px;
+            justify-content: center;
+         }
+         .fin-donut-wrap {
+            position: relative;
+            width: 200px;
+            height: 200px;
+         }
+         .fin-donut-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+         }
+         .fin-donut-hole { fill: #fff; }
+         .fin-donut-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            text-align: center;
+            padding: 2.5rem;
+         }
+         .fin-donut-center-label {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+         }
+         .fin-donut-center-value {
+            font-size: 0.8125rem;
+            font-weight: 800;
+            color: #334155;
+            margin-top: 0.125rem;
+            line-height: 1.2;
+         }
+         .fin-chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem 1.25rem;
+            width: 100%;
+         }
+         .fin-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+         }
+         .fin-legend-dot {
+            width: 0.625rem;
+            height: 0.625rem;
+            border-radius: 9999px;
+            flex-shrink: 0;
+         }
+         .fin-chart-empty {
+            font-size: 0.8125rem;
+            color: #94a3b8;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem 1rem;
+         }
+         .fin-flow-bar {
+            display: flex;
+            height: 0.5rem;
+            border-radius: 9999px;
+            overflow: hidden;
+            background: #f1f5f9;
+            width: 100%;
+            margin-top: 0.75rem;
+         }
+         .fin-flow-bar span { display: block; height: 100%; transition: width 0.4s ease; }
+         html.dark .fin-chart-card { background: #1e293b; border-color: #334155; }
+         html.dark .fin-chart-header { border-color: #334155; }
+         html.dark .fin-chart-header h3 { color: #f8fafc; }
+         html.dark .fin-donut-hole { fill: #1e293b; }
+         html.dark .fin-donut-center-value { color: #e2e8f0; }
+         html.dark .fin-flow-bar { background: #334155; }
+
+      </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+<div id="toast-container"></div>
+      <div id="login-view" class="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
+         <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn absolute top-4 right-4 z-[60]">
+            <span id="login-dark-mode-icon">🌙</span>
+            <span id="login-dark-mode-label">Dark</span>
+         </button>
+         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-6">
+            <div class="text-center space-y-3">
+               <img src="/static/bloom-logo.png" alt="BLOOM CAFÉ" class="bloom-logo-img mx-auto" />
+               <div>
+                  <h2 class="text-2xl bloom-brand">BLOOM CAFÉ</h2>
+                  <p class="text-xs font-semibold text-slate-400 tracking-widest uppercase mt-1">Finance</p>
+               </div>
+               <p class="text-xs text-slate-400">Owner login — income &amp; expenses</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+               <input type="text" id="login-username" required placeholder="Username" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+               <input type="password" id="login-password" required placeholder="Password" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+               <button type="submit" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-lg text-sm">Sign In</button>
+            </form>
+         </div>
+      </div>
+      <div id="access-denied-view" class="hidden fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
+         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-5 text-center">
+            <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img mx-auto" aria-hidden="true" />
+            <div>
+               <h2 class="text-xl font-bold text-slate-800">Owner access only</h2>
+               <p class="text-sm text-slate-500 mt-2">Finance is restricted to the shop owner account (<strong>admin</strong>). Floor managers should use Operations at /manager.</p>
+            </div>
+            <a href="/manager" class="block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg text-sm">Go to Operations</a>
+            <button type="button" onclick="handleLogout()" class="w-full text-sm font-bold text-rose-600 hover:bg-rose-50 py-2 rounded-lg">Sign out</button>
+         </div>
+      </div>
+      <div id="dashboard-view" class="hidden">
+         <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                     <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img hidden sm:block" aria-hidden="true" />
+                     <div>
+                        <h1 class="text-xl bloom-brand leading-tight">BLOOM CAFÉ <span class="text-slate-400 font-medium text-sm tracking-widest">Finance</span></h1>
+                        <p class="text-xs text-slate-400 mt-0.5">Income, outcome &amp; net profit</p>
+                     </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                     <a href="/manager" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-50 transition">Operations →</a>
+                     <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn">
+                        <span id="dark-mode-icon">🌙</span>
+                        <span id="dark-mode-label">Dark</span>
+                     </button>
+                     <button onclick="togglePasswordModal(true)" class="text-xs font-bold text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50">Password</button>
+                     <button onclick="handleLogout()" class="text-xs font-bold text-rose-600 px-3 py-2 rounded-lg hover:bg-rose-50">Logout</button>
+                  </div>
+               </div>
+               <div id="finance-toolbar" class="flex flex-wrap items-center gap-2">
+                  <select id="finance-range" onchange="onFinanceRangeChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold">
+                     <option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="custom">Custom range</option>
+                  </select>
+                  <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                     <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                     <input type="date" id="finance-date" onchange="fetchFinanceSummary()" class="bg-transparent border-none text-sm font-semibold focus:outline-none">
+                  </div>
+                  <div id="finance-custom-dates" class="hidden flex flex-wrap items-center gap-2">
+                     <input type="date" id="finance-from-date" onchange="fetchFinanceSummary()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                     <input type="date" id="finance-to-date" onchange="fetchFinanceSummary()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                  </div>
+                  <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-bold">
+                     <button type="button" onclick="exportFinanceReport('day')" class="px-3 py-2 bg-indigo-600 text-white">Today</button>
+                     <button type="button" onclick="exportFinanceReport('week')" class="px-3 py-2 bg-white border-l">Week</button>
+                     <button type="button" onclick="exportFinanceReport('month')" class="px-3 py-2 bg-white border-l">Month</button>
+                  </div>
+                  <button onclick="toggleExpenseModal(true)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg text-xs">+ Expense</button>
+               </div>
+            </div>
+         </header>
+
+<div id="finance-dashboard" >
+            <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
+               <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div class="stat-card">
+                     <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Income (Sales)</span>
+                     <h3 class="text-2xl font-black text-emerald-600 mt-2" id="fin-income">0 Ks</h3>
+                     <p class="text-[10px] text-slate-400 mt-1" id="fin-income-sub">0 completed orders</p>
+                  </div>
+                  <div class="stat-card">
+                     <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Outcome (Expenses)</span>
+                     <h3 class="text-2xl font-black text-rose-600 mt-2" id="fin-outcome">0 Ks</h3>
+                     <p class="text-[10px] text-slate-400 mt-1" id="fin-outcome-sub">0 entries today</p>
+                  </div>
+                  <div class="stat-card">
+                     <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Net Profit (Day)</span>
+                     <h3 class="text-2xl font-black text-indigo-600 mt-2" id="fin-net">0 Ks</h3>
+                     <p class="text-[10px] text-slate-400 mt-1" id="fin-net-sub">Income minus outcome</p>
+                  </div>
+                  <div class="stat-card">
+                     <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider" id="fin-month-label">Month Net</span>
+                     <h3 class="text-2xl font-black text-slate-800 mt-2" id="fin-month-net">0 Ks</h3>
+                     <p class="text-[10px] text-slate-400 mt-1" id="fin-month-sub">Monthly income vs expenses</p>
+                  </div>
+               </section>
+
+               <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <article class="fin-chart-card">
+                     <div class="fin-chart-header">
+                        <div>
+                           <h3>Income vs Outcome</h3>
+                           <p id="fin-chart-overview-sub">Period snapshot</p>
+                        </div>
+                     </div>
+                     <div class="fin-chart-body">
+                        <div class="fin-donut-wrap" id="fin-overview-chart"></div>
+                        <div class="fin-flow-bar" id="fin-flow-bar" title="Income vs outcome split">
+                           <span id="fin-flow-income" class="bg-indigo-500" style="width:50%"></span>
+                           <span id="fin-flow-outcome" class="bg-rose-500" style="width:50%"></span>
+                        </div>
+                        <div class="fin-chart-legend" id="fin-overview-legend"></div>
+                     </div>
+                  </article>
+                  <article class="fin-chart-card">
+                     <div class="fin-chart-header">
+                        <div>
+                           <h3>Expense Categories</h3>
+                           <p>Where money went out</p>
+                        </div>
+                     </div>
+                     <div class="fin-chart-body">
+                        <div class="fin-donut-wrap" id="fin-expense-chart"></div>
+                        <div class="fin-chart-legend" id="fin-expense-legend"></div>
+                     </div>
+                  </article>
+               </section>
+
+               <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                     <div class="flex items-center justify-between mb-4">
+                        <div>
+                           <h2 class="text-base font-bold text-slate-800">Outcome — Expenses</h2>
+                           <p class="text-xs text-slate-400">Track rent, supplies, staff &amp; other costs</p>
+                        </div>
+                        <button onclick="toggleExpenseModal(true)" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2 px-3 rounded-lg transition">+ Add Expense</button>
+                     </div>
+                     <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                        <table class="w-full text-left text-sm">
+                           <thead>
+                              <tr class="text-[10px] text-slate-400 uppercase border-b bg-slate-50/80">
+                                 <th class="py-2.5 px-4 font-bold">Time</th>
+                                 <th class="py-2.5 px-2 font-bold">Category</th>
+                                 <th class="py-2.5 px-2 font-bold">Description</th>
+                                 <th class="py-2.5 px-2 font-bold text-right">Amount</th>
+                                 <th class="py-2.5 px-4 font-bold text-right">Actions</th>
+                              </tr>
+                           </thead>
+                           <tbody id="expenses-tbody" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                     </div>
+                  </section>
+
+               <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                  <div class="flex items-center justify-between mb-4">
+                     <div>
+                        <h2 class="text-base font-bold text-slate-800">Income — Settled Sales</h2>
+                        <p class="text-xs text-slate-400">Counted by settlement date (when bill was paid)</p>
+                     </div>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                     <table class="w-full text-left text-sm">
+                        <thead>
+                           <tr class="text-[10px] text-slate-400 uppercase border-b bg-slate-50/80">
+                              <th class="py-2.5 px-4 font-bold">Order</th>
+                              <th class="py-2.5 px-2 font-bold">Table</th>
+                              <th class="py-2.5 px-2 font-bold">Time</th>
+                              <th class="py-2.5 px-4 font-bold text-right">Amount</th>
+                              <th class="py-2.5 px-4 font-bold text-right">Receipt</th>
+                           </tr>
+                        </thead>
+                        <tbody id="finance-income-tbody" class="divide-y divide-slate-50"></tbody>
+                     </table>
+                  </div>
+               </section>
+            </main>
+               </div>
+
+      
+      </div>
+<div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+         <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl relative space-y-4">
+            <button onclick="togglePasswordModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800">Change Admin Password</h3>
+            <form onsubmit="submitChangePassword(event)" class="space-y-4">
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Old Password</label>
+                  <input type="password" id="p-old-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">New Password</label>
+                  <input type="password" id="p-new-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Confirm New Password</label>
+                  <input type="password" id="p-confirm-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+               </div>
+               <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm transition">
+               Update Password
+               </button>
+            </form>
+         </div>
+      </div>
+      
+      <div id="expense-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
+         <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl relative space-y-4 border border-slate-100">
+            <button onclick="toggleExpenseModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 id="expense-modal-title" class="text-lg font-bold text-slate-800">Add Expense</h3>
+            <form id="expense-form" onsubmit="submitExpense(event)" class="space-y-4">
+               <input type="hidden" id="expense-id" value="">
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
+                  <div class="flex gap-1 p-1 bg-slate-100 rounded-lg mb-2">
+                     <button type="button" id="expense-cat-tab-preset" onclick="setExpenseCategoryMode('preset')" class="flex-1 text-xs font-bold py-1.5 rounded-md bg-white text-slate-800 shadow-sm">Presets</button>
+                     <button type="button" id="expense-cat-tab-custom" onclick="setExpenseCategoryMode('custom')" class="flex-1 text-xs font-bold py-1.5 rounded-md text-slate-500 hover:text-slate-700">Custom</button>
+                  </div>
+                  <div id="expense-category-preset-panel">
+                     <select id="expense-category" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400"></select>
+                  </div>
+                  <div id="expense-category-custom-panel" class="hidden space-y-2">
+                     <input type="text" id="expense-category-custom" maxlength="50" placeholder="e.g. Cleaning, Delivery fee..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400">
+                     <div id="expense-custom-suggestions" class="flex flex-wrap gap-1.5"></div>
+                     <p class="text-[10px] text-slate-400">Tap a saved custom category or type a new one.</p>
+                  </div>
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Amount (Ks)</label>
+                  <input type="number" step="1" min="1" id="expense-amount" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400">
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Date</label>
+                  <input type="date" id="expense-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400">
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
+                  <input type="text" id="expense-description" placeholder="Optional note" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400">
+               </div>
+               <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Save Expense</button>
+            </form>
+         </div>
+      </div>
+            <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
+         <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <div id="receipt-payload" class="space-y-4"></div>
+            <button onclick="window.print()" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm print:hidden">Print Receipt</button>
+         </div>
+      </div>
+      <script>
+         const API_BASE = `${window.location.origin}/api/v1`;
+         const DARK_MODE_KEY = 'manager_dark_mode';
+         let expenseCategories = [], expenseCustomCategories = [], expenseCategoryMode = 'preset', financeExpenses = [];
+         const FIN_EXPENSE_COLORS = ['#e11d48', '#f43f5e', '#fb7185', '#f97316', '#f59e0b', '#eab308', '#a78bfa', '#8b5cf6'];
+
+         function isDarkModeEnabled() { return document.documentElement.classList.contains('dark'); }
+         function updateDarkModeUi() {
+            const enabled = isDarkModeEnabled();
+            const icon = enabled ? '☀️' : '🌙';
+            const label = enabled ? 'Light' : 'Dark';
+            ['dark-mode-icon','login-dark-mode-icon'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=icon; });
+            ['dark-mode-label','login-dark-mode-label'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=label; });
+         }
+         function toggleDarkMode() {
+            const enabled = !isDarkModeEnabled();
+            document.documentElement.classList.toggle('dark', enabled);
+            localStorage.setItem(DARK_MODE_KEY, enabled ? '1' : '0');
+            updateDarkModeUi();
+         }
+
+function formatKs(amount) {
+             return `${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Ks`;
+         }
+
+function showToast(message, type = 'info', duration = 3200) {
+             const container = document.getElementById('toast-container');
+             const el = document.createElement('div');
+             el.className = `toast toast-${type}`;
+             el.textContent = message;
+             container.appendChild(el);
+             setTimeout(() => {
+                 el.style.opacity = '0';
+                 el.style.transition = 'opacity 0.2s';
+                 setTimeout(() => el.remove(), 200);
+             }, duration);
+         }
+
+         function escapeHtml(text) {
+             return String(text)
+                 .replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;')
+                 .replace(/"/g, '&quot;');
+         }
+
+         function renderBillReceiptHtml(bill, options = {}) {
+             const { title = 'TABLE SESSION MASTER INVOICE' } = options;
+             const itemsStr = (bill.items || []).map(i => {
+                 const modsLabel = (i.modifiers || []).length > 0
+                     ? `<div class="text-[10px] text-slate-500 pl-4">+ ${i.modifiers.join(', ')}</div>` : '';
+                 const subtotal = i.subtotal != null ? i.subtotal : i.quantity * i.unit_price;
+                 return `
+                     <div class="border-b border-dashed pb-1">
+                         <div class="flex justify-between text-xs font-semibold">
+                             <span>${escapeHtml(i.name)} (x${i.quantity})</span>
+                             <span>${formatKs(subtotal)}</span>
+                         </div>
+                         ${modsLabel}
+                     </div>`;
+             }).join('');
+             const total = bill.grand_total != null ? bill.grand_total : bill.subtotal;
+             const orderLine = bill.order_ids
+                 ? `<p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>`
+                 : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
+             return `
+                 <div class="text-center border-b pb-3 border-dashed">
+                     <h2 class="text-lg font-bold bloom-brand">${escapeHtml(bill.restaurant_name || 'BLOOM CAFÉ')}</h2>
+                     <p class="text-[10px] text-slate-400">${escapeHtml(title)}</p>
+                     <p class="text-[10px] text-slate-400">${escapeHtml(bill.timestamp || '')}</p>
+                 </div>
+                 <div class="text-xs">
+                     <p><b>Table:</b> ${escapeHtml(bill.table_number)}</p>
+                     ${orderLine}
+                 </div>
+                 <div class="space-y-2 my-4">${itemsStr}</div>
+                 <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
+                     <span>GRAND TOTAL</span>
+                     <span>${formatKs(total)}</span>
+                 </div>`;
+         }
+
+function getAuthHeaders() {
+             const token = localStorage.getItem('manager_token');
+             return {
+                 'Authorization': `Bearer ${token}`,
+                 'Content-Type': 'application/json'
+             };
+         }
+
+async function handleLogin(event) {
+             event.preventDefault();
+             const usernameInput = document.getElementById('login-username').value;
+             const passwordInput = document.getElementById('login-password').value;
+         
+             try {
+                 const response = await fetch(`${API_BASE}/manager/login`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                 });
+         
+                 if (response.ok) {
+                     const data = await response.json();
+                     localStorage.setItem('manager_token', data.token);
+                     localStorage.setItem('manager_role', data.role || 'manager');
+                     localStorage.setItem('manager_username', data.username || '');
+                     checkAuthState();
+                 } else {
+                     showToast('Invalid username or password.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error occurred.', 'error');
+             }
+         }
+
+async function handleLogout() {
+             try {
+                 await fetch(`${API_BASE}/manager/logout`, {
+                     method: 'POST',
+                     headers: getAuthHeaders()
+                 });
+             } catch (err) { /* ignore */ }
+             localStorage.removeItem('manager_token');
+             localStorage.removeItem('manager_role');
+             localStorage.removeItem('manager_username');
+             window.location.reload();
+         }
+
+function togglePasswordModal(show) {
+             const modal = document.getElementById('password-modal');
+             if (show) modal.classList.remove('hidden');
+             else modal.classList.add('hidden');
+         }
+
+async function submitChangePassword(event) {
+             event.preventDefault();
+             const oldPassword = document.getElementById('p-old-password').value;
+             const newPassword = document.getElementById('p-new-password').value;
+             const confirmPassword = document.getElementById('p-confirm-password').value;
+         
+             if (newPassword !== confirmPassword) {
+                 showToast('New passwords do not match.', 'error');
+                 return;
+             }
+         
+             try {
+                 const response = await fetch(`${API_BASE}/manager/change-password`, {
+                     method: 'POST',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+                 });
+         
+                 if (response.status === 401) { handleLogout(); return; }
+         
+                 if (response.ok) {
+                     showToast('Password updated. Please log in again.', 'success');
+                     handleLogout();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Incorrect old password.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network communication error.', 'error');
+             }
+         }
+
+function setDefaultDatePicker() {
+             const todayLocal = new Date().toLocaleDateString('en-CA');
+             document.getElementById('finance-date').value = todayLocal;
+                          const finFrom = document.getElementById('finance-from-date');
+             const finTo = document.getElementById('finance-to-date');
+             if (finFrom) finFrom.value = todayLocal;
+             if (finTo) finTo.value = todayLocal;
+         }
+
+         async function loadExpenseCategories() {
+             try {
+                 const response = await fetch(`${API_BASE}/finance/categories`, { headers: getAuthHeaders() });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (response.ok) {
+                     const data = await response.json();
+                     expenseCategories = data.presets || data.all || data;
+                     expenseCustomCategories = data.custom || [];
+                     if (Array.isArray(data)) {
+                         expenseCategories = data;
+                         expenseCustomCategories = data.filter(c => !['Supplies','Rent','Utilities','Staff','Equipment','Marketing','Other'].includes(c));
+                     }
+                     const options = expenseCategories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                     document.getElementById('expense-category').innerHTML = options;
+                     renderExpenseCustomSuggestions();
+                 }
+             } catch (err) {
+                 console.error('Could not load expense categories.');
+             }
+         }
+
+         function setExpenseCategoryMode(mode) {
+             expenseCategoryMode = mode;
+             const presetPanel = document.getElementById('expense-category-preset-panel');
+             const customPanel = document.getElementById('expense-category-custom-panel');
+             const presetTab = document.getElementById('expense-cat-tab-preset');
+             const customTab = document.getElementById('expense-cat-tab-custom');
+             const isPreset = mode === 'preset';
+             presetPanel?.classList.toggle('hidden', !isPreset);
+             customPanel?.classList.toggle('hidden', isPreset);
+             presetTab?.classList.toggle('bg-white', isPreset);
+             presetTab?.classList.toggle('shadow-sm', isPreset);
+             presetTab?.classList.toggle('text-slate-800', isPreset);
+             presetTab?.classList.toggle('text-slate-500', !isPreset);
+             customTab?.classList.toggle('bg-white', !isPreset);
+             customTab?.classList.toggle('shadow-sm', !isPreset);
+             customTab?.classList.toggle('text-slate-800', !isPreset);
+             customTab?.classList.toggle('text-slate-500', isPreset);
+         }
+
+         function renderExpenseCustomSuggestions() {
+             const box = document.getElementById('expense-custom-suggestions');
+             if (!box) return;
+             if (!expenseCustomCategories.length) {
+                 box.innerHTML = '';
+                 return;
+             }
+             box.innerHTML = expenseCustomCategories.map(name => `
+                 <button type="button" onclick="selectExpenseCustomCategory('${escapeHtml(name).replace(/'/g, "\\'")}')"
+                     class="text-[10px] font-bold uppercase tracking-wide bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-md transition">${escapeHtml(name)}</button>`).join('');
+         }
+
+         function selectExpenseCustomCategory(name) {
+             document.getElementById('expense-category-custom').value = name;
+         }
+
+         function getExpenseCategoryValue() {
+             if (expenseCategoryMode === 'custom') {
+                 return document.getElementById('expense-category-custom').value.trim();
+             }
+             return document.getElementById('expense-category').value;
+         }
+
+         function applyExpenseCategoryToForm(category) {
+             const presets = expenseCategories.length ? expenseCategories : ['Supplies', 'Rent', 'Utilities', 'Staff', 'Equipment', 'Marketing', 'Other'];
+             if (presets.includes(category)) {
+                 setExpenseCategoryMode('preset');
+                 document.getElementById('expense-category').value = category;
+             } else {
+                 setExpenseCategoryMode('custom');
+                 document.getElementById('expense-category-custom').value = category;
+             }
+         }
+
+         async function toggleExpenseModal(show, expense) {
+             const modal = document.getElementById('expense-modal');
+             if (show) {
+                 await loadExpenseCategories();
+                 const financeDate = document.getElementById('finance-date').value || new Date().toLocaleDateString('en-CA');
+                 document.getElementById('expense-id').value = expense ? expense.id : '';
+                 document.getElementById('expense-modal-title').innerText = expense ? 'Edit Expense' : 'Add Expense';
+                 if (expense) {
+                     applyExpenseCategoryToForm(expense.category);
+                     document.getElementById('expense-amount').value = expense.amount;
+                     document.getElementById('expense-description').value = expense.description || '';
+                     document.getElementById('expense-date').value = expense.recorded_at
+                         ? new Date(expense.recorded_at).toLocaleDateString('en-CA')
+                         : financeDate;
+                 } else {
+                     setExpenseCategoryMode('preset');
+                     document.getElementById('expense-category').value = expenseCategories[0] || 'Other';
+                     document.getElementById('expense-category-custom').value = '';
+                     document.getElementById('expense-amount').value = '';
+                     document.getElementById('expense-description').value = '';
+                     document.getElementById('expense-date').value = financeDate;
+                 }
+                 modal.classList.remove('hidden');
+             } else {
+                 modal.classList.add('hidden');
+                 document.getElementById('expense-form').reset();
+                 document.getElementById('expense-id').value = '';
+             }
+         }
+
+         async function submitExpense(event) {
+             event.preventDefault();
+             const id = document.getElementById('expense-id').value;
+             const category = getExpenseCategoryValue();
+             if (!category) {
+                 showToast('Please enter a category.', 'error');
+                 return;
+             }
+             const expenseDate = document.getElementById('expense-date').value;
+             const payload = {
+                 category,
+                 amount: parseFloat(document.getElementById('expense-amount').value),
+                 description: document.getElementById('expense-description').value || null,
+                 recorded_at: expenseDate ? `${expenseDate}T12:00:00` : null
+             };
+
+             try {
+                 const url = id ? `${API_BASE}/finance/expenses/${id}` : `${API_BASE}/finance/expenses`;
+                 const response = await fetch(url, {
+                     method: id ? 'PUT' : 'POST',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify(payload)
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (response.ok) {
+                     toggleExpenseModal(false);
+                     fetchFinanceSummary();
+                     showToast('Expense saved.', 'success');
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not save expense.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error.', 'error');
+             }
+         }
+
+         function editExpenseById(expenseId) {
+             const expense = financeExpenses.find(e => e.id === expenseId);
+             if (expense) toggleExpenseModal(true, expense);
+         }
+
+         async function deleteExpense(expenseId) {
+             if (!confirm('Delete this expense entry?')) return;
+             try {
+                 const response = await fetch(`${API_BASE}/finance/expenses/${expenseId}`, {
+                     method: 'DELETE',
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (response.ok) {
+                     fetchFinanceSummary();
+                     showToast('Expense deleted.', 'success');
+                 }
+             } catch (err) {
+                 showToast('Network error.', 'error');
+             }
+         }
+
+         function checkAuthState() {
+            const token = localStorage.getItem('manager_token');
+            const role = localStorage.getItem('manager_role');
+            const loginView = document.getElementById('login-view');
+            const deniedView = document.getElementById('access-denied-view');
+            const dashboardView = document.getElementById('dashboard-view');
+
+            loginView.classList.add('hidden');
+            deniedView.classList.add('hidden');
+            dashboardView.classList.add('hidden');
+
+            if (!token) {
+               loginView.classList.remove('hidden');
+               return;
+            }
+            if (role !== 'owner') {
+               deniedView.classList.remove('hidden');
+               return;
+            }
+            dashboardView.classList.remove('hidden');
+            setDefaultDatePicker();
+            fetchFinanceSummary();
+            loadExpenseCategories();
+         }
+
+function renderFinanceLegend(containerId, segments) {
+             const el = document.getElementById(containerId);
+             if (!el) return;
+             if (!segments.length) {
+                 el.innerHTML = '';
+                 return;
+             }
+             el.innerHTML = segments.map((seg) => `
+                 <span class="fin-legend-item" title="${formatKs(seg.value)}">
+                     <span class="fin-legend-dot" style="background:${seg.color}"></span>
+                     ${escapeHtml(seg.label)}${seg.pct != null ? ` ${seg.pct}%` : ''}
+                 </span>`).join('');
+         }
+
+         function renderFinanceDonut(containerId, segments, centerLabel, centerValue) {
+             const wrap = document.getElementById(containerId);
+             if (!wrap) return;
+             const total = segments.reduce((sum, s) => sum + s.value, 0);
+             if (total <= 0 || !segments.length) {
+                 wrap.innerHTML = `<div class="fin-chart-empty">No data for this period</div>`;
+                 return;
+             }
+
+             const r = 70;
+             const circumference = 2 * Math.PI * r;
+             let offset = 0;
+             const arcs = segments.map((seg) => {
+                 const pct = seg.value / total;
+                 const dash = pct * circumference;
+                 const circle = `<circle cx="100" cy="100" r="${r}" fill="none" stroke="${seg.color}" stroke-width="30"
+                     stroke-linecap="butt" stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}"
+                     transform="rotate(-90 100 100)" />`;
+                 offset += dash;
+                 return circle;
+             }).join('');
+
+             wrap.innerHTML = `
+                 <svg viewBox="0 0 200 200" class="fin-donut-svg" role="img" aria-label="${escapeHtml(centerLabel)}">
+                     ${arcs}
+                     <circle cx="100" cy="100" r="52" class="fin-donut-hole" />
+                 </svg>
+                 <div class="fin-donut-center">
+                     <span class="fin-donut-center-label">${escapeHtml(centerLabel)}</span>
+                     <span class="fin-donut-center-value">${centerValue}</span>
+                 </div>`;
+         }
+
+         function renderFinanceCharts(data) {
+             const periodSub = document.getElementById('fin-chart-overview-sub');
+             if (periodSub) {
+                 periodSub.textContent = data.period_label || 'Selected period';
+             }
+
+             const income = data.income_total || 0;
+             const outcome = data.outcome_total || 0;
+             const flowTotal = income + outcome;
+             const incomePct = flowTotal > 0 ? Math.round((income / flowTotal) * 100) : 50;
+             const outcomePct = flowTotal > 0 ? 100 - incomePct : 50;
+             const flowIncome = document.getElementById('fin-flow-income');
+             const flowOutcome = document.getElementById('fin-flow-outcome');
+             if (flowIncome) flowIncome.style.width = `${incomePct}%`;
+             if (flowOutcome) flowOutcome.style.width = `${outcomePct}%`;
+
+             const overviewSegments = [];
+             if (income > 0) overviewSegments.push({ label: 'Income', value: income, color: '#4f46e5', pct: incomePct });
+             if (outcome > 0) overviewSegments.push({ label: 'Outcome', value: outcome, color: '#e11d48', pct: outcomePct });
+             renderFinanceDonut('fin-overview-chart', overviewSegments, 'Net flow', formatKs(data.net_profit));
+             renderFinanceLegend('fin-overview-legend', overviewSegments);
+
+             const expenseSegments = (data.expenses_by_category || []).map((row, i) => ({
+                 label: row.category,
+                 value: row.total,
+                 color: FIN_EXPENSE_COLORS[i % FIN_EXPENSE_COLORS.length],
+                 pct: outcome > 0 ? Math.round((row.total / outcome) * 100) : 0,
+             }));
+             renderFinanceDonut('fin-expense-chart', expenseSegments, 'Total out', formatKs(outcome));
+             renderFinanceLegend('fin-expense-legend', expenseSegments);
+         }
+
+         function onFinanceRangeChange() {
+             const range = document.getElementById('finance-range').value;
+             const customBox = document.getElementById('finance-custom-dates');
+             const dateBox = document.getElementById('finance-date')?.closest('.flex.items-center');
+             if (customBox) customBox.classList.toggle('hidden', range !== 'custom');
+             if (dateBox) dateBox.classList.toggle('hidden', range === 'custom');
+             fetchFinanceSummary();
+         }
+
+         function buildFinanceQueryParams() {
+             const range = document.getElementById('finance-range')?.value || 'day';
+             const params = new URLSearchParams();
+             if (range === 'custom') {
+                 const from = document.getElementById('finance-from-date')?.value;
+                 const to = document.getElementById('finance-to-date')?.value;
+                 if (from) params.set('from_date', from);
+                 if (to) params.set('to_date', to);
+             } else {
+                 const selectedDate = document.getElementById('finance-date').value;
+                 if (selectedDate) params.set('date', selectedDate);
+                 if (range !== 'day') params.set('range', range);
+             }
+             return params;
+         }
+
+         async function fetchFinanceSummary() {
+             const range = document.getElementById('finance-range')?.value || 'day';
+             const selectedDate = document.getElementById('finance-date').value;
+             const dateObj = new Date(selectedDate);
+             const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+             document.getElementById('fin-month-label').innerText = `${monthLabel} Net`;
+
+             const periodLabels = { day: 'Day', week: 'Week', month: 'Month', custom: 'Period' };
+             const netTitle = document.querySelector('#finance-dashboard .stat-card:nth-child(3) span');
+             if (netTitle) netTitle.innerText = `Net Profit (${periodLabels[range] || 'Period'})`;
+
+             try {
+                 const params = buildFinanceQueryParams();
+                 const response = await fetch(`${API_BASE}/finance/summary?${params.toString()}`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) return;
+
+                 const data = await response.json();
+                 financeExpenses = data.expenses;
+
+                 const periodHint = data.period_label && range !== 'day' ? data.period_label : null;
+                 document.getElementById('fin-income').innerText = formatKs(data.income_total);
+                 document.getElementById('fin-income-sub').innerText = `${data.order_count} completed order${data.order_count === 1 ? '' : 's'}${periodHint ? ` · ${periodHint}` : ''}`;
+                 document.getElementById('fin-outcome').innerText = formatKs(data.outcome_total);
+                 document.getElementById('fin-outcome-sub').innerText = `${data.expense_count} expense${data.expense_count === 1 ? '' : 's'}${range === 'day' ? ' today' : ''}`;
+                 document.getElementById('fin-net').innerText = formatKs(data.net_profit);
+                 document.getElementById('fin-net').className = `text-2xl font-black mt-2 ${data.net_profit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`;
+                 document.getElementById('fin-month-net').innerText = formatKs(data.monthly_net);
+                 document.getElementById('fin-month-sub').innerText = `${formatKs(data.monthly_income)} in · ${formatKs(data.monthly_outcome)} out`;
+
+                 const expTbody = document.getElementById('expenses-tbody');
+                 expTbody.innerHTML = '';
+                 if (data.expenses.length === 0) {
+                     expTbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 italic text-sm">No expenses recorded for this date</td></tr>`;
+                 } else {
+                     data.expenses.forEach(exp => {
+                         const time = new Date(exp.recorded_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                         const tr = document.createElement('tr');
+                         tr.className = 'hover:bg-slate-50/80';
+                         tr.innerHTML = `
+                             <td class="py-3 px-4 text-slate-500 text-xs">${time}</td>
+                             <td class="py-3 px-2"><span class="text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 px-2 py-1 rounded-md">${exp.category}</span></td>
+                             <td class="py-3 px-2 text-slate-600">${exp.description || '—'}</td>
+                             <td class="py-3 px-2 text-right font-bold text-rose-600">${formatKs(exp.amount)}</td>
+                             <td class="py-3 px-4 text-right space-x-1">
+                                 <button onclick="editExpenseById(${exp.id})" class="text-[10px] font-bold text-slate-500 hover:text-slate-800 px-2 py-1 rounded hover:bg-slate-100">Edit</button>
+                                 <button onclick="deleteExpense(${exp.id})" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50">Delete</button>
+                             </td>`;
+                         expTbody.appendChild(tr);
+                     });
+                 }
+
+                 renderFinanceCharts(data);
+
+                 const incTbody = document.getElementById('finance-income-tbody');
+                 incTbody.innerHTML = '';
+                 if (data.income_entries.length === 0) {
+                     incTbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 italic text-sm">No completed sales on this date</td></tr>`;
+                 } else {
+                     data.income_entries.forEach(entry => {
+                         const when = entry.settled_at || entry.created_at;
+                         const time = new Date(when).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                         const tr = document.createElement('tr');
+                         tr.className = 'hover:bg-slate-50/80';
+                         tr.innerHTML = `
+                             <td class="py-3 px-4 font-semibold text-slate-800">#${entry.order_id}</td>
+                             <td class="py-3 px-2 text-slate-600">Table ${entry.table_label}</td>
+                             <td class="py-3 px-2 text-slate-500 text-xs">${time}</td>
+                             <td class="py-3 px-4 text-right font-bold text-emerald-600">${formatKs(entry.amount)}</td>
+                             <td class="py-3 px-4 text-right">
+                                 <button onclick="loadReceipt(${entry.order_id})" class="text-[10px] font-bold border border-slate-200 hover:bg-slate-50 text-slate-700 px-2.5 py-1 rounded-lg transition">Receipt</button>
+                             </td>`;
+                         incTbody.appendChild(tr);
+                     });
+                 }
+             } catch (err) {
+                 console.error('Could not fetch finance summary.');
+             }
+         }
+
+         async function exportFinanceReport(range = 'day') {
+             try {
+                 const financeDate = document.getElementById('finance-date')?.value
+                     || new Date().toLocaleDateString('en-CA');
+                 const params = new URLSearchParams({ date: financeDate, range });
+                 const response = await fetch(`${API_BASE}/finance/export?${params.toString()}`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (response.ok) {
+                     const blob = await response.blob();
+                     const downloadUrl = window.URL.createObjectURL(blob);
+                     const anchor = document.createElement('a');
+                     anchor.href = downloadUrl;
+                     const safeLabel = financeDate.replace(/[^0-9-]/g, '');
+                     anchor.download = `finance_${range}_${safeLabel}.pdf`;
+                     document.body.appendChild(anchor);
+                     anchor.click();
+                     anchor.remove();
+                     window.URL.revokeObjectURL(downloadUrl);
+                     const rangeName = { day: 'Today', week: 'Week', month: 'Month' }[range] || range;
+                     showToast(`${rangeName} finance PDF downloaded.`, 'success');
+                 } else {
+                     const err = await response.json().catch(() => ({}));
+                     showToast(err.detail || 'Export failed.', 'error');
+                 }
+             } catch (err) {
+                 console.error('Finance export failed:', err);
+                 showToast('Network error exporting document.', 'error');
+             }
+         }
+
+         async function loadReceipt(orderId) {
+             try {
+                 const response = await fetch(`${API_BASE}/manager/orders/${orderId}/voucher`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 const receipt = await response.json();
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(receipt, {
+                     title: receipt.voucher_id || 'ORDER RECEIPT'
+                 });
+                 toggleReceiptModal(true);
+             } catch (err) {
+                 showToast('Receipt compilation failed.', 'error');
+             }
+         }
+
+         function toggleReceiptModal(show) {
+            const modal = document.getElementById('receipt-modal');
+            if (show) modal.classList.remove('hidden'); else modal.classList.add('hidden');
+         }
+         updateDarkModeUi();
+         document.addEventListener('DOMContentLoaded', checkAuthState);
+      </script>
+</body>
+</html>

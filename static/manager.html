@@ -3,17 +3,161 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Manager Dashboard</title>
+      <title>BLOOM CAFÉ — Manager</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
       <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+         (function () {
+            const saved = localStorage.getItem('manager_dark_mode');
+            if (saved === '1' || (saved === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+               document.documentElement.classList.add('dark');
+            }
+         })();
+      </script>
       <script src="/static/bluetooth-printer.js"></script>
+      <style>
+         body { font-family: 'Montserrat', 'Noto Sans Myanmar', system-ui, sans-serif; }
+         .bloom-brand {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #9b2d8c;
+         }
+         html.dark .bloom-brand { color: #d48fcf; }
+         .bloom-logo-img {
+            width: 3.25rem;
+            height: 3.25rem;
+            object-fit: contain;
+         }
+         .bloom-logo-img--light {
+            filter: brightness(0) invert(1);
+         }
+         .nav-tab { padding: 0.5rem 1rem; border-radius: 0.625rem; font-size: 0.8125rem; font-weight: 700; color: #64748b; transition: all 0.15s ease; }
+         .nav-tab:hover { color: #334155; background: rgba(255,255,255,0.6); }
+         .nav-tab-active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,0.08); }
+         .panel-tab { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 700; transition: all 0.15s ease; }
+         .panel-tab-active { background: #0f172a; color: #fff; }
+         .panel-tab-inactive { background: #f1f5f9; color: #475569; }
+         .panel-tab-inactive:hover { background: #e2e8f0; }
+         .stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1.25rem 1.5rem; }
+         .table-floor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.75rem; align-items: stretch; width: 100%; }
+         @media (min-width: 640px) { .table-floor-grid { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 1rem; } }
+         @media (min-width: 1024px) { .table-floor-grid { grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); } }
+         .table-floor-tile { min-width: 0; }
+         #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 200; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+         .toast { pointer-events: auto; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; box-shadow: 0 4px 14px rgba(15,23,42,0.12); animation: toast-in 0.2s ease; max-width: 320px; }
+         .toast-success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+         .toast-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+         .toast-info { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+         .toast-warn { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+         @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+         /* Dark mode */
+         html.dark body { background-color: #0f172a; color: #e2e8f0; }
+         html.dark #login-view { background-color: #020617; }
+         html.dark .bg-white { background-color: #1e293b !important; }
+         html.dark .bg-slate-50 { background-color: #0f172a !important; }
+         html.dark .bg-slate-100 { background-color: #1e293b !important; }
+         html.dark .bg-slate-100\/90 { background-color: rgba(30, 41, 59, 0.9) !important; }
+         html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+         html.dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
+         html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-\[\#161912\] { color: #f8fafc !important; }
+         html.dark .text-slate-700, html.dark .text-slate-600 { color: #cbd5e1 !important; }
+         html.dark .text-slate-500, html.dark .text-slate-400 { color: #94a3b8 !important; }
+         html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-100\/60 { border-color: #334155 !important; }
+         html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+         html.dark .divide-y.divide-slate-50 { border-color: #334155; }
+         html.dark header, html.dark #ops-subnav { background-color: #1e293b !important; border-color: #334155 !important; }
+         html.dark .stat-card { background: #1e293b; border-color: #334155; }
+         html.dark .nav-tab { color: #94a3b8; }
+         html.dark .nav-tab:hover { color: #e2e8f0; background: rgba(51, 65, 85, 0.6); }
+         html.dark .nav-tab-active { background: #334155; color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+         html.dark .panel-tab-inactive { background: #334155; color: #cbd5e1; }
+         html.dark .panel-tab-inactive:hover { background: #475569; }
+         html.dark .panel-tab-active { background: #f8fafc; color: #0f172a; }
+         html.dark input:not([type="checkbox"]):not([type="radio"]), html.dark select, html.dark textarea {
+            background-color: #334155 !important; color: #f1f5f9 !important; border-color: #475569 !important;
+         }
+         html.dark input[type="date"] { color-scheme: dark; }
+         html.dark .shadow-sm, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+         html.dark tr.bg-slate-100, html.dark .bg-slate-100.font-bold { background-color: #334155 !important; }
+         html.dark .border-dashed { border-color: #475569 !important; }
+         html.dark .toast-info { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+         html.dark .toast-success { background: #064e3b; color: #a7f3d0; border-color: #047857; }
+         html.dark .toast-error { background: #4c0519; color: #fecdd3; border-color: #be123c; }
+         html.dark .toast-warn { background: #431407; color: #fed7aa; border-color: #c2410c; }
+         .service-alert-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.875rem;
+            background: linear-gradient(135deg, #9b2d8c 0%, #7a1f72 100%);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(122, 31, 114, 0.28);
+            animation: toast-in 0.25s ease;
+         }
+         .service-alert-banner__text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            font-size: 0.8125rem;
+         }
+         .service-alert-banner__text strong {
+            font-size: 0.6875rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.85;
+         }
+         .service-alert-banner__dismiss {
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            cursor: pointer;
+         }
+         .service-alert-banner__dismiss:hover { background: rgba(255, 255, 255, 0.22); }
+         html.dark #receipt-modal .bg-white { background-color: #fff !important; color: #000 !important; }
+         html.dark .table-floor-tile.border-emerald-500 { border-color: #10b981 !important; }
+         html.dark .table-floor-tile.bg-emerald-50 { background-color: rgba(6, 78, 59, 0.35) !important; }
+         html.dark .table-floor-tile.border-slate-200 { border-color: #475569 !important; }
+         html.dark .table-floor-tile.bg-slate-50 { background-color: #1e293b !important; }
+         .theme-toggle-btn {
+            display: inline-flex; align-items: center; gap: 0.375rem;
+            font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc;
+            color: #475569; transition: all 0.15s ease;
+         }
+         .theme-toggle-btn:hover { background: #f1f5f9; color: #0f172a; }
+         html.dark .theme-toggle-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
+         html.dark .theme-toggle-btn:hover { background: #475569; color: #f8fafc; }
+
+               </style>
    </head>
    <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+      <div id="toast-container"></div>
       <!-- 1. SECURE LOGIN VIEW (Centered, shown if unauthenticated) -->
       <div id="login-view" class="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
+         <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn absolute top-4 right-4 z-[60]" aria-label="Toggle dark mode">
+            <span id="login-dark-mode-icon" aria-hidden="true">🌙</span>
+            <span id="login-dark-mode-label">Dark</span>
+         </button>
          <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-6">
-            <div class="text-center space-y-1">
-               <h2 class="text-2xl font-black text-slate-800">27 Cafe POS</h2>
-               <p class="text-xs text-slate-400">Please enter administrative credentials</p>
+            <div class="text-center space-y-3">
+               <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img mx-auto" aria-hidden="true" />
+               <div>
+                  <h2 class="text-2xl bloom-brand">BLOOM CAFÉ</h2>
+                  <p class="text-xs font-semibold text-slate-400 tracking-widest uppercase mt-1">POS</p>
+               </div>
+               <p class="text-xs text-slate-400">Floor manager login — use <strong>manager</strong> account (owner uses Finance panel)</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                <div>
@@ -32,46 +176,69 @@
       </div>
       <!-- 2. PROTECTED DASHBOARD VIEW (Hidden until successfully authorized) -->
       <div id="dashboard-view" class="hidden">
-         <!-- Header -->
-         <header class="bg-white border-b px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-               <h1 class="text-2xl font-black text-slate-800">Management Panel</h1>
-               <p class="text-xs text-slate-400">Inventory control, financials, and logs</p>
-            </div>
-            <!-- Action Tools -->
-            <div class="flex flex-wrap items-center gap-3">
-               <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border">
-                  <span class="text-xs font-bold text-slate-400 uppercase pl-2">Filter Date:</span>
-                  <input type="date" id="analytics-date" onchange="fetchAnalytics()" class="bg-transparent border-none text-sm font-bold focus:outline-none outline-none cursor-pointer">
+         <!-- App shell -->
+         <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm shadow-slate-100/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                     <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img hidden sm:block" aria-hidden="true" />
+                     <div>
+                        <h1 class="text-xl bloom-brand leading-tight">BLOOM CAFÉ <span class="text-slate-400 font-medium text-sm tracking-widest">POS</span></h1>
+                        <p id="section-subtitle" class="text-xs text-slate-400 mt-0.5">Daily operations — tables, menu &amp; bills</p>
+                     </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                     <a href="/finance" id="finance-nav-link" class="hidden text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition">Finance →</a>
+                     <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn" aria-label="Toggle dark mode">
+                        <span id="dark-mode-icon" aria-hidden="true">🌙</span>
+                        <span id="dark-mode-label">Dark</span>
+                     </button>
+                     <button onclick="togglePasswordModal(true)" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-50 transition">Password</button>
+                     <button onclick="handleLogout()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-3 py-2 rounded-lg hover:bg-rose-50 transition">Logout</button>
+                  </div>
                </div>
-               <button onclick="exportReport()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-               Export to PDF
-               </button>
-               <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-               + Add Menu Item
-               </button>
-               <!-- Change Password Trigger -->
-               <button onclick="togglePasswordModal(true)" class="border-2 border-slate-600/30 hover:border-slate-650 hover:bg-slate-100 text-slate-700 font-bold py-1.5 px-4 rounded-lg text-sm transition">
-               Change Password
-               </button>
-               <!-- Logout Button -->
-               <button onclick="handleLogout()" class="border-2 border-rose-600/30 hover:border-rose-600 hover:bg-rose-50 text-rose-600 font-bold py-1.5 px-4 rounded-lg text-sm transition">
-               Logout
-               </button>
+               <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div id="ops-toolbar" class="flex flex-wrap items-center gap-2">
+                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <input type="date" id="analytics-date" onchange="fetchAnalytics()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
+                     </div>
+                     <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-bold">
+                        <button type="button" onclick="exportReport('day')" class="px-3 py-2 bg-amber-600 text-white hover:bg-amber-700 transition">Today</button>
+                        <button type="button" onclick="exportReport('week')" class="px-3 py-2 bg-white text-slate-700 hover:bg-slate-50 border-l border-slate-200 transition">Week</button>
+                        <button type="button" onclick="exportReport('month')" class="px-3 py-2 bg-white text-slate-700 hover:bg-slate-50 border-l border-slate-200 transition">Month</button>
+                     </div>
+                  </div>
+               </div>
             </div>
          </header>
-         <!-- Main Content -->
-         <main class="max-w-7xl mx-auto p-6 space-y-8">
-            <!-- Dashboard Metrics Row - Upgraded to 4 Columns -->
+
+         <div id="manager-service-alerts" class="max-w-7xl mx-auto px-4 sm:px-6 pt-3 space-y-2"></div>
+
+         <!-- OPERATIONS -->
+         <div id="operations-section">
+         <nav id="ops-subnav" class="bg-white border-b border-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap gap-2 py-3">
+               <button type="button" data-panel="main" class="panel-tab panel-tab-active">Main</button>
+               <button type="button" data-panel="settled" class="panel-tab panel-tab-inactive">Settled</button>
+               <button type="button" data-panel="counter" class="panel-tab panel-tab-inactive">Counter</button>
+               <button type="button" data-panel="qr" class="panel-tab panel-tab-inactive">QR Panel</button>
+               <button type="button" data-panel="orders" class="panel-tab panel-tab-inactive">Single Tickets</button>
+               <button type="button" data-panel="menu" class="panel-tab panel-tab-inactive">Menu</button>
+            </div>
+         </nav>
+         <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
+
+            <!-- MAIN PANEL -->
+            <div id="panel-main" class="manager-panel space-y-8">
             <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
                   <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" id="revenue-title">Selected Day's Revenue</span>
-                  <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-revenue">$0.00</h3>
+                  <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-revenue">0 Ks</h3>
                </div>
-               <!-- NEW: Monthly Revenue Card -->
                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
                   <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" id="monthly-revenue-title">Selected Month's Revenue</span>
-                  <h3 class="text-3xl font-black text-emerald-600 mt-2" id="stat-monthly-revenue">$0.00</h3>
+                  <h3 class="text-3xl font-black text-emerald-600 mt-2" id="stat-monthly-revenue">0 Ks</h3>
                </div>
                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
                   <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Completed Transactions</span>
@@ -84,20 +251,94 @@
                   </ol>
                </div>
             </section>
-            <!-- Dynamic Table QR Cryptographic Link Generator Section -->
+
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col w-full min-w-0">
+               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                  <div class="min-w-0">
+                     <h2 class="text-lg font-bold text-slate-800">Table Floor Plan</h2>
+                     <p class="text-xs text-slate-400 mt-1">All tables — green when a session is active.</p>
+                  </div>
+                  <div id="table-floor-legend" class="flex flex-wrap gap-3 text-[10px] font-bold uppercase tracking-wide shrink-0">
+                     <span class="inline-flex items-center gap-1.5 text-emerald-700"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Live</span>
+                     <span class="inline-flex items-center gap-1.5 text-slate-500"><span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span> Available</span>
+                  </div>
+               </div>
+               <div id="table-floor-empty" class="hidden py-10 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl">
+                  No tables configured in the system
+               </div>
+               <div id="table-floor-grid" class="table-floor-grid w-full min-w-0"></div>
+            </section>
+            </div>
+
+            <!-- SETTLED — closed table sessions -->
+            <div id="panel-settled" class="manager-panel hidden space-y-8">
+               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 w-full min-w-0">
+                  <h2 class="text-lg font-bold mb-2 text-slate-800">Settled Table Sessions</h2>
+                  <p class="text-xs text-slate-400 mb-4">Master receipts for dining sessions closed together.</p>
+                  <div class="space-y-3 overflow-y-auto max-h-[min(75vh,40rem)]" id="settled-tables-history-log"></div>
+               </section>
+            </div>
+
+            <!-- COUNTER / WALK-IN PANEL -->
+            <div id="panel-counter" class="manager-panel hidden space-y-6">
+               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-slate-100 pb-4">
+                     <div>
+                        <h2 class="text-lg font-bold text-slate-800">Walk-in / Counter Sale</h2>
+                        <p class="text-xs text-slate-400 mt-1">Ring up takeaway or counter orders — no table QR needed.</p>
+                     </div>
+                     <button type="button" onclick="clearCounterCart()" class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-lg hover:bg-rose-50 transition">Clear cart</button>
+                  </div>
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                     <div class="lg:col-span-2 space-y-3">
+                        <input type="search" id="counter-menu-search" placeholder="Search menu..." oninput="renderCounterMenu()" class="w-full bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-violet-500">
+                        <div id="counter-menu-grid" class="space-y-5 max-h-[min(60vh,28rem)] overflow-y-auto pr-1"></div>
+                     </div>
+                     <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col min-h-[20rem]">
+                        <h3 class="text-sm font-bold text-slate-700 mb-3">Current sale</h3>
+                        <div id="counter-cart-lines" class="flex-1 space-y-2 overflow-y-auto text-sm mb-4 min-h-[8rem]">
+                           <p class="text-slate-400 italic text-xs">Tap menu items to add</p>
+                        </div>
+                        <div class="border-t border-slate-200 pt-3 space-y-3">
+                           <div class="flex justify-between items-center">
+                              <span class="text-xs font-bold uppercase text-slate-400">Total</span>
+                              <span id="counter-cart-total" class="text-xl font-black text-violet-600">0 Ks</span>
+                           </div>
+                           <button type="button" onclick="submitCounterSale()" id="counter-checkout-btn" disabled class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl text-sm transition">Complete sale</button>
+                        </div>
+                     </div>
+                  </div>
+               </section>
+            </div>
+
+            <!-- QR PANEL -->
+            <div id="panel-qr" class="manager-panel hidden space-y-8">
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-slate-100 pb-4">
+                  <div>
+                     <h2 class="text-lg font-bold text-slate-800">Manage Tables</h2>
+                     <p class="text-xs text-slate-400 mt-1">Add, rename, or remove tables. Enable VIP hourly session billing per table.</p>
+                  </div>
+               </div>
+               <form id="add-table-form" onsubmit="submitAddTable(event)" class="flex flex-wrap items-end gap-2 mb-4">
+                  <div class="flex-1 min-w-[180px]">
+                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">New table label</label>
+                     <input type="text" id="add-table-label" maxlength="50" placeholder="e.g. V-3, A8, VIP-1" required class="w-full bg-slate-100 border-none rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500">
+                  </div>
+                  <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition shrink-0">+ Add Table</button>
+               </form>
+               <div id="qr-tables-empty" class="hidden py-8 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl mb-4">No tables yet. Add your first table above.</div>
+               <div id="qr-tables-list" class="space-y-2 mb-6 max-h-[32rem] overflow-y-auto"></div>
+            </section>
             <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                <h2 class="text-lg font-bold mb-2 text-slate-800">Tamper-Proof Dining QR Generator</h2>
-               <p class="text-xs text-slate-400 mb-4">Generates cryptographically signed URLs for tables, preventing billing spoofing.</p>
+               <p class="text-xs text-slate-400 mb-4">Generates cryptographically signed URLs for tables.</p>
                <div class="flex flex-wrap items-center gap-3">
                   <select id="qr-table-select" class="bg-slate-100 border-none rounded px-4 py-2.5 text-sm font-semibold outline-none">
                      <option value="">Loading tables...</option>
                   </select>
-                  <button onclick="requestSignedToken()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">
-                  Generate Signed Link
-                  </button>
-                  <button onclick="requestAllTableLinks()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">
-                  Generate All Table Links
-                  </button>
+                  <button onclick="requestSignedToken()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">Generate Signed Link</button>
+                  <button onclick="requestAllTableLinks()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">Generate All Table Links</button>
                </div>
                <div id="qr-output-container" class="mt-4 p-4 bg-slate-50 border rounded-xl hidden text-sm font-semibold space-y-2">
                   <p class="text-xs text-slate-400 uppercase font-bold">Secure Path Signature:</p>
@@ -109,41 +350,75 @@
                   <div id="all-qr-links-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
                </div>
             </section>
-            <!-- Split Grid Workspace -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-               <!-- Active Dining Sessions (COMBINED TABLE BILLS) -->
-               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
-                  <div>
-                     <h2 class="text-lg font-bold mb-2 text-slate-800">Live Dining Sessions (Active Bills)</h2>
-                     <p class="text-xs text-slate-400 mb-4">Consolidate multiple orders from the same table into a single master bill.</p>
-                  </div>
-                  <div class="overflow-y-auto max-h-[300px] border border-slate-100 rounded-lg">
-                     <table class="w-full text-left border-collapse">
-                        <thead>
-                           <tr class="text-xs text-slate-400 border-b">
-                              <th class="py-2">Table Number</th>
-                              <th class="py-2">Active Dockets</th>
-                              <th class="py-2">Total Accumulated</th>
-                              <th class="py-2 text-right">Bill Action</th>
-                           </tr>
-                        </thead>
-                        <tbody id="active-tables-tbody" class="text-sm divide-y"></tbody>
-                     </table>
-                  </div>
-               </section>
-               <!-- Menu Inventory modifier -->
+            </div>
+
+            <!-- SINGLE TICKETS PANEL -->
+            <div id="panel-orders" class="manager-panel hidden space-y-8">
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                  <h2 class="text-lg font-bold mb-4 border-b pb-2">Modify Menu Items & Pricing</h2>
-                  <div class="overflow-y-auto max-h-[350px] border border-slate-100 rounded-lg">
+                  <h2 class="text-lg font-bold mb-2 text-slate-800">Consolidated Orders Record</h2>
+                  <p class="text-xs text-slate-400 mb-4">Filter by date, status, or table.</p>
+                  <div class="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-slate-100">
+                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <input type="date" id="orders-filter-date" onchange="fetchOrdersLog()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
+                     </div>
+                     <select id="orders-filter-status" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="served">Served</option>
+                        <option value="awaiting_payment">Awaiting payment</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                     </select>
+                     <select id="orders-filter-table" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
+                        <option value="">All tables</option>
+                     </select>
+                     <button type="button" onclick="clearOrderFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-3 rounded-lg text-xs transition">Clear</button>
+                  </div>
+                  <p id="orders-filter-count" class="text-xs text-slate-400 mb-3"></p>
+                  <div class="space-y-3 overflow-y-auto max-h-[70vh]" id="orders-record-log"></div>
+               </section>
+            </div>
+
+            <!-- UPDATE MENU PANEL -->
+            <div id="panel-menu" class="manager-panel hidden space-y-8">
+               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
+                     <h2 class="text-lg font-bold text-slate-800">Modify Menu Items &amp; Pricing</h2>
+                     <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shrink-0">+ Add Menu Item</button>
+                  </div>
+                  <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 mb-3">
+                     <div class="relative flex-1 min-w-[200px]">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                           <circle cx="11" cy="11" r="7"></circle>
+                           <path stroke-linecap="round" d="M20 20l-3-3"></path>
+                        </svg>
+                        <input type="search" id="menu-item-search" placeholder="Search by name or category..." oninput="applyMenuFilters()" class="w-full bg-slate-100 border-none rounded-lg pl-9 pr-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500">
+                     </div>
+                     <select id="menu-category-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[160px]">
+                        <option value="">All categories</option>
+                     </select>
+                     <select id="menu-kitchen-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
+                        <option value="">All kitchens</option>
+                        <option value="coffee">☕ Coffee bar</option>
+                        <option value="food">🍳 Food kitchen</option>
+                     </select>
+                     <button type="button" onclick="clearMenuFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">Clear</button>
+                  </div>
+                  <p id="menu-filter-count" class="text-xs text-slate-400 mb-3"></p>
+                  <div class="overflow-y-auto max-h-[65vh] border border-slate-100 rounded-lg">
                      <table class="w-full text-left border-collapse">
                         <thead>
                            <tr class="text-xs text-slate-400 border-b">
-                              <th class="py-2">Item Name</th>
+                              <th class="py-2 px-4">Item Name</th>
                               <th class="py-2">Category</th>
+                              <th class="py-2">Kitchen</th>
                               <th class="py-2">Price</th>
-                              <th class="py-2">Stock Level</th>
-                              <th class="py-2">Available</th>
-                              <th class="py-2 text-right">Action</th>
+                              <th class="py-2">Modifiers</th>
+                              <th class="py-2">Stock</th>
+                              <th class="py-2">Status</th>
+                              <th class="py-2 text-right pr-4">Action</th>
                            </tr>
                         </thead>
                         <tbody id="menu-management-table" class="text-sm divide-y"></tbody>
@@ -151,22 +426,9 @@
                   </div>
                </section>
             </div>
-            <!-- Historical Sections Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-               <!-- Left: Settled Table Sessions (Grouped Tables) -->
-               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                  <h2 class="text-lg font-bold mb-2 text-slate-800">Settled Table Sessions Record (Grouped)</h2>
-                  <p class="text-xs text-slate-400 mb-4">View master receipts of historical dining sessions closed together.</p>
-                  <div class="space-y-3 overflow-y-auto max-h-[400px]" id="settled-tables-history-log"></div>
-               </section>
-               <!-- Right: Single Tickets History Log -->
-               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                  <h2 class="text-lg font-bold mb-2 text-slate-800">Consolidated Orders Record (Single Tickets)</h2>
-                  <p class="text-xs text-slate-400 mb-4">View independent order dockets individually.</p>
-                  <div class="space-y-3 overflow-y-auto max-h-[400px]" id="orders-record-log"></div>
-               </section>
-            </div>
+
          </main>
+         </div>
       </div>
       <!-- Change Password Modal -->
       <div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
@@ -202,13 +464,22 @@
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
                   <input type="text" id="add-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Kitchen</label>
+                  <input type="hidden" id="add-item-kitchen" value="food">
+                  <div class="flex gap-2">
+                     <button type="button" id="add-kitchen-coffee" onclick="setKitchenStation('add', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300">☕ Cafe</button>
+                     <button type="button" id="add-kitchen-food" onclick="setKitchenStation('add', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800">🍳 Food</button>
+                  </div>
+                  <p class="text-[10px] text-slate-400 mt-1">Choose which kitchen display receives orders for this item.</p>
+               </div>
                <div class="grid grid-cols-3 gap-4">
                   <div>
                      <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
                      <input type="text"
                             id="add-item-category"
                             list="category-list"
-                            placeholder="e.g. Coffee, Drinks, Snacks"
+                            placeholder="e.g. Coffee Classics, Snacks"
                             required>
                       <datalist id="category-list"></datalist>
                   </div>
@@ -230,6 +501,14 @@
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
                   <textarea id="add-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                </div>
+               <div>
+                  <div class="flex items-center justify-between mb-2">
+                     <label class="block text-xs font-semibold text-slate-400 uppercase">Modifiers (optional)</label>
+                     <button type="button" onclick="addModifierRow('add-modifiers-list')" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900">+ Add modifier</button>
+                  </div>
+                  <div id="add-modifiers-list" class="space-y-2"></div>
+                  <p class="text-[10px] text-slate-400 mt-1">Extra options customers can add (e.g. Extra shot +500 Ks).</p>
+               </div>
                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition">
                Save to Database
                </button>
@@ -246,6 +525,14 @@
                <div>
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
                   <input type="text" id="edit-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+               </div>
+               <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Kitchen</label>
+                  <input type="hidden" id="edit-item-kitchen" value="food">
+                  <div class="flex gap-2">
+                     <button type="button" id="edit-kitchen-coffee" onclick="setKitchenStation('edit', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300">☕ Cafe</button>
+                     <button type="button" id="edit-kitchen-food" onclick="setKitchenStation('edit', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800">🍳 Food</button>
+                  </div>
                </div>
                <div class="grid grid-cols-3 gap-4">
                   <div>
@@ -270,6 +557,13 @@
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
                   <textarea id="edit-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
                </div>
+               <div>
+                  <div class="flex items-center justify-between mb-2">
+                     <label class="block text-xs font-semibold text-slate-400 uppercase">Modifiers</label>
+                     <button type="button" onclick="addModifierRow('edit-modifiers-list')" class="text-[10px] font-bold text-amber-700 hover:text-amber-900">+ Add modifier</button>
+                  </div>
+                  <div id="edit-modifiers-list" class="space-y-2"></div>
+               </div>
                <div class="flex items-center gap-2 pt-2">
                   <input type="checkbox" id="edit-item-available" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
                   <label for="edit-item-available" class="text-sm font-semibold text-slate-600">Mark as available / in stock</label>
@@ -288,35 +582,279 @@
             </form>
          </div>
       </div>
+      <!-- Counter item modifier picker -->
+      <div id="counter-modifier-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
+         <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-100">
+            <button type="button" onclick="closeCounterModifierModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 id="counter-modifier-title" class="text-lg font-bold text-slate-800 mb-1">Customize item</h3>
+            <p class="text-xs text-slate-400 mb-4">Select add-ons (optional)</p>
+            <div id="counter-modifier-options" class="space-y-2 max-h-48 overflow-y-auto mb-4"></div>
+            <button type="button" onclick="confirmCounterModifierAdd()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Add to cart</button>
+         </div>
+      </div>
       <!-- Master Receipt Printer Modal -->
       <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
          <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative">
             <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl print:hidden">&times;</button>
             <div id="receipt-payload" class="space-y-4"></div>
             <div id="receipt-actions" class="mt-6 space-y-2 print:hidden">
-               <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
-               <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">
-               Connect Bluetooth Printer
-               </button>
-               <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm">
-               Print to Bluetooth Printer
-               </button>
-               <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">
-               Print Receipt (Browser)
-               </button>
-               <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden">
-               Settle & Close Table Bill
-               </button>
+               <div id="receipt-print-actions" class="space-y-2">
+                  <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
+                  <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">Connect Bluetooth Printer</button>
+                  <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm">Print to Bluetooth Printer</button>
+                  <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Print Receipt (Browser)</button>
+               </div>
+               <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden">Settle &amp; Close Table Bill</button>
             </div>
          </div>
       </div>
       <!-- JavaScript logic -->
       <script>
          const API_BASE = `${window.location.origin}/api/v1`;
+         const DARK_MODE_KEY = 'manager_dark_mode';
+
+         function isDarkModeEnabled() {
+             return document.documentElement.classList.contains('dark');
+         }
+
+         function updateDarkModeUi() {
+             const enabled = isDarkModeEnabled();
+             const icon = enabled ? '☀️' : '🌙';
+             const label = enabled ? 'Light' : 'Dark';
+             ['dark-mode-icon', 'login-dark-mode-icon'].forEach((id) => {
+                 const el = document.getElementById(id);
+                 if (el) el.textContent = icon;
+             });
+             ['dark-mode-label', 'login-dark-mode-label'].forEach((id) => {
+                 const el = document.getElementById(id);
+                 if (el) el.textContent = label;
+             });
+         }
+
+         function setDarkMode(enabled) {
+             document.documentElement.classList.toggle('dark', enabled);
+             localStorage.setItem(DARK_MODE_KEY, enabled ? '1' : '0');
+             updateDarkModeUi();
+         }
+
+         function toggleDarkMode() {
+             setDarkMode(!isDarkModeEnabled());
+         }
+
+         updateDarkModeUi();
+         const MANAGER_PANEL_KEY = 'manager_active_panel';
          let menuItemsList = [];
+         let kitchenCoffeeCategories = new Set();
          let managerWs = null;
          let activeTablesPollId = null;
+         let counterMenuItems = [];
+         let counterCart = [];
+         let counterPendingItem = null;
+         let floorTablesCache = [];
+         let floorTimerIntervalId = null;
+         let managerAudioCtx = null;
          
+         function formatKs(amount) {
+             return `${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Ks`;
+         }
+
+         function showToast(message, type = 'info', duration = 3200) {
+             const container = document.getElementById('toast-container');
+             const el = document.createElement('div');
+             el.className = `toast toast-${type}`;
+             el.textContent = message;
+             container.appendChild(el);
+             setTimeout(() => {
+                 el.style.opacity = '0';
+                 el.style.transition = 'opacity 0.2s';
+                 setTimeout(() => el.remove(), 200);
+             }, duration);
+         }
+
+         function formatServiceRequestLabel(requestType) {
+             const key = String(requestType || '').toLowerCase();
+             if (key === 'water') return 'Water refill';
+             if (key === 'waiter') return 'Call staff';
+             return requestType || 'Assistance';
+         }
+
+         function unlockManagerAudio() {
+             if (!managerAudioCtx) {
+                 managerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+             }
+             if (managerAudioCtx.state === 'suspended') {
+                 managerAudioCtx.resume();
+             }
+         }
+
+         function playManagerServiceAlertSound() {
+             try {
+                 unlockManagerAudio();
+                 const ctx = managerAudioCtx;
+                 if (!ctx || ctx.state !== 'running') return;
+                 const t = ctx.currentTime;
+                 [880, 1100].forEach((freq, i) => {
+                     const osc = ctx.createOscillator();
+                     const gain = ctx.createGain();
+                     osc.type = 'sine';
+                     osc.frequency.value = freq;
+                     const start = t + i * 0.14;
+                     gain.gain.setValueAtTime(0.0001, start);
+                     gain.gain.exponentialRampToValueAtTime(0.22, start + 0.02);
+                     gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+                     osc.connect(gain);
+                     gain.connect(ctx.destination);
+                     osc.start(start);
+                     osc.stop(start + 0.24);
+                 });
+             } catch (err) {
+                 console.warn('Service alert sound failed', err);
+             }
+         }
+
+         function showManagerBrowserNotification(title, body) {
+             if (!('Notification' in window) || Notification.permission !== 'granted') return;
+             try {
+                 new Notification(title, { body });
+             } catch (err) {
+                 console.warn('Browser notification failed', err);
+             }
+         }
+
+         function showServiceRequestAlert(tableNumber, requestType) {
+             const label = formatServiceRequestLabel(requestType);
+             const tableLabel = tableNumber ? `Table ${tableNumber}` : 'A table';
+             const message = `${tableLabel} requested: ${label}`;
+
+             showToast(`🛎️ ${message}`, 'warn', 7000);
+
+             const container = document.getElementById('manager-service-alerts');
+             if (container) {
+                 const banner = document.createElement('div');
+                 banner.className = 'service-alert-banner';
+                 banner.innerHTML = `
+                     <div class="service-alert-banner__text">
+                         <strong>Guest assistance</strong>
+                         <span>${message}</span>
+                     </div>
+                     <button type="button" class="service-alert-banner__dismiss">Dismiss</button>
+                 `;
+                 banner.querySelector('.service-alert-banner__dismiss').onclick = () => banner.remove();
+                 container.prepend(banner);
+                 while (container.children.length > 5) {
+                     container.lastElementChild.remove();
+                 }
+             }
+
+             playManagerServiceAlertSound();
+             showManagerBrowserNotification('BLOOM CAFÉ — Guest assistance', message);
+         }
+
+         function setupManagerNotifications() {
+             document.body.addEventListener('click', unlockManagerAudio, { once: true });
+             if ('Notification' in window && Notification.permission === 'default') {
+                 Notification.requestPermission().catch(() => {});
+             }
+         }
+
+         function renderBillReceiptHtml(bill, options = {}) {
+             const { title = 'TABLE SESSION MASTER INVOICE', showSettle = true } = options;
+             const itemsStr = (bill.items || []).map(i => {
+                 const modsLabel = (i.modifiers || []).length > 0
+                     ? `<div class="text-[10px] text-slate-500 pl-4">+ ${i.modifiers.join(', ')}</div>` : '';
+                 const subtotal = i.subtotal != null ? i.subtotal : i.quantity * i.unit_price;
+                 return `
+                     <div class="border-b border-dashed pb-1">
+                         <div class="flex justify-between text-xs font-semibold">
+                             <span>${i.name} (x${i.quantity})</span>
+                             <span>${formatKs(subtotal)}</span>
+                         </div>
+                         ${modsLabel}
+                     </div>`;
+             }).join('');
+             const total = bill.grand_total != null ? bill.grand_total : bill.subtotal;
+             const orderLine = bill.order_ids
+                 ? `<p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>`
+                 : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
+             return `
+                 <div class="text-center border-b pb-3 border-dashed">
+                     <h2 class="text-lg font-bold bloom-brand">${bill.restaurant_name || 'BLOOM CAFÉ'}</h2>
+                     <p class="text-[10px] text-slate-400">${title}</p>
+                     <p class="text-[10px] text-slate-400">${bill.timestamp || ''}</p>
+                 </div>
+                 <div class="text-xs">
+                     <p><b>Table:</b> ${bill.table_number}</p>
+                     ${orderLine}
+                 </div>
+                 <div class="space-y-2 my-4">${itemsStr}</div>
+                 <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
+                     <span>GRAND TOTAL</span>
+                     <span>${formatKs(total)}</span>
+                 </div>`;
+         }
+
+         function configureReceiptModalActions(mode, tableId) {
+             const printActions = document.getElementById('receipt-print-actions');
+             const settleBtn = document.getElementById('settle-bill-btn');
+
+             if (mode === 'live') {
+                 printActions?.classList.add('hidden');
+                 settleBtn?.classList.remove('hidden');
+                 if (tableId) settleBtn?.setAttribute('onclick', `settleTableBill(${tableId})`);
+                 return;
+             }
+
+             printActions?.classList.remove('hidden');
+             settleBtn?.classList.add('hidden');
+         }
+
+         function showManagerPanel(panelId) {
+             const validPanels = ['main', 'counter', 'qr', 'orders', 'menu', 'settled'];
+             const activePanel = validPanels.includes(panelId) ? panelId : 'main';
+
+             document.querySelectorAll('.manager-panel').forEach((panel) => {
+                 panel.classList.add('hidden');
+             });
+             document.getElementById(`panel-${activePanel}`)?.classList.remove('hidden');
+
+             document.querySelectorAll('#ops-subnav .panel-tab').forEach((button) => {
+                 const isActive = button.dataset.panel === activePanel;
+                 button.className = isActive
+                     ? 'panel-tab panel-tab-active'
+                     : 'panel-tab panel-tab-inactive';
+             });
+
+             sessionStorage.setItem(MANAGER_PANEL_KEY, activePanel);
+
+             if (activePanel === 'qr') {
+                 loadQrTableSelect();
+             } else if (activePanel === 'counter') {
+                 loadCounterMenu();
+             } else if (activePanel === 'orders') {
+                 loadOrderFilterTables();
+                 fetchOrdersLog();
+             } else if (activePanel === 'menu') {
+                 loadKitchenStationConfig().then(() => {
+                     fetchMenuTable();
+                     loadCategories();
+                 });
+             } else if (activePanel === 'settled') {
+                 fetchSettledTablesHistory();
+             } else if (activePanel === 'main') {
+                 fetchAnalytics();
+                 fetchActiveTables();
+             }
+         }
+
+         function initManagerNavigation() {
+             document.querySelectorAll('#ops-subnav .panel-tab').forEach((button) => {
+                 button.addEventListener('click', () => showManagerPanel(button.dataset.panel));
+             });
+             let savedPanel = sessionStorage.getItem(MANAGER_PANEL_KEY) || 'main';
+             if (savedPanel === 'bill') savedPanel = 'main';
+             showManagerPanel(savedPanel);
+         }
+
          function getAuthHeaders() {
              const token = localStorage.getItem('manager_token');
              return {
@@ -325,6 +863,14 @@
              };
          }
          
+         function updateManagerRoleUi() {
+             const role = localStorage.getItem('manager_role');
+             const financeLink = document.getElementById('finance-nav-link');
+             if (financeLink) {
+                 financeLink.classList.toggle('hidden', role !== 'owner');
+             }
+         }
+
          function checkAuthState() {
              const token = localStorage.getItem('manager_token');
              const loginView = document.getElementById('login-view');
@@ -336,19 +882,14 @@
              } else {
                  loginView.classList.add('hidden');
                  dashboardView.classList.remove('hidden');
+                 updateManagerRoleUi();
                  
-                 loadCategories();
-
                  setDefaultDatePicker();
-                 fetchAnalytics();
-                 fetchMenuTable();
-                 fetchActiveTables(); 
-                 loadQrTableSelect();
-                 fetchOrdersLog();
-                 fetchSettledTablesHistory();
+                 initManagerNavigation();
                  connectManagerWS();
                  startActiveTablesPolling();
                  reconnectBluetoothPrinter();
+                 setupManagerNotifications();
              }
          }
 
@@ -358,9 +899,13 @@
          }
 
          function handleManagerWsEvent(data) {
+             if (data.event === 'service_request') {
+                 showServiceRequestAlert(data.table_number, data.request);
+                 return;
+             }
              if (data.event === 'new_order' || data.event === 'status_update') {
                  refreshLiveDashboard();
-             } else if (data.event === 'table_settled') {
+             } else if (data.event === 'table_settled' || data.event === 'table_session_started') {
                  refreshLiveDashboard();
                  fetchSettledTablesHistory();
                  fetchAnalytics();
@@ -446,17 +991,27 @@
                  if (response.ok) {
                      const data = await response.json();
                      localStorage.setItem('manager_token', data.token);
+                     localStorage.setItem('manager_role', data.role || 'manager');
+                     localStorage.setItem('manager_username', data.username || '');
                      checkAuthState();
                  } else {
-                     alert("Invalid administrator username or password.");
+                     showToast('Invalid username or password.', 'error');
                  }
              } catch (err) {
-                 alert("Network error occurred.");
+                 showToast('Network error occurred.', 'error');
              }
          }
          
-         function handleLogout() {
+         async function handleLogout() {
+             try {
+                 await fetch(`${API_BASE}/manager/logout`, {
+                     method: 'POST',
+                     headers: getAuthHeaders()
+                 });
+             } catch (err) { /* ignore */ }
              localStorage.removeItem('manager_token');
+             localStorage.removeItem('manager_role');
+             localStorage.removeItem('manager_username');
              window.location.reload();
          }
          
@@ -475,7 +1030,7 @@
              const confirmPassword = document.getElementById('p-confirm-password').value;
          
              if (newPassword !== confirmPassword) {
-                 alert("New passwords do not match. Please re-enter.");
+                 showToast('New passwords do not match.', 'error');
                  return;
              }
          
@@ -489,20 +1044,22 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  if (response.ok) {
-                     alert("Password updated successfully! For security purposes, please log back in with your new credentials.");
-                     handleLogout(); // Force logout to clear session
+                     showToast('Password updated. Please log in again.', 'success');
+                     handleLogout();
                  } else {
                      const err = await response.json();
-                     alert(err.detail || "Incorrect old password.");
+                     showToast(err.detail || 'Incorrect old password.', 'error');
                  }
              } catch (err) {
-                 alert("Network communication error.");
+                 showToast('Network communication error.', 'error');
              }
          }
          
          function setDefaultDatePicker() {
              const todayLocal = new Date().toLocaleDateString('en-CA');
              document.getElementById('analytics-date').value = todayLocal;
+             const ordersDate = document.getElementById('orders-filter-date');
+             if (ordersDate) ordersDate.value = todayLocal;
          }
          
          async function fetchAnalytics() {
@@ -523,8 +1080,8 @@
          
                 const data = await response.json();
                 
-                document.getElementById('stat-revenue').innerText = `${data.total_revenue.toFixed(2)} Ks`;
-                document.getElementById('stat-monthly-revenue').innerText = `${data.total_monthly_revenue.toFixed(2)} Ks`; // NEW
+                 document.getElementById('stat-revenue').innerText = formatKs(data.total_revenue);
+                 document.getElementById('stat-monthly-revenue').innerText = formatKs(data.total_monthly_revenue);
                 document.getElementById('stat-count').innerText = data.total_orders_completed;
                  
                  const list = document.getElementById('stat-top-items');
@@ -536,6 +1093,7 @@
                          list.innerHTML += `<li>${item.name} (${item.sold_qty} sold)</li>`;
                      });
                  }
+
              } catch (err) {
                  console.error("Could not fetch metrics.");
              }
@@ -543,11 +1101,11 @@
          
          // --- Updated: Secure Excel (CSV) Exporter using Auth-Headers & Blob Streaming ---
          // --- Updated: Secure PDF Document Exporter ---
-         async function exportReport() {
+         async function exportReport(range = 'day') {
          const selectedDate = document.getElementById('analytics-date').value;
          
          try {
-         const response = await fetch(`${API_BASE}/manager/analytics/export?date=${selectedDate}`, {
+         const response = await fetch(`${API_BASE}/manager/analytics/export?date=${selectedDate}&range=${range}`, {
             headers: getAuthHeaders()
          });
          
@@ -562,39 +1120,193 @@
             
             const virtualAnchor = document.createElement('a');
             virtualAnchor.href = downloadUrl;
-            // Updated: Saved as a clean, standardized PDF
-            virtualAnchor.download = `business_summary_${selectedDate}.pdf`;
+            virtualAnchor.download = `operations_${range}_${selectedDate}.pdf`;
             
             document.body.appendChild(virtualAnchor);
             virtualAnchor.click();
             
             virtualAnchor.remove();
             window.URL.revokeObjectURL(downloadUrl);
+            const rangeName = { day: 'Today', week: 'Week', month: 'Month' }[range] || range;
+            showToast(`${rangeName} operations PDF downloaded.`, 'success');
          } else {
-            alert("Export failed. Please check backend log streams.");
+            showToast('Export failed. Please check backend log streams.', 'error');
          }
          } catch (err) {
-         alert("Network error exporting document.");
+         showToast('Network error exporting document.', 'error');
          }
          }
          
          async function loadQrTableSelect() {
+             await loadManagedTables();
+         }
+
+         function renderManagedTables(tables) {
+             const listEl = document.getElementById('qr-tables-list');
+             const emptyEl = document.getElementById('qr-tables-empty');
+             const select = document.getElementById('qr-table-select');
+             if (!listEl || !emptyEl || !select) return;
+
+             if (!tables.length) {
+                 listEl.innerHTML = '';
+                 emptyEl.classList.remove('hidden');
+                 select.innerHTML = '<option value="">No tables available</option>';
+                 return;
+             }
+
+             emptyEl.classList.add('hidden');
+             select.innerHTML = tables.map((table) =>
+                 `<option value="${table.id}">Table ${escapeHtml(table.label)}</option>`
+             ).join('');
+
+             listEl.innerHTML = tables.map((table) => `
+                 <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
+                     <div class="flex flex-wrap items-center gap-2">
+                         <div class="flex-1 min-w-[120px]">
+                             <p class="text-sm font-black text-slate-800">Table ${escapeHtml(table.label)}</p>
+                             <p class="text-[10px] text-slate-400 font-mono">#${table.number}${table.has_active_orders ? ' · Live session' : ''}${table.is_vip_room ? ' · VIP' : ''}</p>
+                         </div>
+                         <input type="text" id="table-label-input-${table.id}" value="${escapeHtml(table.label)}" maxlength="50"
+                             class="flex-1 min-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                         <button type="button" onclick="removeTable(${table.id})" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 px-3 rounded-lg transition">Remove</button>
+                     </div>
+                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-slate-200 pt-3">
+                         <label class="col-span-2 sm:col-span-4 flex items-center gap-2 text-xs font-bold text-violet-700">
+                             <input type="checkbox" id="table-vip-${table.id}" ${table.is_vip_room ? 'checked' : ''} class="rounded">
+                             VIP room (hourly session fee)
+                         </label>
+                         <div>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rate / hour (Ks)</label>
+                             <input type="number" min="0" step="1" id="table-rate-${table.id}" value="${table.hourly_rate || 0}"
+                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
+                         </div>
+                         <div>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min minutes</label>
+                             <input type="number" min="0" step="1" id="table-min-${table.id}" value="${table.minimum_minutes ?? 30}"
+                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
+                         </div>
+                         <div>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Free minutes</label>
+                             <input type="number" min="0" step="1" id="table-free-${table.id}" value="${table.free_minutes || 0}"
+                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
+                         </div>
+                         <div class="flex items-end">
+                             <button type="button" onclick="saveTableSettings(${table.id})" class="w-full text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-3 rounded-lg transition">Save</button>
+                         </div>
+                     </div>
+                     ${table.active_session ? `<p class="text-[10px] text-violet-600 font-semibold">⏱ Active: ${escapeHtml(table.active_session.elapsed_label)} · ${formatKs(table.active_session.current_fee)} session fee</p>` : ''}
+                 </div>
+             `).join('');
+         }
+
+         async function loadManagedTables() {
              try {
-                 const response = await fetch(`${API_BASE}/manager/tables/qr-links`, {
+                 const response = await fetch(`${API_BASE}/manager/tables`, {
                      headers: getAuthHeaders()
                  });
 
                  if (response.status === 401) { handleLogout(); return; }
 
                  if (response.ok) {
-                     const links = await response.json();
-                     const select = document.getElementById('qr-table-select');
-                     select.innerHTML = links.map(entry =>
-                         `<option value="${entry.table_id}">Table ${entry.table_number}</option>`
-                     ).join('');
+                     const tables = await response.json();
+                     renderManagedTables(tables);
                  }
              } catch (err) {
-                 console.error("Failed to load table list for QR generator.");
+                 console.error('Failed to load managed tables.');
+             }
+         }
+
+         async function submitAddTable(event) {
+             event.preventDefault();
+             const label = document.getElementById('add-table-label').value.trim();
+             if (!label) {
+                 showToast('Please enter a table label.', 'error');
+                 return;
+             }
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables`, {
+                     method: 'POST',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ label })
+                 });
+
+                 if (response.status === 401) { handleLogout(); return; }
+
+                 if (response.ok) {
+                     document.getElementById('add-table-form').reset();
+                     showToast(`Table ${label} added.`, 'success');
+                     await loadManagedTables();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not add table.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error while adding table.', 'error');
+             }
+         }
+
+         async function saveTableSettings(tableId) {
+             const label = document.getElementById(`table-label-input-${tableId}`)?.value.trim();
+             const is_vip_room = document.getElementById(`table-vip-${tableId}`)?.checked || false;
+             const hourly_rate = parseFloat(document.getElementById(`table-rate-${tableId}`)?.value || '0');
+             const minimum_minutes = parseInt(document.getElementById(`table-min-${tableId}`)?.value || '30', 10);
+             const free_minutes = parseInt(document.getElementById(`table-free-${tableId}`)?.value || '0', 10);
+
+             if (!label) {
+                 showToast('Table label cannot be empty.', 'error');
+                 return;
+             }
+             if (is_vip_room && hourly_rate <= 0) {
+                 showToast('VIP tables need an hourly rate greater than 0.', 'error');
+                 return;
+             }
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}`, {
+                     method: 'PUT',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ label, is_vip_room, hourly_rate, minimum_minutes, free_minutes })
+                 });
+
+                 if (response.status === 401) { handleLogout(); return; }
+
+                 if (response.ok) {
+                     showToast('Table settings saved.', 'success');
+                     await loadManagedTables();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not save table settings.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error while saving table.', 'error');
+             }
+         }
+
+         async function removeTable(tableId) {
+             const input = document.getElementById(`table-label-input-${tableId}`);
+             const label = input?.value.trim() || `ID ${tableId}`;
+             if (!confirm(`Remove table ${label}? Its QR link will stop working.`)) return;
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}`, {
+                     method: 'DELETE',
+                     headers: getAuthHeaders()
+                 });
+
+                 if (response.status === 401) { handleLogout(); return; }
+
+                 if (response.ok) {
+                     showToast(`Table ${label} removed.`, 'success');
+                     document.getElementById('qr-output-container')?.classList.add('hidden');
+                     document.getElementById('all-qr-links-container')?.classList.add('hidden');
+                     await loadManagedTables();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not remove table.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error while removing table.', 'error');
              }
          }
 
@@ -647,41 +1359,147 @@
              }
          }
          
+         function escapeHtml(text) {
+             return String(text)
+                 .replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;')
+                 .replace(/"/g, '&quot;');
+         }
+
+         function formatLiveTimer(startedAtIso) {
+             if (!startedAtIso) return '00:00:00';
+             const started = new Date(startedAtIso);
+             const secs = Math.max(0, Math.floor((Date.now() - started.getTime()) / 1000));
+             const h = Math.floor(secs / 3600);
+             const m = Math.floor((secs % 3600) / 60);
+             const s = secs % 60;
+             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+         }
+
+         function startFloorTimer() {
+             if (floorTimerIntervalId) return;
+             floorTimerIntervalId = setInterval(() => {
+                 document.querySelectorAll('[data-vip-timer]').forEach((el) => {
+                     const startedAt = el.getAttribute('data-started-at');
+                     el.textContent = `⏱ ${formatLiveTimer(startedAt)}`;
+                 });
+             }, 1000);
+         }
+
+         function buildTableFloorTile(table) {
+             const isLive = table.status === 'live';
+             const tile = document.createElement('div');
+             const vipBorder = table.is_vip_room && isLive ? 'border-violet-500 bg-violet-50' : 'border-emerald-500 bg-emerald-50';
+             tile.className = isLive
+                 ? `table-floor-tile rounded-2xl border-2 ${vipBorder} p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full`
+                 : 'table-floor-tile rounded-2xl border-2 border-slate-200 bg-slate-50 p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full opacity-90';
+
+             const vipBadge = table.is_vip_room ? '<p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">VIP Room</p>' : '';
+             const sessionTimer = (table.vip_session && table.vip_session.started_at)
+                 ? `<p class="text-xs font-mono font-bold text-violet-700" data-vip-timer data-started-at="${table.vip_session.started_at}">⏱ ${formatLiveTimer(table.vip_session.started_at)}</p>`
+                 : '';
+             const sessionFeeLine = table.session_fee > 0
+                 ? `<p class="text-[10px] text-violet-600">Room: ${formatKs(table.session_fee)}</p>`
+                 : '';
+             const totalLine = table.total_with_session > table.total_price
+                 ? `<p class="text-sm font-black text-amber-600">${formatKs(table.total_with_session)} total</p><p class="text-[10px] text-slate-500">Orders: ${formatKs(table.total_price)}</p>`
+                 : `<p class="text-sm font-black text-amber-600">${formatKs(table.total_price)}</p>`;
+
+             if (isLive) {
+                 tile.innerHTML = `
+                     <div class="flex flex-col items-center gap-1.5">
+                         <span class="h-2.5 w-2.5 rounded-full ${table.is_vip_room ? 'bg-violet-500 ring-violet-200' : 'bg-emerald-500 ring-emerald-200'} ring-4 shrink-0"></span>
+                         <p class="text-base sm:text-lg font-black text-slate-800 leading-tight break-words w-full">Table ${escapeHtml(table.table_number)}</p>
+                         ${vipBadge}
+                         <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">Live Session</p>
+                         ${sessionTimer}
+                         ${sessionFeeLine}
+                         <p class="text-xs text-slate-600">${table.active_orders_count} order${table.active_orders_count === 1 ? '' : 's'}</p>
+                         ${totalLine}
+                     </div>
+                     <div class="flex flex-col gap-2 w-full mt-auto pt-2">
+                         <button type="button" data-action="bill" class="w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition">Bill</button>
+                         <button type="button" data-action="cancel" class="w-full text-xs bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-lg transition">Cancel</button>
+                     </div>`;
+                 tile.querySelector('[data-action="bill"]')?.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     loadConsolidatedTableBill(table.table_id);
+                 });
+                 tile.querySelector('[data-action="cancel"]')?.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     cancelTableSession(table.table_id);
+                 });
+             } else {
+                 tile.innerHTML = `
+                     <div class="flex flex-col items-center gap-1.5 justify-center flex-1 py-2">
+                         <span class="h-2.5 w-2.5 rounded-full bg-slate-300 shrink-0"></span>
+                         <p class="text-base sm:text-lg font-black text-slate-600 leading-tight break-words w-full">Table ${escapeHtml(table.table_number)}</p>
+                         ${table.is_vip_room ? '<p class="text-[10px] font-bold uppercase tracking-wide text-violet-500">VIP</p>' : ''}
+                         <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Available</p>
+                     </div>`;
+             }
+             return tile;
+         }
+
+         function renderTableFloorGrid(floorTables) {
+             floorTablesCache = floorTables || [];
+             const grid = document.getElementById('table-floor-grid');
+             const emptyState = document.getElementById('table-floor-empty');
+             if (!grid || !emptyState) return;
+
+             grid.innerHTML = '';
+
+             if (!floorTablesCache.length) {
+                 grid.classList.add('hidden');
+                 emptyState.classList.remove('hidden');
+                 return;
+             }
+
+             emptyState.classList.add('hidden');
+             grid.classList.remove('hidden');
+
+             floorTablesCache.forEach((table) => {
+                 grid.appendChild(buildTableFloorTile(table));
+             });
+             startFloorTimer();
+         }
+
          async function fetchActiveTables() {
              try {
-                 const response = await fetch(`${API_BASE}/manager/tables/active`, {
+                 const response = await fetch(`${API_BASE}/manager/tables/floor`, {
                      headers: getAuthHeaders()
                  });
-         
                  if (response.status === 401) { handleLogout(); return; }
-         
-                 const activeTables = await response.json();
-                 const tbody = document.getElementById("active-tables-tbody");
-                 tbody.innerHTML = "";
-         
-                 if (activeTables.length === 0) {
-                     tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400 italic">No live dining sessions active currently</td></tr>`;
-                     return;
-                 }
-         
-                 activeTables.forEach(table => {
-                     const tr = document.createElement("tr");
-                     tr.className = "hover:bg-slate-50";
-                     tr.innerHTML = `
-                         <td class="py-3 font-bold text-[#161912]">Table ${table.table_number}</td>
-                         
-                         <td class="py-3 font-semibold text-amber-600">${table.total_price.toFixed(2)} Ks</td>
-                         <td class="py-3 text-right">
-                             <button onclick="loadConsolidatedTableBill(${table.table_id})" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black py-1 px-3 rounded-lg transition">Generate Master Bill</button>
-                         </td>
-                     `;
-                     tbody.appendChild(tr);
-                 });
+                 const floorTables = response.ok ? await response.json() : [];
+                 renderTableFloorGrid(floorTables);
              } catch (err) {
-                 console.error("Could not populate live tables.");
+                 console.error('Could not populate table floor.');
              }
          }
-         
+
+         async function cancelTableSession(tableId) {
+             if (!confirm('Cancel all active orders for this table? Stock will be restored.')) return;
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}/cancel`, {
+                     method: 'POST',
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (response.ok) {
+                     const data = await response.json();
+                     showToast(data.message || 'Table session cancelled.', 'success');
+                     fetchActiveTables();
+                     fetchOrdersLog();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not cancel table session.', 'error');
+                 }
+             } catch (err) {
+                 showToast('Network error while cancelling.', 'error');
+             }
+         }
+
          async function loadConsolidatedTableBill(tableId) {
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/bill`, {
@@ -692,59 +1510,17 @@
          
                  const bill = await response.json();
                  BluetoothPrinter.setCurrentReceipt(bill);
-                 const receiptContainer = document.getElementById("receipt-payload");
-                 const itemsStr = bill.items.map(i => {
-                     const modsLabel = i.modifiers.length > 0 ? `<div class="text-[10px] text-slate-500 pl-4">+ ${i.modifiers.join(', ')}</div>` : "";
-                     const subtotal = i.quantity * i.unit_price;
-                     return `
-                         <div class="border-b border-dashed pb-1">
-                             <div class="flex justify-between text-xs font-semibold">
-                                 <span>${i.name} (x${i.quantity})</span>
-                                 <span>$${subtotal.toFixed(2)}</span>
-                             </div>
-                             ${modsLabel}
-                         </div>
-                     `;
-                 }).join("");
-         
-                 receiptContainer.innerHTML = `
-                     <div class="text-center border-b pb-3 border-dashed">
-                         <h2 class="text-lg font-bold">${bill.restaurant_name}</h2>
-                         <p class="text-[10px] text-slate-400">TABLE SESSION MASTER INVOICE</p>
-                         <p class="text-[10px] text-slate-400">${bill.timestamp}</p>
-                     </div>
-                     <div class="text-xs">
-                         <p><b>TABLE NUMBER:</b> Table ${bill.table_number}</p>
-                         <p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>
-                     </div>
-                     <div class="space-y-2 my-4">
-                         ${itemsStr}
-                     </div>
-                     <div class="space-y-1 pt-3 border-t border-dashed text-xs text-slate-600">
-                         <div class="flex justify-between">
-                             <span>Subtotal</span>
-                             <span>${bill.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                         <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
-                             <span>GRAND TOTAL</span>
-                             <span>${bill.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                     </div>
-                 `;
-         
-                 const settleBtn = document.getElementById('settle-bill-btn');
-                 settleBtn.setAttribute('onclick', `settleTableBill(${bill.table_id})`);
-                 settleBtn.classList.remove('hidden');
-         
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill);
+                 configureReceiptModalActions('live', bill.table_id);
                  toggleReceiptModal(true);
              } catch (err) {
-                 alert("Could not load consolidated bill.");
+                 showToast('Could not load consolidated bill.', 'error');
              }
          }
          
          async function settleTableBill(tableId) {
-             if (!confirm("Confirm payment received and settle this table session? This closes all active dockets.")) return;
-         
+             if (!confirm('Confirm payment received and settle this table?')) return;
+
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/settle`, {
                      method: 'POST',
@@ -754,15 +1530,19 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  if (response.ok) {
-                     alert("Bill settled! Table cleared.");
+                     showToast('Bill settled. Table cleared.', 'success');
                      toggleReceiptModal(false);
+                     configureReceiptModalActions('historical');
                      fetchActiveTables();
                      fetchOrdersLog();
                      fetchSettledTablesHistory();
-                     fetchAnalytics();
+                 fetchAnalytics();
+                 } else {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not settle bill.', 'error');
                  }
              } catch (err) {
-                 alert("Network communication issue.");
+                 showToast('Network communication issue.', 'error');
              }
          }
          
@@ -787,11 +1567,16 @@
                      const card = document.createElement("div");
                      card.className = "bg-white p-4 border border-slate-100 rounded-xl shadow-sm flex justify-between items-center";
                      const isoTime = session.settled_at_iso;
+                     const sessionFee = session.session_fee || 0;
+                     const ordersTotal = session.orders_total != null ? session.orders_total : session.total_price;
+                     const totalLine = sessionFee > 0
+                         ? `Orders: ${formatKs(ordersTotal)} · Room: ${formatKs(sessionFee)} · <span class="text-amber-600">Total: ${formatKs(session.total_price)}</span>`
+                         : `Total: ${formatKs(session.total_price)}`;
                      card.innerHTML = `
                          <div>
                              <p class="font-bold text-[#161912]">Table ${session.table_number}</p>
                              <p class="text-[10px] text-slate-400">Closed: ${session.settled_at}</p>
-                             <p class="text-xs text-slate-500 font-semibold mt-1">Total: ${session.total_price.toFixed(2)} Ks| Dockets: ${session.order_ids.map(id => `#${id}`).join(', ')}</p>
+                             <p class="text-xs text-slate-500 font-semibold mt-1">${totalLine} · Dockets: ${session.order_ids.map(id => `#${id}`).join(', ')}</p>
                          </div>
                          <button onclick="loadHistoricalTableBill(${session.table_id}, '${isoTime}')" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Master Receipt</button>
                      `;
@@ -812,50 +1597,13 @@
          
                  const bill = await response.json();
                  BluetoothPrinter.setCurrentReceipt(bill);
-                 const receiptContainer = document.getElementById("receipt-payload");
-                 const itemsStr = bill.items.map(i => {
-                     const modsLabel = i.modifiers.length > 0 ? `<div class="text-[10px] text-slate-500 pl-4">+ ${i.modifiers.join(', ')}</div>` : "";
-                     const subtotal = i.quantity * i.unit_price;
-                     return `
-                         <div class="border-b border-dashed pb-1">
-                             <div class="flex justify-between text-xs font-semibold">
-                                 <span>${i.name} (x${i.quantity})</span>
-                                 <span>${subtotal.toFixed(2)} Ks</span>
-                             </div>
-                             ${modsLabel}
-                         </div>
-                     `;
-                 }).join("");
-         
-                 receiptContainer.innerHTML = `
-                     <div class="text-center border-b pb-3 border-dashed">
-                         <h2 class="text-lg font-bold">27 Cafe & Bar</h2>
-                         <p class="text-[10px] text-slate-400">HISTORICAL TABLE SESSION RECEIPT</p>
-                         <p class="text-[10px] text-slate-400">${bill.timestamp}</p>
-                     </div>
-                     <div class="text-xs">
-                         <p><b>TABLE NUMBER:</b> Table ${bill.table_number}</p>
-                         
-                     </div>
-                     <div class="space-y-2 my-4">
-                         ${itemsStr}
-                     </div>
-                     <div class="space-y-1 pt-3 border-t border-dashed text-xs text-slate-600">
-                         <div class="flex justify-between">
-                             <span>Subtotal</span>
-                             <span>${bill.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                         <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
-                             <span>GRAND TOTAL</span>
-                             <span>${bill.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                     </div>
-                 `;
-         
-                 document.getElementById('settle-bill-btn').classList.add('hidden');
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
+                     title: 'HISTORICAL TABLE SESSION RECEIPT'
+                 });
+                 configureReceiptModalActions('historical');
                  toggleReceiptModal(true);
              } catch (err) {
-                 alert("Could not load historical receipt.");
+                 showToast('Could not load historical receipt.', 'error');
              }
          }
          
@@ -886,6 +1634,50 @@
              return null;
          }
 
+         async function loadKitchenStationConfig() {
+             try {
+                 const response = await fetch(`${API_BASE}/kitchen/stations/config`);
+                 if (!response.ok) return;
+                 const data = await response.json();
+                 kitchenCoffeeCategories = new Set((data.coffee_categories || []).map((c) => c.toLowerCase()));
+             } catch (err) {
+                 console.warn('Could not load kitchen station config', err);
+             }
+         }
+
+         function kitchenStationForCategory(category) {
+             const name = (category || '').trim().toLowerCase();
+             return kitchenCoffeeCategories.has(name) ? 'coffee' : 'food';
+         }
+
+         function kitchenStationForItem(item) {
+             if (item && item.kitchen_station) return item.kitchen_station;
+             return kitchenStationForCategory(item?.category);
+         }
+
+         function setKitchenStation(form, station) {
+             const prefix = form === 'add' ? 'add' : 'edit';
+             const hidden = document.getElementById(`${prefix}-item-kitchen`);
+             if (hidden) hidden.value = station;
+
+             const coffeeBtn = document.getElementById(`${prefix}-kitchen-coffee`);
+             const foodBtn = document.getElementById(`${prefix}-kitchen-food`);
+             const coffeeActive = 'flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-amber-100 border-amber-500 text-amber-800';
+             const coffeeInactive = 'flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300';
+             const foodActive = 'flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800';
+             const foodInactive = 'flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-emerald-300';
+
+             if (coffeeBtn) coffeeBtn.className = station === 'coffee' ? coffeeActive : coffeeInactive;
+             if (foodBtn) foodBtn.className = station === 'food' ? foodActive : foodInactive;
+         }
+
+         function kitchenStationBadgeHtml(station) {
+             if (station === 'coffee') {
+                 return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">☕ Cafe</span>';
+             }
+             return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">🍳 Food</span>';
+         }
+
          async function loadCategories() {
             const res = await fetch(`${API_BASE}/menu/`);
             const items = await res.json();
@@ -899,73 +1691,185 @@
             .join('');
         }
          
-        // --- Updated: Dynamic Category Grouping for Inventory Manager Table ---
+        // --- Menu table: search + category filter ---
+        function populateMenuCategoryFilter() {
+            const select = document.getElementById('menu-category-filter');
+            if (!select) return;
+            const currentValue = select.value;
+            const categories = [...new Set(menuItemsList.map((item) => item.category))].sort((a, b) => a.localeCompare(b));
+            select.innerHTML = '<option value="">All categories</option>';
+            categories.forEach((category) => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
+            });
+            if (currentValue && categories.includes(currentValue)) select.value = currentValue;
+        }
+
+        function getFilteredMenuItems() {
+            const query = (document.getElementById('menu-item-search')?.value || '').trim().toLowerCase();
+            const categoryFilter = document.getElementById('menu-category-filter')?.value || '';
+            const kitchenFilter = document.getElementById('menu-kitchen-filter')?.value || '';
+            return menuItemsList.filter((item) => {
+                const matchesCategory = !categoryFilter || item.category === categoryFilter;
+                const matchesKitchen = !kitchenFilter || kitchenStationForItem(item) === kitchenFilter;
+                const haystack = `${item.name} ${item.category}`.toLowerCase();
+                return matchesCategory && matchesKitchen && (!query || haystack.includes(query));
+            });
+        }
+
+        function updateMenuFilterCount(visibleCount, totalCount) {
+            const countEl = document.getElementById('menu-filter-count');
+            if (!countEl) return;
+            const query = (document.getElementById('menu-item-search')?.value || '').trim();
+            const categoryFilter = document.getElementById('menu-category-filter')?.value || '';
+            const kitchenFilter = document.getElementById('menu-kitchen-filter')?.value || '';
+            if (!query && !categoryFilter && !kitchenFilter) {
+                countEl.innerText = `Showing all ${totalCount} item${totalCount === 1 ? '' : 's'}`;
+                return;
+            }
+            countEl.innerText = `Showing ${visibleCount} of ${totalCount} item${totalCount === 1 ? '' : 's'}`;
+        }
+
+        function renderMenuTable(items) {
+            const tbody = document.getElementById('menu-management-table');
+            tbody.innerHTML = '';
+            if (menuItemsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">No menu items found</td></tr>`;
+                updateMenuFilterCount(0, 0);
+                return;
+            }
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">No items match your search</td></tr>`;
+                updateMenuFilterCount(0, menuItemsList.length);
+                return;
+            }
+            const categories = {};
+            items.forEach((item) => {
+                if (!categories[item.category]) categories[item.category] = [];
+                categories[item.category].push(item);
+            });
+            for (const [categoryName, categoryItems] of Object.entries(categories)) {
+                const headerRow = document.createElement('tr');
+                headerRow.className = 'bg-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider select-none';
+                headerRow.innerHTML = `<td colspan="8" class="py-2.5 px-4 font-black border-y border-slate-200/60">${escapeHtml(categoryName)} ${kitchenStationBadgeHtml(kitchenStationForItem(categoryItems[0]))}</td>`;
+                tbody.appendChild(headerRow);
+                categoryItems.forEach((item) => {
+                    const lowStock = item.stock !== null && item.stock <= 5;
+                    const stockLabel = item.stock !== null
+                        ? `<span class="${lowStock ? 'text-rose-600 font-bold' : ''}">${item.stock} units${lowStock ? ' ⚠' : ''}</span>`
+                        : 'Infinite';
+                    const modifiersLabel = (item.modifiers && item.modifiers.length)
+                        ? item.modifiers.map(m => `${escapeHtml(m.name)} (${formatKs(m.price)})`).join('<br>')
+                        : '<span class="text-slate-300">—</span>';
+                    const kitchenStation = kitchenStationForItem(item);
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition duration-150';
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(item.name)}</td>
+                        <td class="py-3 text-slate-400 font-bold text-xs uppercase">${escapeHtml(item.category)}</td>
+                        <td class="py-3">${kitchenStationBadgeHtml(kitchenStation)}</td>
+                        <td class="py-3 font-black text-amber-600">${formatKs(item.price)}</td>
+                        <td class="py-3 text-xs text-slate-600 leading-relaxed">${modifiersLabel}</td>
+                        <td class="py-3 font-mono text-xs text-slate-500">${stockLabel}</td>
+                        <td class="py-3">
+                            <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider ${item.is_available ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'}">
+                                ${item.is_available ? 'Active' : 'Sold Out'}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right pr-4">
+                            <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Edit</button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            updateMenuFilterCount(items.length, menuItemsList.length);
+        }
+
+        function applyMenuFilters() {
+            renderMenuTable(getFilteredMenuItems());
+        }
+
+        function clearMenuFilters() {
+            const searchInput = document.getElementById('menu-item-search');
+            const categorySelect = document.getElementById('menu-category-filter');
+            const kitchenSelect = document.getElementById('menu-kitchen-filter');
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = '';
+            if (kitchenSelect) kitchenSelect.value = '';
+            applyMenuFilters();
+        }
+
         async function fetchMenuTable() {
             try {
                 const response = await fetch(`${API_BASE}/menu/`);
                 menuItemsList = await response.json();
-                
-                const tbody = document.getElementById("menu-management-table");
-                tbody.innerHTML = "";
-
-                if (menuItemsList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400 italic">No menu items found</td></tr>`;
-                    return;
-                }
-
-                // 1. Group database items by their category names dynamically
-                const categories = {};
-                menuItemsList.forEach(item => {
-                    if (!categories[item.category]) {
-                        categories[item.category] = [];
-                    }
-                    categories[item.category].push(item);
-                });
-
-                // 2. Loop through each category to render separate grouped sections
-                for (const [categoryName, items] of Object.entries(categories)) {
-                    
-                    // Create a styled full-width category sub-header row
-                    const headerRow = document.createElement("tr");
-                    headerRow.className = "bg-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider select-none";
-                    headerRow.innerHTML = `
-                        <td colspan="6" class="py-2.5 px-4 font-black border-y border-slate-200/60">${categoryName}</td>
-                    `;
-                    tbody.appendChild(headerRow);
-
-                    // Add all items belonging strictly to this category group
-                    items.forEach(item => {
-                        const stockLabel = item.stock !== null ? `${item.stock} units` : "Infinite";
-                        const tr = document.createElement("tr");
-                        tr.className = "hover:bg-slate-50 transition duration-150";
-                        tr.innerHTML = `
-                            <td class="py-3 px-4 font-semibold text-slate-800">${item.name}</td>
-                            <td class="py-3 text-slate-400 font-bold text-xs uppercase">${item.category}</td>
-                            <td class="py-3 font-black text-amber-600">${item.price.toFixed(0)} Ks</td>
-                            <td class="py-3 font-mono text-xs text-slate-500">${stockLabel}</td>
-                            <td class="py-3">
-                                <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider ${item.is_available ? 'bg-green-100 text-green-800':'bg-rose-100 text-rose-800'}">
-                                    ${item.is_available ? 'Active' : 'Sold Out'}
-                                </span>
-                            </td>
-                            <td class="py-3 text-right pr-4">
-                                <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Edit</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                }
+                populateMenuCategoryFilter();
+                applyMenuFilters();
             } catch (err) {
-                console.error("Could not populate items.");
+                console.error('Could not populate items.');
             }
         }
 
 
          
+         function addModifierRow(containerId, mod = { name: '', price: '' }) {
+             const container = document.getElementById(containerId);
+             if (!container) return;
+             const row = document.createElement('div');
+             row.className = 'flex gap-2 items-center';
+             row.dataset.modifierRow = '1';
+             row.innerHTML = `
+                 <input type="text" data-mod-name placeholder="Name (e.g. Extra shot)" value="${escapeHtml(mod.name || '')}" class="flex-1 bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                 <input type="number" data-mod-price step="0.01" min="0" placeholder="Price" value="${mod.price !== undefined && mod.price !== null && mod.price !== '' ? mod.price : ''}" class="w-24 bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                 <button type="button" onclick="removeModifierRow(this)" class="text-slate-400 hover:text-rose-600 font-bold px-2" title="Remove">&times;</button>`;
+             container.appendChild(row);
+         }
+
+         function removeModifierRow(btn) {
+             const row = btn.closest('[data-modifier-row]');
+             const container = row?.parentElement;
+             if (!row || !container) return;
+             if (container.querySelectorAll('[data-modifier-row]').length <= 1) {
+                 row.querySelector('[data-mod-name]').value = '';
+                 row.querySelector('[data-mod-price]').value = '';
+                 return;
+             }
+             row.remove();
+         }
+
+         function collectModifiersFromForm(containerId) {
+             const container = document.getElementById(containerId);
+             if (!container) return [];
+             const mods = [];
+             container.querySelectorAll('[data-modifier-row]').forEach((row) => {
+                 const name = row.querySelector('[data-mod-name]')?.value?.trim();
+                 const price = parseFloat(row.querySelector('[data-mod-price]')?.value);
+                 if (name && !Number.isNaN(price) && price >= 0) {
+                     mods.push({ name, price });
+                 }
+             });
+             return mods;
+         }
+
+         function renderModifierRows(containerId, modifiers = []) {
+             const container = document.getElementById(containerId);
+             if (!container) return;
+             container.innerHTML = '';
+             const list = modifiers.length ? modifiers : [{ name: '', price: '' }];
+             list.forEach((mod) => addModifierRow(containerId, mod));
+         }
+
          function toggleAddModal(show) {
              const modal = document.getElementById('add-item-modal');
-             if (show) modal.classList.remove('hidden');
-             else modal.classList.add('hidden');
+             if (show) {
+                 renderModifierRows('add-modifiers-list', []);
+                 setKitchenStation('add', 'food');
+                 modal.classList.remove('hidden');
+             } else {
+                 modal.classList.add('hidden');
+             }
          }
          
          async function submitAddItem(event) {
@@ -974,6 +1878,7 @@
          
              const name = document.getElementById('add-item-name').value;
              const category = document.getElementById('add-item-category').value;
+             const kitchen_station = document.getElementById('add-item-kitchen').value || 'food';
              const price = parseFloat(document.getElementById('add-item-price').value);
              const description = document.getElementById('add-item-desc').value;
              const rawStock = document.getElementById('add-item-stock').value;
@@ -981,13 +1886,14 @@
          
              const payload = { 
                  name, 
-                 category, 
+                 category,
+                 kitchen_station,
                  price, 
                  description, 
                  is_available: true, 
                  stock, 
                  image_url: uploadedImageUrl,
-                 modifiers: [] 
+                 modifiers: collectModifiersFromForm('add-modifiers-list')
              };
          
              try {
@@ -1028,7 +1934,9 @@
              document.getElementById('edit-item-stock').value = item.stock !== null ? item.stock : '';
              document.getElementById('edit-item-available').checked = item.is_available;
              document.getElementById('edit-item-image').value = "";
-         
+             renderModifierRows('edit-modifiers-list', item.modifiers || []);
+             setKitchenStation('edit', kitchenStationForItem(item));
+
              toggleEditModal(true);
          }
          
@@ -1039,13 +1947,14 @@
              
              const name = document.getElementById('edit-item-name').value;
              const category = document.getElementById('edit-item-category').value;
+             const kitchen_station = document.getElementById('edit-item-kitchen').value || 'food';
              const price = parseFloat(document.getElementById('edit-item-price').value);
              const description = document.getElementById('edit-item-desc').value;
              const rawStock = document.getElementById('edit-item-stock').value;
              const stock = rawStock !== "" ? parseInt(rawStock) : null;
              const is_available = document.getElementById('edit-item-available').checked;
          
-             const payload = { name, category, price, description, is_available, stock };
+             const payload = { name, category, kitchen_station, price, description, is_available, stock, modifiers: collectModifiersFromForm('edit-modifiers-list') };
              if (uploadedImageUrl) {
                  payload.image_url = uploadedImageUrl;
              }
@@ -1097,9 +2006,46 @@
          }
          }
          
+         async function loadOrderFilterTables() {
+             const select = document.getElementById('orders-filter-table');
+             if (!select || select.dataset.loaded === '1') return;
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/floor`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) return;
+                 const tables = await response.json();
+                 const current = select.value;
+                 select.innerHTML = '<option value="">All tables</option>' +
+                     tables.map(t => `<option value="${t.table_id}">Table ${escapeHtml(t.table_number)}</option>`).join('');
+                 if (current) select.value = current;
+                 select.dataset.loaded = '1';
+             } catch (err) {
+                 console.error('Could not load tables for order filter.');
+             }
+         }
+
+         function clearOrderFilters() {
+             const todayLocal = new Date().toLocaleDateString('en-CA');
+             document.getElementById('orders-filter-date').value = todayLocal;
+             document.getElementById('orders-filter-status').value = '';
+             document.getElementById('orders-filter-table').value = '';
+             fetchOrdersLog();
+         }
+
          async function fetchOrdersLog() {
              try {
-                 const response = await fetch(`${API_BASE}/manager/orders`, {
+                 const params = new URLSearchParams();
+                 const date = document.getElementById('orders-filter-date')?.value;
+                 const status = document.getElementById('orders-filter-status')?.value;
+                 const tableId = document.getElementById('orders-filter-table')?.value;
+                 if (date) params.set('date', date);
+                 if (status) params.set('status', status);
+                 if (tableId) params.set('table_id', tableId);
+
+                 const query = params.toString();
+                 const response = await fetch(`${API_BASE}/manager/orders${query ? `?${query}` : ''}`, {
                      headers: getAuthHeaders()
                  });
          
@@ -1107,15 +2053,28 @@
          
                  const orders = await response.json();
                  const container = document.getElementById("orders-record-log");
+                 const countEl = document.getElementById('orders-filter-count');
                  container.innerHTML = "";
+
+                 if (countEl) {
+                     countEl.innerText = orders.length === 0
+                         ? 'No orders match these filters'
+                         : `Showing ${orders.length} order${orders.length === 1 ? '' : 's'}`;
+                 }
+
+                 if (orders.length === 0) {
+                     container.innerHTML = `<div class="text-center text-slate-400 italic py-8 border border-dashed border-slate-200 rounded-xl">No orders found</div>`;
+                     return;
+                 }
          
                  orders.forEach(order => {
                      const card = document.createElement("div");
                      card.className = "bg-white p-4 border border-slate-100 rounded-xl shadow-sm flex justify-between items-center";
+                     const created = order.created_at ? new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                      card.innerHTML = `
                          <div>
                              <p class="font-bold text-slate-800">Order ID #${order.id} - Table ${order.table.label}</p>
-                             <p class="text-xs text-slate-400">Total: ${order.total_price.toFixed(2)} Ks| Status: <span class="capitalize font-semibold text-amber-600">${order.status}</span></p>
+                             <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}Total: ${formatKs(order.total_price)} · Status: <span class="capitalize font-semibold text-amber-600">${order.status}</span></p>
                          </div>
                          <button onclick="loadReceipt(${order.id})" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Receipt</button>
                      `;
@@ -1136,49 +2095,23 @@
          
                  const receipt = await response.json();
                  BluetoothPrinter.setCurrentReceipt(receipt);
-                 const receiptContainer = document.getElementById("receipt-payload");
-                 const itemsStr = receipt.items.map(i => `
-                     <div class="flex justify-between text-xs border-b border-dashed pb-1">
-                         <span>${i.name} (x${i.quantity})</span>
-                         <span>${i.subtotal.toFixed(2)} Ks</span>
-                     </div>
-                 `).join("");
-         
-                 receiptContainer.innerHTML = `
-                     <div class="text-center border-b pb-3 border-dashed">
-                         <h2 class="text-lg font-bold">27 Cafe & Bar</h2>
-                         <p class="text-[10px] text-slate-400">Transaction ID: ${receipt.voucher_id}</p>
-                         <p class="text-[10px] text-slate-400">${receipt.timestamp}</p>
-                     </div>
-                     <div class="text-xs">
-                         <p><b>Table:</b> ${receipt.table_number}</p>
-                     </div>
-                     <div class="space-y-1 my-3">
-                         ${itemsStr}
-                     </div>
-                     <div class="space-y-1 pt-3 border-t border-dashed text-xs text-slate-600">
-                         <div class="flex justify-between">
-                             <span>Subtotal</span>
-                             <span>${receipt.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                         <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
-                             <span>Grand Total</span>
-                             <span>${receipt.subtotal.toFixed(2)} Ks</span>
-                         </div>
-                     </div>
-                 `;
-         
-                 document.getElementById('settle-bill-btn').classList.add('hidden');
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(receipt, {
+                     title: receipt.voucher_id || 'ORDER RECEIPT'
+                 });
+                 configureReceiptModalActions('historical');
                  toggleReceiptModal(true);
              } catch (err) {
-                 alert("Receipt compilation failed.");
+                 showToast('Receipt compilation failed.', 'error');
              }
          }
          
          function toggleReceiptModal(show) {
              const modal = document.getElementById('receipt-modal');
              if (show) modal.classList.remove('hidden');
-             else modal.classList.add('hidden');
+             else {
+                 modal.classList.add('hidden');
+                 configureReceiptModalActions('historical');
+             }
          }
 
          function getBluetoothStatusEl() {
@@ -1206,6 +2139,195 @@
          }
          
          setupBluetoothLifecycleHooks();
+
+         async function loadCounterMenu() {
+             try {
+                 const response = await fetch(`${API_BASE}/menu/`);
+                 if (!response.ok) return;
+                 counterMenuItems = await response.json();
+                 renderCounterMenu();
+             } catch (err) {
+                 console.error('Could not load menu for counter.');
+             }
+         }
+
+         function renderCounterMenu() {
+             const grid = document.getElementById('counter-menu-grid');
+             if (!grid) return;
+             const query = (document.getElementById('counter-menu-search')?.value || '').trim().toLowerCase();
+             const items = counterMenuItems.filter(item =>
+                 !query || item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query)
+             );
+             if (items.length === 0) {
+                 grid.innerHTML = `<p class="text-center text-slate-400 italic text-sm py-8">No items available</p>`;
+                 return;
+             }
+
+             const categories = {};
+             const categoryOrder = [];
+             items.forEach((item) => {
+                 if (!categories[item.category]) {
+                     categories[item.category] = [];
+                     categoryOrder.push(item.category);
+                 }
+                 categories[item.category].push(item);
+             });
+
+             grid.innerHTML = categoryOrder.map((categoryName) => {
+                 const categoryItems = categories[categoryName];
+                 const cards = categoryItems.map(item => `
+                     <button type="button" onclick="onCounterItemClick(${item.id})"
+                         class="text-left bg-slate-50 hover:bg-violet-50 border border-slate-100 hover:border-violet-200 rounded-xl p-3 transition active:scale-[0.98]">
+                         <p class="text-sm font-bold text-slate-800 leading-tight line-clamp-2">${escapeHtml(item.name)}</p>
+                         <p class="text-sm font-black text-violet-600 mt-2">${formatKs(item.price)}</p>
+                     </button>`).join('');
+                 return `
+                     <section>
+                         <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 border-b border-slate-100 pb-1.5">${escapeHtml(categoryName)}</h3>
+                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${cards}</div>
+                     </section>`;
+             }).join('');
+         }
+
+         function onCounterItemClick(itemId) {
+             const item = counterMenuItems.find(i => i.id === itemId);
+             if (!item) return;
+             if (item.modifiers && item.modifiers.length > 0) {
+                 counterPendingItem = item;
+                 document.getElementById('counter-modifier-title').innerText = item.name;
+                 document.getElementById('counter-modifier-options').innerHTML = item.modifiers.map(mod => `
+                     <label class="flex items-center justify-between gap-2 bg-slate-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-violet-50">
+                         <span class="flex items-center gap-2 text-sm font-medium text-slate-700">
+                             <input type="checkbox" class="counter-mod-check rounded text-violet-600" value="${mod.id}">
+                             ${escapeHtml(mod.name)}
+                         </span>
+                         <span class="text-xs font-bold text-violet-600">+${formatKs(mod.price)}</span>
+                     </label>`).join('');
+                 document.getElementById('counter-modifier-modal').classList.remove('hidden');
+             } else {
+                 addToCounterCart(item, []);
+             }
+         }
+
+         function closeCounterModifierModal() {
+             document.getElementById('counter-modifier-modal').classList.add('hidden');
+             counterPendingItem = null;
+         }
+
+         function confirmCounterModifierAdd() {
+             if (!counterPendingItem) return;
+             const modIds = Array.from(document.querySelectorAll('.counter-mod-check:checked')).map(el => parseInt(el.value, 10));
+             addToCounterCart(counterPendingItem, modIds);
+             closeCounterModifierModal();
+         }
+
+         function counterLineKey(menuItemId, modifierIds) {
+             return `${menuItemId}:${[...modifierIds].sort((a, b) => a - b).join(',')}`;
+         }
+
+         function addToCounterCart(item, modifierIds) {
+             const mods = (item.modifiers || []).filter(m => modifierIds.includes(m.id));
+             const modExtra = mods.reduce((sum, m) => sum + m.price, 0);
+             const unitPrice = item.price + modExtra;
+             const key = counterLineKey(item.id, modifierIds);
+             const existing = counterCart.find(line => line.key === key);
+             if (existing) {
+                 existing.quantity += 1;
+             } else {
+                 counterCart.push({
+                     key,
+                     menu_item_id: item.id,
+                     name: item.name,
+                     quantity: 1,
+                     unit_price: unitPrice,
+                     modifier_ids: modifierIds,
+                     modifier_names: mods.map(m => m.name),
+                 });
+             }
+             renderCounterCart();
+         }
+
+         function changeCounterQty(key, delta) {
+             const line = counterCart.find(l => l.key === key);
+             if (!line) return;
+             line.quantity += delta;
+             if (line.quantity <= 0) {
+                 counterCart = counterCart.filter(l => l.key !== key);
+             }
+             renderCounterCart();
+         }
+
+         function renderCounterCart() {
+             const container = document.getElementById('counter-cart-lines');
+             const checkoutBtn = document.getElementById('counter-checkout-btn');
+             if (!container) return;
+
+             if (counterCart.length === 0) {
+                 container.innerHTML = `<p class="text-slate-400 italic text-xs">Tap menu items to add</p>`;
+                 document.getElementById('counter-cart-total').innerText = formatKs(0);
+                 if (checkoutBtn) checkoutBtn.disabled = true;
+                 return;
+             }
+
+             container.innerHTML = counterCart.map(line => `
+                 <div class="bg-white border border-slate-100 rounded-lg p-2.5">
+                     <div class="flex justify-between gap-2">
+                         <div class="min-w-0">
+                             <p class="font-semibold text-slate-800 text-sm truncate">${escapeHtml(line.name)}</p>
+                             ${line.modifier_names.length ? `<p class="text-[10px] text-slate-400 truncate">+ ${line.modifier_names.map(escapeHtml).join(', ')}</p>` : ''}
+                             <p class="text-xs text-violet-600 font-bold mt-0.5">${formatKs(line.unit_price)} each</p>
+                         </div>
+                         <div class="flex items-center gap-1 shrink-0">
+                             <button type="button" onclick="changeCounterQty('${line.key}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">−</button>
+                             <span class="w-6 text-center text-sm font-bold">${line.quantity}</span>
+                             <button type="button" onclick="changeCounterQty('${line.key}', 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">+</button>
+                         </div>
+                     </div>
+                 </div>`).join('');
+
+             const total = counterCart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
+             document.getElementById('counter-cart-total').innerText = formatKs(total);
+             if (checkoutBtn) checkoutBtn.disabled = false;
+         }
+
+         function clearCounterCart() {
+             counterCart = [];
+             renderCounterCart();
+         }
+
+         async function submitCounterSale() {
+             if (!counterCart.length) return;
+             const payload = {
+                 items: counterCart.map(line => ({
+                     menu_item_id: line.menu_item_id,
+                     quantity: line.quantity,
+                     modifier_ids: line.modifier_ids,
+                 })),
+             };
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/counter/sale`, {
+                     method: 'POST',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify(payload),
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not complete sale.', 'error');
+                     return;
+                 }
+
+                 const order = await response.json();
+                 clearCounterCart();
+                 loadCounterMenu();
+                 fetchAnalytics();
+                 showToast(`Counter sale #${order.id} completed.`, 'success');
+                 loadReceipt(order.id);
+             } catch (err) {
+                 showToast('Network error completing sale.', 'error');
+             }
+         }
 
          // Initialize session protection on page load
          checkAuthState();

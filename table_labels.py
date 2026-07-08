@@ -1,4 +1,4 @@
-"""Table display labels for 27 Cafe & Bar dining areas."""
+"""Table display labels for BLOOM CAFÉ dining areas."""
 
 # Section A (7 tables) + Section B (6 tables) = 13 tables
 TABLE_LABELS = [
@@ -6,13 +6,23 @@ TABLE_LABELS = [
     "D2", "V-1", "V-2", "Order", "Main", "Extra",
 ]
 
-RESTAURANT_NAME = "27 Cafe & Bar"
+RESTAURANT_NAME = "BLOOM CAFÉ"
+
+# Walk-in / counter sales (not a physical dining table)
+COUNTER_TABLE_NUMBER = 0
+COUNTER_TABLE_LABEL = "Counter"
 
 
 def label_for_number(n: int) -> str:
+    if n == COUNTER_TABLE_NUMBER:
+        return COUNTER_TABLE_LABEL
     if 1 <= n <= len(TABLE_LABELS):
         return TABLE_LABELS[n - 1]
     return f"T{n}"
+
+
+def is_counter_table(table) -> bool:
+    return table is not None and table.number == COUNTER_TABLE_NUMBER
 
 
 def format_table_display(label: str) -> str:
