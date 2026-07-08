@@ -1,0 +1,25 @@
+{
+  "name": "BLOOM CAFÉ Finance",
+  "short_name": "Finance",
+  "description": "Owner finance — income and expenses",
+  "start_url": "/finance",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#4338ca",
+  "icons": [
+    {
+      "src": "/static/bloom-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/bloom-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

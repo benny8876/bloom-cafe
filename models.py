@@ -5,19 +5,20 @@ from datetime import datetime, timezone, timedelta
 from database import Base
 
 
-# --- MYANMAR (YANGON) TIMEZONE OFFSET CONFIGURATION ---
+
+
 MYANMAR_TZ = timezone(timedelta(hours=6, minutes=30))
 
 def get_yangon_now():
-    # Returns the exact current time in Myanmar (UTC+6:30) as a database-friendly naive object
+    
     return datetime.now(MYANMAR_TZ).replace(tzinfo=None)
 
 class OrderStatus(str, enum.Enum):
-    AWAITING_PAYMENT = "awaiting_payment" # Payment Hold
-    PENDING = "pending"                   # Paid & Queued
-    PREPARING = "preparing"               # In Kitchen
-    SERVED = "served"                     # Served to Table
-    COMPLETED = "completed"               # Cleared and settled
+    AWAITING_PAYMENT = "awaiting_payment" 
+    PENDING = "pending"                  
+    PREPARING = "preparing"               
+    SERVED = "served"                     
+    COMPLETED = "completed"               
     CANCELLED = "cancelled"
 
 class RestaurantTable(Base):
@@ -73,7 +74,7 @@ class MenuItem(Base):
     stock = Column(Integer, nullable=True)
     order_index = Column(Integer, default=0 , index=True)
     
-    # NEW: Stores the server path of your uploaded menu item photos
+    
     image_url = Column(String, nullable=True) 
 
     modifiers = relationship("MenuItemModifier", back_populates="menu_item", cascade="all, delete-orphan")
@@ -103,7 +104,7 @@ class Order(Base):
     total_price = Column(Float, default=0.0)
     created_at = Column(DateTime, default=get_yangon_now)
     
-    # Tracks when the grouped table session was formally closed and paid
+    
     settled_at = Column(DateTime, nullable=True)
     payment_method = Column(String, nullable=True)
 

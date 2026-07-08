@@ -24,17 +24,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# NEW: Mount the static directory to serve static media files dynamically
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# Routing Modules
+
 app.include_router(menu.router, prefix="/api/v1")
 app.include_router(kitchen.router, prefix="/api/v1")
 app.include_router(manager.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")
 
-# Static Frontend Routes
+
 @app.get("/menu")
 def serve_menu():
     return FileResponse(os.path.join("static", "menu.html"))
@@ -285,7 +285,7 @@ def seed_initial_data():
 
     ensure_default_accounts(db)
 
-    # Seed tables A1–A7 and B1–B6
+   
     if not db.query(models.RestaurantTable).first():
         tables = [
             models.RestaurantTable(number=i + 1, label=label)
@@ -296,9 +296,9 @@ def seed_initial_data():
 
     ensure_counter_table(db)
 
-    # Seed default menu items
+
     if not db.query(models.MenuItem).first():
-        # ၁။ Item တွေကို အရင်ဆောက်ပါ
+ 
         burger = models.MenuItem(
             name="Cheeseburger", price=8.99, category="Main", kitchen_station="food", stock=25
         )
@@ -313,23 +313,7 @@ def seed_initial_data():
         )
 
         db.add_all([burger, fries, soda, coffee])
-        db.flush()  # ID တွေ ရဖို့အတွက် flush ခံပေးပါ
-
-        # ၂။ အခုမှ coffee.id ကို သုံးလို့ရပါပြီ
-        #mod_less_sugar = models.MenuItemModifier(
-            #menu_item_id=coffee.id, name="Less Sugar", price=0.0
-        #)
-        #mod_more_sugar = models.MenuItemModifier(
-            #menu_item_id=coffee.id, name="More Sugar", price=0.0
-        #)
-        #mod_less_ice = models.MenuItemModifier(
-            #menu_item_id=coffee.id, name="Less Ice", price=0.0
-        #)
-        #mod_more_ice = models.MenuItemModifier(
-            #menu_item_id=coffee.id, name="More Ice", price=0.0
-        #)
-
-        #db.add_all([mod_less_sugar, mod_more_sugar, mod_less_ice, mod_more_ice])
+        db.flush()  
         db.commit()
 
 
@@ -342,6 +326,5 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
-
-    # Coolify ရဲ့ internal port ဖြစ်တဲ့ 3000 ပေါ်မှာ မောင်းပေးလိုက်တာပါ
+    
     uvicorn.run("main:app", host="0.0.0.0", port=3000)
