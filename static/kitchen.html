@@ -210,7 +210,7 @@
         let kitchenToken = sessionStorage.getItem('kitchen_token');
         let audioCtx = null;
         let audioUnlocked = sessionStorage.getItem('kitchen_audio_unlocked') === '1';
-        const ALERT_GAIN = 3.2;
+        const ALERT_GAIN = 4.8;
         let masterGain = null;
 
         function getMasterGain(ctx) {
@@ -304,16 +304,23 @@
         function playKitchenAlertSoundNow(ctx, pattern = 'order') {
             const t = ctx.currentTime;
             if (pattern === 'service') {
-                playTone(ctx, 880, t, 0.22, 1.0);
-                playTone(ctx, 1100, t + 0.2, 0.22, 1.0);
+                playCafeChime(ctx, 587, t, 0.45, 0.9);
+                playCafeChime(ctx, 784, t + 0.28, 0.5, 0.95);
                 return;
             }
 
-            playTone(ctx, 1046, t, 0.14, 1.0);
-            playTone(ctx, 1318, t + 0.12, 0.14, 1.0);
-            playTone(ctx, 1568, t + 0.24, 0.2, 1.0);
-            playTone(ctx, 1046, t + 0.52, 0.14, 1.0);
-            playTone(ctx, 1568, t + 0.64, 0.18, 1.0);
+            // Warm café chime — G major arpeggio ×2, ~3.5s, loud but gentle
+            const phrase = [
+                { freq: 392, at: 0, dur: 0.55, peak: 1.0 },
+                { freq: 494, at: 0.32, dur: 0.55, peak: 0.95 },
+                { freq: 587, at: 0.64, dur: 0.55, peak: 0.95 },
+                { freq: 784, at: 0.96, dur: 0.85, peak: 1.0 },
+            ];
+            const repeatAt = 1.95;
+            phrase.forEach((note) => {
+                playCafeChime(ctx, note.freq, t + note.at, note.dur, note.peak);
+                playCafeChime(ctx, note.freq, t + repeatAt + note.at, note.dur, note.peak * 0.92);
+            });
         }
 
         function playKitchenAlertSound(pattern = 'order') {
@@ -434,18 +441,31 @@
             }
         });
 
-        function playTone(ctx, frequency, startTime, duration, peak = 1.0) {
+        function playCafeChime(ctx, frequency, startTime, duration, peak = 1.0) {
             const oscillator = ctx.createOscillator();
             const gain = ctx.createGain();
-            oscillator.type = 'square';
+            oscillator.type = 'triangle';
             oscillator.frequency.setValueAtTime(frequency, startTime);
             gain.gain.setValueAtTime(0.0001, startTime);
-            gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.008);
+            gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(peak * 0.85, startTime + duration * 0.45);
             gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
             oscillator.connect(gain);
             gain.connect(getMasterGain(ctx));
             oscillator.start(startTime);
-            oscillator.stop(startTime + duration);
+            oscillator.stop(startTime + duration + 0.05);
+
+            const shimmer = ctx.createOscillator();
+            const shimmerGain = ctx.createGain();
+            shimmer.type = 'sine';
+            shimmer.frequency.setValueAtTime(frequency * 2, startTime);
+            shimmerGain.gain.setValueAtTime(0.0001, startTime);
+            shimmerGain.gain.exponentialRampToValueAtTime(peak * 0.2, startTime + 0.02);
+            shimmerGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.55);
+            shimmer.connect(shimmerGain);
+            shimmerGain.connect(getMasterGain(ctx));
+            shimmer.start(startTime);
+            shimmer.stop(startTime + duration * 0.6);
         }
 
         function flashNewOrderScreen() {
