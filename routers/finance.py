@@ -20,6 +20,7 @@ from services.analytics import (
     month_bounds,
     completed_orders_for_range,
     resolve_range_bounds,
+    add_settled_session_fees,
 )
 from services.pdf_fonts import bilingual_category_paragraph, mixed_text_paragraph
 
@@ -78,9 +79,9 @@ def _build_finance_summary(
         .all()
     )
 
-    income_total = sum(order.total_price for order in completed_orders)
+    income_total_orders = sum(order.total_price for order in completed_orders)
     outcome_total = sum(expense.amount for expense in period_expenses)
-    monthly_income = sum(order.total_price for order in monthly_orders)
+    monthly_income_orders = sum(order.total_price for order in monthly_orders)
     monthly_outcome = sum(expense.amount for expense in month_expenses)
 
     table_income: dict = {}
@@ -102,6 +103,11 @@ def _build_finance_summary(
         settled = order.settled_at or order.created_at
         if row["last_settled_at"] is None or settled > row["last_settled_at"]:
             row["last_settled_at"] = settled
+
+    session_fees_total = add_settled_session_fees(db, completed_orders, table_income)
+    monthly_session_fees = add_settled_session_fees(db, monthly_orders)
+    income_total = income_total_orders + session_fees_total
+    monthly_income = monthly_income_orders + monthly_session_fees
 
     income_entries = [
         schemas.FinanceTableIncomeEntry(**row)

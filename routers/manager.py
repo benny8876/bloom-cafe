@@ -22,6 +22,7 @@ from services.analytics import (
     bill_amounts,
     income_timestamp,
     resolve_range_bounds,
+    add_settled_session_fees,
     MYANMAR_TZ,
 )
 from services.orders import create_order_from_items
@@ -1082,16 +1083,20 @@ def get_daily_analytics(
     completed_orders = completed_orders_for_range(db, day_start, day_end)
     monthly_orders = completed_orders_for_range(db, month_start, month_end)
 
-    total_revenue = sum(order.total_price for order in completed_orders)
-    total_monthly_revenue = sum(order.total_price for order in monthly_orders)
+    revenue_orders = sum(order.total_price for order in completed_orders)
+    revenue_monthly_orders = sum(order.total_price for order in monthly_orders)
+    session_fees_day = add_settled_session_fees(db, completed_orders)
+    session_fees_month = add_settled_session_fees(db, monthly_orders)
+    total_revenue = revenue_orders + session_fees_day
+    total_monthly_revenue = revenue_monthly_orders + session_fees_month
 
     popular_items = top_selling_items_for_range(db, day_start, day_end, limit=5)
     top_selling = [{"name": item[0], "sold_qty": item[1]} for item in popular_items]
 
     return schemas.DailyAnalytics(
         date=target_date.strftime("%Y-%m-%d"),
-        total_revenue=total_revenue,
-        total_monthly_revenue=total_monthly_revenue,
+        total_revenue=round(total_revenue, 2),
+        total_monthly_revenue=round(total_monthly_revenue, 2),
         total_orders_completed=len(completed_orders),
         top_selling_items=top_selling,
     )
@@ -1112,7 +1117,9 @@ def export_daily_report(
 
     range_key = (range or "day").lower()
     period_orders = completed_orders_for_range(db, range_start, range_end)
-    total_revenue = sum(order.total_price for order in period_orders)
+    revenue_orders = sum(order.total_price for order in period_orders)
+    session_fees = add_settled_session_fees(db, period_orders)
+    total_revenue = revenue_orders + session_fees
     total_transactions = len(period_orders)
     show_date_column = range_key != "day"
 

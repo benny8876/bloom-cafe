@@ -133,9 +133,12 @@ def migrate_vip_table_settings():
         return
 
     columns = {col["name"] for col in inspector.get_columns("tables")}
+    bool_default = "0" if engine.dialect.name == "sqlite" else "FALSE"
     alters = []
     if "is_vip_room" not in columns:
-        alters.append("ALTER TABLE tables ADD COLUMN is_vip_room BOOLEAN NOT NULL DEFAULT 0")
+        alters.append(
+            f"ALTER TABLE tables ADD COLUMN is_vip_room BOOLEAN NOT NULL DEFAULT {bool_default}"
+        )
     if "hourly_rate" not in columns:
         alters.append("ALTER TABLE tables ADD COLUMN hourly_rate FLOAT NOT NULL DEFAULT 0")
     if "minimum_minutes" not in columns:
@@ -150,6 +153,34 @@ def migrate_vip_table_settings():
 
     if "table_sessions" not in inspector.get_table_names():
         models.TableSession.__table__.create(bind=engine)
+
+
+LEGACY_MENU_PRICES_KS = {
+    "Cheeseburger": (8.99, 4500),
+    "French Fries": (3.49, 2500),
+    "Iced Soda": (2.49, 1500),
+    "Iced Coffee": (3.0, 2000),
+}
+
+
+def migrate_legacy_menu_prices():
+    """Convert USD seed prices to Myanmar Kyat for legacy installs."""
+    db = SessionLocal()
+    try:
+        updated = False
+        for name, (legacy_price, ks_price) in LEGACY_MENU_PRICES_KS.items():
+            item = (
+                db.query(models.MenuItem)
+                .filter(models.MenuItem.name == name, models.MenuItem.price == legacy_price)
+                .first()
+            )
+            if item:
+                item.price = ks_price
+                updated = True
+        if updated:
+            db.commit()
+    finally:
+        db.close()
 
 
 def migrate_order_status_values():
@@ -279,6 +310,7 @@ def seed_initial_data():
     migrate_orders_payment_method()
     migrate_menu_kitchen_station()
     migrate_vip_table_settings()
+    migrate_legacy_menu_prices()
     migrate_order_status_values()
     migrate_auth_tables()
     db = SessionLocal()
@@ -300,16 +332,16 @@ def seed_initial_data():
     if not db.query(models.MenuItem).first():
  
         burger = models.MenuItem(
-            name="Cheeseburger", price=8.99, category="Main", kitchen_station="food", stock=25
+            name="Cheeseburger", price=4500, category="Main", kitchen_station="food", stock=25
         )
         fries = models.MenuItem(
-            name="French Fries", price=3.49, category="Side", kitchen_station="food", stock=50
+            name="French Fries", price=2500, category="Side", kitchen_station="food", stock=50
         )
         soda = models.MenuItem(
-            name="Iced Soda", price=2.49, category="Drink", kitchen_station="coffee", stock=10
+            name="Iced Soda", price=1500, category="Drink", kitchen_station="coffee", stock=10
         )
         coffee = models.MenuItem(
-            name="Iced Coffee", price=3.00, category="Drink", kitchen_station="coffee", stock=20
+            name="Iced Coffee", price=2000, category="Drink", kitchen_station="coffee", stock=20
         )
 
         db.add_all([burger, fries, soda, coffee])
@@ -326,5 +358,5 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run("main:app", host="0.0.0.0", port=3000)

@@ -121,6 +121,32 @@ def income_timestamp(order: models.Order) -> datetime:
     return order.settled_at or order.created_at
 
 
+def add_settled_session_fees(
+    db: Session,
+    orders: List[models.Order],
+    table_totals: Optional[dict] = None,
+) -> float:
+    """Add VIP room fees once per settlement batch; optionally bump per-table totals."""
+    from services.table_sessions import get_settled_session_at
+
+    session_fee_keys: set = set()
+    total_fees = 0.0
+    for order in orders:
+        if not order.settled_at:
+            continue
+        fee_key = (order.table_id, order.settled_at.isoformat())
+        if fee_key in session_fee_keys:
+            continue
+        session_fee_keys.add(fee_key)
+        table_session = get_settled_session_at(db, order.table_id, order.settled_at)
+        if table_session and (table_session.session_fee_charged or 0) > 0:
+            fee = float(table_session.session_fee_charged)
+            total_fees += fee
+            if table_totals is not None and order.table_id in table_totals:
+                table_totals[order.table_id]["total_amount"] += fee
+    return total_fees
+
+
 def bill_amounts(subtotal: float) -> dict:
     """Prices are tax-inclusive; grand total matches menu prices."""
     return {

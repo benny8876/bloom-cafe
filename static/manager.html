@@ -82,7 +82,73 @@
          html.dark .nav-tab-active { background: #334155; color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
          html.dark .panel-tab-inactive { background: #334155; color: #cbd5e1; }
          html.dark .panel-tab-inactive:hover { background: #475569; }
-         html.dark .panel-tab-active { background: #f8fafc; color: #0f172a; }
+         html.dark .panel-tab-active {
+            background: #64748b !important;
+            color: #f8fafc !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+         }
+         html.dark .text-emerald-600 { color: #34d399 !important; }
+         html.dark .text-rose-600 { color: #fb7185 !important; }
+         html.dark .text-indigo-600 { color: #818cf8 !important; }
+         html.dark .text-violet-700 { color: #a78bfa !important; }
+         html.dark #pwa-install-header-btn { border-color: #475569 !important; color: #a78bfa !important; }
+         html.dark #pwa-install-header-btn:hover { background: rgba(139, 92, 246, 0.15) !important; }
+         html.dark a.hover\:bg-indigo-50:hover { background: rgba(99, 102, 241, 0.15) !important; }
+         html.dark button.hover\:bg-rose-50:hover { background: rgba(190, 18, 60, 0.15) !important; }
+         .mgr-date-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+         }
+         html.dark .mgr-date-pill {
+            background: #334155 !important;
+            border-color: #475569 !important;
+         }
+         html.dark .mgr-date-pill input[type="date"] {
+            color: #f1f5f9 !important;
+            background: transparent !important;
+         }
+         .mgr-export-btn {
+            padding: 0.5rem 0.75rem;
+            background: #fff;
+            color: #334155;
+            border-left: 1px solid #e2e8f0;
+            transition: background 0.15s;
+         }
+         .mgr-export-btn:hover { background: #f8fafc; }
+         html.dark .mgr-export-btn {
+            background: #334155 !important;
+            color: #e2e8f0 !important;
+            border-color: #475569 !important;
+         }
+         html.dark .mgr-export-btn:hover { background: #475569 !important; }
+         .mgr-card {
+            background: #fff;
+            border: 1px solid #f1f5f9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+         }
+         html.dark .mgr-card {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+         }
+         .mgr-table-wrap { border: 1px solid #f1f5f9; border-radius: 0.5rem; overflow: auto; }
+         html.dark .mgr-table-wrap { border-color: #334155 !important; }
+         html.dark .mgr-table-wrap thead tr { background: #334155 !important; border-color: #475569 !important; }
+         html.dark .mgr-table-wrap thead th { background: #334155 !important; color: #94a3b8 !important; }
+         html.dark .mgr-table-row:hover { background: rgba(51, 65, 85, 0.55) !important; }
+         html.dark .bg-green-100 { background-color: rgba(6, 78, 59, 0.35) !important; }
+         html.dark .text-green-800 { color: #6ee7b7 !important; }
+         html.dark .bg-rose-100 { background-color: rgba(190, 18, 60, 0.2) !important; }
+         html.dark .text-rose-800 { color: #fda4af !important; }
+         html.dark .bg-amber-100 { background-color: rgba(180, 83, 9, 0.25) !important; }
+         html.dark .text-amber-800 { color: #fcd34d !important; }
+         html.dark .hover\:bg-amber-200:hover { background-color: rgba(180, 83, 9, 0.4) !important; }
          html.dark input:not([type="checkbox"]):not([type="radio"]), html.dark select, html.dark textarea {
             background-color: #334155 !important; color: #f1f5f9 !important; border-color: #475569 !important;
          }
@@ -90,6 +156,30 @@
          html.dark .shadow-sm, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
          html.dark tr.bg-slate-100, html.dark .bg-slate-100.font-bold { background-color: #334155 !important; }
          html.dark .border-dashed { border-color: #475569 !important; }
+         .fin-table-wrap { border: 1px solid #f1f5f9; border-radius: 0.75rem; overflow-x: auto; }
+         .fin-table thead tr { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+         .fin-table thead th { background: #f8fafc; color: #64748b; font-weight: 700; }
+         .fin-table tbody tr { border-bottom: 1px solid #f1f5f9; }
+         .fin-table tbody tr:last-child { border-bottom: none; }
+         .fin-table-row:hover { background: rgba(248, 250, 252, 0.85); }
+         .fin-receipt-btn {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            transition: background 0.15s, color 0.15s;
+         }
+         .fin-receipt-btn:hover { background: #f8fafc; }
+         html.dark .fin-table-wrap { border-color: #334155 !important; }
+         html.dark .fin-table thead tr { background: #334155 !important; border-color: #475569 !important; }
+         html.dark .fin-table thead th { background: #334155 !important; color: #94a3b8 !important; }
+         html.dark .fin-table tbody tr { border-color: #334155 !important; }
+         html.dark .fin-table-row:hover { background: rgba(51, 65, 85, 0.55) !important; }
+         html.dark .fin-receipt-btn { border-color: #475569 !important; color: #e2e8f0 !important; }
+         html.dark .fin-receipt-btn:hover { background: #334155 !important; }
+         html.dark .text-amber-600 { color: #fbbf24 !important; }
          html.dark .toast-info { background: #1e293b; color: #e2e8f0; border-color: #475569; }
          html.dark .toast-success { background: #064e3b; color: #a7f3d0; border-color: #047857; }
          html.dark .toast-error { background: #4c0519; color: #fecdd3; border-color: #be123c; }
@@ -155,8 +245,15 @@
          }
          html.dark .table-floor-tile.border-emerald-500 { border-color: #10b981 !important; }
          html.dark .table-floor-tile.bg-emerald-50 { background-color: rgba(6, 78, 59, 0.35) !important; }
+         html.dark .table-floor-tile.border-violet-500 { border-color: #a78bfa !important; }
+         html.dark .table-floor-tile.bg-violet-50 { background-color: rgba(91, 33, 182, 0.32) !important; }
          html.dark .table-floor-tile.border-slate-200 { border-color: #475569 !important; }
          html.dark .table-floor-tile.bg-slate-50 { background-color: #1e293b !important; }
+         html.dark .table-floor-tile .text-violet-500 { color: #c4b5fd !important; }
+         html.dark .table-floor-tile .text-violet-600 { color: #c4b5fd !important; }
+         html.dark .table-floor-tile .text-violet-700 { color: #ddd6fe !important; }
+         html.dark .table-floor-tile .text-emerald-700 { color: #6ee7b7 !important; }
+         html.dark .table-floor-tile.is-vip-available { border-color: #7c3aed !important; }
          .theme-toggle-btn {
             display: inline-flex; align-items: center; gap: 0.375rem;
             font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.75rem;
@@ -247,14 +344,14 @@
                </div>
                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div id="ops-toolbar" class="flex flex-wrap items-center gap-2">
-                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                     <div class="mgr-date-pill shrink-0">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
                         <input type="date" id="analytics-date" onchange="fetchAnalytics()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
                      <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-bold">
                         <button type="button" onclick="exportReport('day')" class="px-3 py-2 bg-amber-600 text-white hover:bg-amber-700 transition">Today</button>
-                        <button type="button" onclick="exportReport('week')" class="px-3 py-2 bg-white text-slate-700 hover:bg-slate-50 border-l border-slate-200 transition">Week</button>
-                        <button type="button" onclick="exportReport('month')" class="px-3 py-2 bg-white text-slate-700 hover:bg-slate-50 border-l border-slate-200 transition">Month</button>
+                        <button type="button" onclick="exportReport('week')" class="mgr-export-btn">Week</button>
+                        <button type="button" onclick="exportReport('month')" class="mgr-export-btn">Month</button>
                      </div>
                   </div>
                </div>
@@ -326,22 +423,22 @@
                         <h2 class="text-lg font-bold text-slate-800">Settled Table Sessions</h2>
                         <p class="text-xs text-slate-400">Daily total per table — counted when bill was settled</p>
                      </div>
-                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 shrink-0">
+                     <div class="mgr-date-pill shrink-0">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
                         <input type="date" id="settled-date" onchange="fetchSettledTablesHistory()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
                   </div>
-                  <div class="overflow-x-auto border border-slate-100 rounded-xl">
-                     <table class="w-full text-left text-sm">
+                  <div class="fin-table-wrap">
+                     <table class="fin-table w-full text-left text-sm">
                         <thead>
-                           <tr class="text-[10px] text-slate-400 uppercase border-b bg-slate-50/80">
+                           <tr class="text-[10px] uppercase">
                               <th class="py-2.5 px-4 font-bold">Table</th>
                               <th class="py-2.5 px-2 font-bold text-center">Orders</th>
                               <th class="py-2.5 px-4 font-bold text-right">Amount</th>
                               <th class="py-2.5 px-4 font-bold text-right">Receipt</th>
                            </tr>
                         </thead>
-                        <tbody id="settled-tables-history-log" class="divide-y divide-slate-50"></tbody>
+                        <tbody id="settled-tables-history-log"></tbody>
                      </table>
                   </div>
                </section>
@@ -426,7 +523,7 @@
                   <h2 class="text-lg font-bold mb-2 text-slate-800">Consolidated Orders Record</h2>
                   <p class="text-xs text-slate-400 mb-4">Filter by date, status, or table.</p>
                   <div class="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-slate-100">
-                     <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                     <div class="mgr-date-pill">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
                         <input type="date" id="orders-filter-date" onchange="fetchOrdersLog()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
@@ -475,10 +572,10 @@
                      <button type="button" onclick="clearMenuFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">Clear</button>
                   </div>
                   <p id="menu-filter-count" class="text-xs text-slate-400 mb-3"></p>
-                  <div class="overflow-y-auto max-h-[65vh] border border-slate-100 rounded-lg">
+                  <div class="mgr-table-wrap max-h-[65vh]">
                      <table class="w-full text-left border-collapse">
                         <thead>
-                           <tr class="text-xs text-slate-400 border-b">
+                           <tr class="text-xs border-b">
                               <th class="py-2 px-4">Item Name</th>
                               <th class="py-2">Category</th>
                               <th class="py-2">Kitchen</th>
@@ -1467,9 +1564,10 @@
              const isLive = table.status === 'live';
              const tile = document.createElement('div');
              const vipBorder = table.is_vip_room && isLive ? 'border-violet-500 bg-violet-50' : 'border-emerald-500 bg-emerald-50';
+             const availableVipClass = !isLive && table.is_vip_room ? ' is-vip-available' : '';
              tile.className = isLive
                  ? `table-floor-tile rounded-2xl border-2 ${vipBorder} p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full`
-                 : 'table-floor-tile rounded-2xl border-2 border-slate-200 bg-slate-50 p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full opacity-90';
+                 : `table-floor-tile rounded-2xl border-2 border-slate-200 bg-slate-50 p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full opacity-90${availableVipClass}`;
 
              const vipBadge = table.is_vip_room ? '<p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">VIP Room</p>' : '';
              const sessionTimer = (table.vip_session && table.vip_session.started_at)
@@ -1485,7 +1583,7 @@
              if (isLive) {
                  tile.innerHTML = `
                      <div class="flex flex-col items-center gap-1.5">
-                         <span class="h-2.5 w-2.5 rounded-full ${table.is_vip_room ? 'bg-violet-500 ring-violet-200' : 'bg-emerald-500 ring-emerald-200'} ring-4 shrink-0"></span>
+                         <span class="h-2.5 w-2.5 rounded-full ${table.is_vip_room ? 'bg-violet-500 ring-4 ring-violet-300/40' : 'bg-emerald-500 ring-4 ring-emerald-300/40'} shrink-0"></span>
                          <p class="text-base sm:text-lg font-black text-slate-800 leading-tight break-words w-full">Table ${escapeHtml(table.table_number)}</p>
                          ${vipBadge}
                          <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">Live Session</p>
@@ -1643,13 +1741,13 @@
          
                  history.forEach(row => {
                      const tr = document.createElement("tr");
-                     tr.className = "hover:bg-slate-50/80";
+                     tr.className = "fin-table-row";
                      tr.innerHTML = `
                          <td class="py-3 px-4 font-semibold text-slate-800">Table ${row.table_number}</td>
                          <td class="py-3 px-2 text-center text-slate-600">${row.order_count}</td>
                          <td class="py-3 px-4 text-right font-bold text-amber-600">${formatKs(row.total_amount)}</td>
                          <td class="py-3 px-4 text-right">
-                             <button onclick="loadDailyTableBill(${row.table_id}, '${row.date}')" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Receipt</button>
+                             <button onclick="loadDailyTableBill(${row.table_id}, '${row.date}')" class="fin-receipt-btn transition">Receipt</button>
                          </td>`;
                      tbody.appendChild(tr);
                  });
@@ -1856,7 +1954,7 @@
                         : '<span class="text-slate-300">—</span>';
                     const kitchenStation = kitchenStationForItem(item);
                     const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 transition duration-150';
+                    tr.className = 'mgr-table-row hover:bg-slate-50 transition duration-150';
                     tr.innerHTML = `
                         <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(item.name)}</td>
                         <td class="py-3 text-slate-400 font-bold text-xs uppercase">${escapeHtml(item.category)}</td>
@@ -2160,14 +2258,14 @@
          
                  orders.forEach(order => {
                      const card = document.createElement("div");
-                     card.className = "bg-white p-4 border border-slate-100 rounded-xl shadow-sm flex justify-between items-center";
+                     card.className = "mgr-card flex justify-between items-center";
                      const created = order.created_at ? new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                      card.innerHTML = `
                          <div>
                              <p class="font-bold text-slate-800">Order ID #${order.id} - Table ${order.table.label}</p>
                              <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}Total: ${formatKs(order.total_price)} · Status: <span class="capitalize font-semibold text-amber-600">${order.status}</span></p>
                          </div>
-                         <button onclick="loadReceipt(${order.id})" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Receipt</button>
+                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition">Receipt</button>
                      `;
                      container.appendChild(card);
                  });
