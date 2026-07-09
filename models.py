@@ -62,6 +62,31 @@ class TableSession(Base):
 
     table = relationship("RestaurantTable", back_populates="sessions")
 
+
+class DiningSessionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+
+
+class DiningSession(Base):
+    """Short-lived customer access after scanning a table QR (2h, closed on settle)."""
+    __tablename__ = "dining_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    table_id = Column(Integer, ForeignKey("tables.id"), nullable=False, index=True)
+    token_hash = Column(String, unique=True, nullable=False, index=True)
+    started_at = Column(DateTime, default=get_yangon_now, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    status = Column(
+        Enum(
+            DiningSessionStatus,
+            values_callable=lambda statuses: [status.value for status in statuses],
+        ),
+        default=DiningSessionStatus.ACTIVE,
+    )
+    closed_at = Column(DateTime, nullable=True)
+
+    table = relationship("RestaurantTable")
+
 class MenuItem(Base):
     __tablename__ = "menu_items"
     id = Column(Integer, primary_key=True, index=True)

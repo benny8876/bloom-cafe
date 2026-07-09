@@ -35,6 +35,7 @@ from services.table_sessions import (
     session_fee_line_item,
     session_summary,
 )
+from services.dining_sessions import close_dining_sessions_for_table
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -797,6 +798,7 @@ async def settle_table_bill(
         order.settled_at = now_settled_time
 
     end_table_session(db, table_id, models.TableSessionStatus.SETTLED, as_of=now_settled_time)
+    close_dining_sessions_for_table(db, table_id, as_of=now_settled_time)
 
     db.commit()
     table_label = get_table_label(active_orders[0].table)
@@ -831,6 +833,7 @@ async def cancel_table_session(
         order.status = models.OrderStatus.CANCELLED
 
     end_table_session(db, table_id, models.TableSessionStatus.CANCELLED)
+    close_dining_sessions_for_table(db, table_id)
 
     db.commit()
 

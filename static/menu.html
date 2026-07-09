@@ -957,6 +957,48 @@
     let pendingCustomizeItemId = null;
     let selectedPresets = new Set();
     let selectedModifierIds = new Set();
+    let diningSessionToken = null;
+
+    function diningSessionStorageKey() {
+      return `dining_session_${tableId}`;
+    }
+
+    function loadStoredDiningSession() {
+      try {
+        const raw = sessionStorage.getItem(diningSessionStorageKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.token || !parsed?.expiresAt) return null;
+        if (new Date(parsed.expiresAt) <= new Date()) {
+          sessionStorage.removeItem(diningSessionStorageKey());
+          return null;
+        }
+        return parsed.token;
+      } catch {
+        return null;
+      }
+    }
+
+    function storeDiningSession(token, expiresAt) {
+      diningSessionToken = token;
+      sessionStorage.setItem(
+        diningSessionStorageKey(),
+        JSON.stringify({ token, expiresAt })
+      );
+    }
+
+    function clearDiningSession() {
+      diningSessionToken = null;
+      sessionStorage.removeItem(diningSessionStorageKey());
+    }
+
+    function showSessionExpired(message) {
+      clearDiningSession();
+      document.getElementById('validation-gate').classList.add('hidden');
+      const warning = document.getElementById('security-warning');
+      warning.querySelector('p').textContent = message || 'Your table session has ended. Please scan the QR code on your table again.';
+      warning.classList.remove('hidden');
+    }
 
     const FLORAL_ICONS = ['#icon-bloom', '#icon-lavender', '#icon-cherry'];
 
@@ -976,13 +1018,46 @@
       }).join(' · ');
     }
 
+    async function startDiningSession() {
+      const response = await fetch(`${API_BASE}/menu/session/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_id: parseInt(tableId, 10),
+          token: secureToken
+        })
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Could not start table session.');
+      }
+      const data = await response.json();
+      storeDiningSession(data.session_token, data.expires_at);
+      return data;
+    }
+
+    async function ensureDiningSession() {
+      const stored = loadStoredDiningSession();
+      if (stored) {
+        diningSessionToken = stored;
+        return stored;
+      }
+      const data = await startDiningSession();
+      return data.session_token;
+    }
+
     async function verifyAndLoad() {
       if (!tableId || !secureToken) {
         document.getElementById('security-warning').classList.remove('hidden');
         return;
       }
-      document.getElementById('validation-gate').classList.remove('hidden');
-      await fetchMenu();
+      try {
+        await ensureDiningSession();
+        document.getElementById('validation-gate').classList.remove('hidden');
+        await fetchMenu();
+      } catch (err) {
+        showSessionExpired(err.message || 'Please scan the table QR code again.');
+      }
     }
 
     function getItemQuantityInCart(itemId) {
@@ -990,12 +1065,29 @@
     }
 
     async function fetchMenu() {
+      if (!diningSessionToken) return;
       try {
-        const response = await fetch(`${API_BASE}/menu/`);
+        const params = new URLSearchParams({
+          table_id: tableId,
+          token: secureToken,
+          session_token: diningSessionToken
+        });
+        const response = await fetch(`${API_BASE}/menu/?${params.toString()}`);
+        if (response.status === 403) {
+          clearDiningSession();
+          await ensureDiningSession();
+          return fetchMenu();
+        }
+        if (!response.ok) {
+          throw new Error('Menu unavailable.');
+        }
         menuItems = await response.json();
         renderMenu();
       } catch (err) {
         console.error('Failed to query catalog.');
+        if (err.message === 'Menu unavailable.') {
+          showSessionExpired('Your table session has ended. Please scan the QR code on your table again.');
+        }
       }
     }
 
@@ -1223,6 +1315,7 @@
           body: JSON.stringify({
             table_id: parseInt(tableId, 10),
             token: secureToken,
+            session_token: diningSessionToken,
             items: itemsPayload
           })
         });
@@ -1236,7 +1329,12 @@
           updateCartSummary();
         } else {
           const errObj = await response.json();
-          alert(`Order placement failed: ${errObj.detail || 'Internal error'}`);
+          const detail = errObj.detail || 'Internal error';
+          if (response.status === 403) {
+            showSessionExpired(detail);
+          } else {
+            alert(`Order placement failed: ${detail}`);
+          }
         }
       } catch (err) {
         alert('Network connectivity issue.');
@@ -1260,7 +1358,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             table_id: parseInt(tableId, 10),
-            token: secureToken
+            token: secureToken,
+            session_token: diningSessionToken
           })
         });
         if (response.ok) {
@@ -1268,6 +1367,9 @@
           cart = [];
           updateCartSummary();
           fetchMenu();
+        } else if (response.status === 403) {
+          const errObj = await response.json();
+          showSessionExpired(errObj.detail);
         } else {
           alert('Authorization failed on payment gateway.');
         }
@@ -1279,11 +1381,14 @@
     async function summonService(type) {
       try {
         const response = await fetch(
-          `${API_BASE}/menu/call-waiter?table_id=${tableId}&request_type=${type}&token=${encodeURIComponent(secureToken)}`,
+          `${API_BASE}/menu/call-waiter?table_id=${tableId}&request_type=${type}&token=${encodeURIComponent(secureToken)}&session_token=${encodeURIComponent(diningSessionToken)}`,
           { method: 'POST' }
         );
         if (response.ok) {
           alert('Alert sent: waiting staff notified.');
+        } else if (response.status === 403) {
+          const errObj = await response.json();
+          showSessionExpired(errObj.detail);
         }
       } catch (e) {
         console.error('Alert dispatch failed.');

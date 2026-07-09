@@ -5,15 +5,77 @@ from database import get_db
 import models, schemas
 from websocket import manager_ws
 import security
-from table_labels import get_table_label
+from table_labels import get_table_label, is_counter_table
 from services.orders import create_order_from_items
 from services.table_sessions import ensure_vip_session_started
+from services.dining_sessions import (
+    DINING_SESSION_HOURS,
+    start_dining_session,
+    verify_dining_session,
+)
 
 router = APIRouter(prefix="/menu", tags=["Menu (Client)"])
 
 
+def _require_table_qr_token(table_id: int, token: str) -> None:
+    if not security.verify_table_token(table_id, token):
+        raise HTTPException(
+            status_code=403, detail="Invalid table token. Table verification failed."
+        )
+
+
+def _require_dining_session(db: Session, table_id: int, session_token: str) -> None:
+    session = verify_dining_session(db, table_id, session_token)
+    if not session:
+        raise HTTPException(
+            status_code=403,
+            detail="Dining session expired or closed. Please scan the table QR code again.",
+        )
+
+
+def _get_active_table(db: Session, table_id: int) -> models.RestaurantTable:
+    table = (
+        db.query(models.RestaurantTable)
+        .filter(models.RestaurantTable.id == table_id)
+        .first()
+    )
+    if not table or not table.is_active:
+        raise HTTPException(status_code=404, detail="Selected table is inactive or missing.")
+    if is_counter_table(table):
+        raise HTTPException(
+            status_code=400, detail="Counter sales use the manager panel, not table QR."
+        )
+    return table
+
+
+@router.post("/session/start", response_model=schemas.DiningSessionStartResponse)
+def start_table_dining_session(
+    payload: schemas.DiningSessionStartRequest,
+    db: Session = Depends(get_db),
+):
+    _require_table_qr_token(payload.table_id, payload.token)
+    table = _get_active_table(db, payload.table_id)
+
+    raw_token, session = start_dining_session(db, table.id)
+    db.commit()
+
+    return schemas.DiningSessionStartResponse(
+        session_token=raw_token,
+        expires_at=session.expires_at,
+        table_label=get_table_label(table),
+        duration_hours=DINING_SESSION_HOURS,
+    )
+
+
 @router.get("/", response_model=List[schemas.MenuItemResponse])
-def get_available_menu(db: Session = Depends(get_db)):
+def get_available_menu(
+    table_id: int,
+    token: str,
+    session_token: str,
+    db: Session = Depends(get_db),
+):
+    _require_table_qr_token(table_id, token)
+    _require_dining_session(db, table_id, session_token)
     return (
         db.query(models.MenuItem)
         .filter(models.MenuItem.is_available == True)
@@ -24,18 +86,9 @@ def get_available_menu(db: Session = Depends(get_db)):
 
 @router.post("/order", response_model=schemas.OrderResponse, status_code=status.HTTP_201_CREATED)
 async def place_order(order_data: schemas.OrderCreate, db: Session = Depends(get_db)):
-    if not security.verify_table_token(order_data.table_id, order_data.token):
-        raise HTTPException(
-            status_code=403, detail="Invalid table token. Table verification failed."
-        )
-
-    table = (
-        db.query(models.RestaurantTable)
-        .filter(models.RestaurantTable.id == order_data.table_id)
-        .first()
-    )
-    if not table or not table.is_active:
-        raise HTTPException(status_code=404, detail="Selected table is inactive or missing.")
+    _require_table_qr_token(order_data.table_id, order_data.token)
+    _require_dining_session(db, order_data.table_id, order_data.session_token)
+    table = _get_active_table(db, order_data.table_id)
 
     db_order = create_order_from_items(
         db,
@@ -65,8 +118,8 @@ async def process_mock_payment(
     payment_data: schemas.MockPayRequest,
     db: Session = Depends(get_db),
 ):
-    if not security.verify_table_token(payment_data.table_id, payment_data.token):
-        raise HTTPException(status_code=403, detail="Invalid table token.")
+    _require_table_qr_token(payment_data.table_id, payment_data.token)
+    _require_dining_session(db, payment_data.table_id, payment_data.session_token)
 
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
@@ -91,18 +144,12 @@ async def call_waiter(
     table_id: int,
     request_type: str,
     token: str,
+    session_token: str,
     db: Session = Depends(get_db),
 ):
-    if not security.verify_table_token(table_id, token):
-        raise HTTPException(status_code=403, detail="Invalid table token.")
-
-    table = (
-        db.query(models.RestaurantTable)
-        .filter(models.RestaurantTable.id == table_id)
-        .first()
-    )
-    if not table:
-        raise HTTPException(status_code=404, detail="Table not found.")
+    _require_table_qr_token(table_id, token)
+    _require_dining_session(db, table_id, session_token)
+    table = _get_active_table(db, table_id)
 
     await manager_ws.broadcast(
         {

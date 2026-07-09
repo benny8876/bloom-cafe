@@ -155,6 +155,12 @@ def migrate_vip_table_settings():
         models.TableSession.__table__.create(bind=engine)
 
 
+def migrate_dining_sessions():
+    inspector = inspect(engine)
+    if "dining_sessions" not in inspector.get_table_names():
+        models.DiningSession.__table__.create(bind=engine)
+
+
 LEGACY_MENU_PRICES_KS = {
     "Cheeseburger": (8.99, 4500),
     "French Fries": (3.49, 2500),
@@ -310,6 +316,7 @@ def seed_initial_data():
     migrate_orders_payment_method()
     migrate_menu_kitchen_station()
     migrate_vip_table_settings()
+    migrate_dining_sessions()
     migrate_legacy_menu_prices()
     migrate_order_status_values()
     migrate_auth_tables()

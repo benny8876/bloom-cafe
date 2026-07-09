@@ -32,6 +32,19 @@ class KitchenLoginResponse(BaseModel):
 class MockPayRequest(BaseModel):
     table_id: int
     token: str
+    session_token: str
+
+
+class DiningSessionStartRequest(BaseModel):
+    table_id: int
+    token: str
+
+
+class DiningSessionStartResponse(BaseModel):
+    session_token: str
+    expires_at: datetime
+    table_label: str
+    duration_hours: int = 2
 
 
 class ModifierBase(BaseModel):
@@ -92,7 +105,8 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     table_id: int
-    token: str 
+    token: str
+    session_token: str
     items: List[OrderItemCreate]
 
 class CounterSaleCreate(BaseModel):
