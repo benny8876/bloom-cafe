@@ -303,43 +303,102 @@
       background: var(--bloom-purple-soft);
     }
 
-    .items-scroll {
-      display: grid;
-      grid-template-rows: repeat(2, auto);
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(clamp(128px, 36vw, 168px), 168px);
-      gap: clamp(12px, 2.5vw, 16px);
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding-bottom: 6px;
-      margin: 0 calc(-1 * clamp(18px, 3.5vw, 36px));
-      padding-left: clamp(18px, 3.5vw, 36px);
-      padding-right: clamp(18px, 3.5vw, 36px);
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x proximity;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(155, 45, 140, 0.35) transparent;
+    .menu-mixed {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .items-scroll::-webkit-scrollbar {
-      height: 6px;
+    .menu-list {
+      display: flex;
+      flex-direction: column;
     }
 
-    .items-scroll::-webkit-scrollbar-thumb {
-      background: rgba(155, 45, 140, 0.3);
-      border-radius: 999px;
+    .menu-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 2px;
+      border-bottom: 1px dotted rgba(155, 45, 140, 0.28);
+      transition: background 0.15s ease;
     }
 
-    .items-scroll::-webkit-scrollbar-track {
-      background: transparent;
+    .menu-row:not(.sold-out) {
+      cursor: pointer;
     }
 
+    .menu-row:not(.sold-out):active {
+      background: rgba(155, 45, 140, 0.06);
+    }
+
+    .menu-row.sold-out {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .menu-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .menu-row-name {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .menu-row-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+
+    .menu-row-mods {
+      font-size: 0.68rem;
+      color: var(--bloom-purple-muted);
+      margin-top: 2px;
+    }
+
+    .menu-row-sold {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #c0392b;
+    }
+
+    .menu-row-price {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      font-weight: 600;
+      color: var(--bloom-purple);
+      white-space: nowrap;
+      padding-left: 14px;
+      border-left: 1px solid rgba(155, 45, 140, 0.22);
+      flex-shrink: 0;
+      min-width: 4.5rem;
+      text-align: right;
+    }
+
+    .menu-row-qty {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--bloom-purple-muted);
+      margin-top: 2px;
+    }
+
+    /* Image items — original square card */
     .menu-item-wrap {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      scroll-snap-align: start;
-      min-width: 0;
+      max-width: 168px;
     }
 
     .menu-item-wrap:not(.sold-out) {
@@ -363,16 +422,13 @@
       border-color: rgba(155, 45, 140, 0.22);
     }
 
-    .menu-item-wrap.sold-out { opacity: 0.65; cursor: not-allowed; }
-    .menu-item-wrap.sold-out:hover .menu-item { transform: none; }
+    .menu-item-wrap.sold-out {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
 
-    .item-flower {
-      width: 100%;
-      height: 100%;
-      display: block;
-      padding: 18%;
-      box-sizing: border-box;
-      color: var(--bloom-purple-soft);
+    .menu-item-wrap.sold-out:hover .menu-item {
+      transform: none;
     }
 
     .item-photo {
@@ -444,6 +500,42 @@
       font-weight: 600;
       color: var(--bloom-purple);
       letter-spacing: 0.04em;
+    }
+
+    .items-scroll {
+      display: grid;
+      grid-template-rows: repeat(2, auto);
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(clamp(128px, 36vw, 168px), 168px);
+      gap: clamp(12px, 2.5vw, 16px);
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+      margin: 0 calc(-1 * clamp(18px, 3.5vw, 36px));
+      padding-left: clamp(18px, 3.5vw, 36px);
+      padding-right: clamp(18px, 3.5vw, 36px);
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(155, 45, 140, 0.35) transparent;
+    }
+
+    .items-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .items-scroll::-webkit-scrollbar-thumb {
+      background: rgba(155, 45, 140, 0.3);
+      border-radius: 999px;
+    }
+
+    .items-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .items-scroll .menu-item-wrap {
+      scroll-snap-align: start;
+      min-width: 0;
     }
 
     .inner-footer {
@@ -1000,7 +1092,6 @@
       warning.classList.remove('hidden');
     }
 
-    const FLORAL_ICONS = ['#icon-bloom', '#icon-lavender', '#icon-cherry'];
 
     function escapeHtml(text) {
       return String(text)
@@ -1101,43 +1192,80 @@
         categories[item.category].push(item);
       });
 
-      let iconIndex = 0;
       for (const [categoryName, items] of Object.entries(categories)) {
         items.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-        const cardsHtml = items.map(item => {
-          const isSoldOut = item.stock !== null && item.stock <= 0;
-          const qty = getItemQuantityInCart(item.id);
-          const icon = FLORAL_ICONS[iconIndex % FLORAL_ICONS.length];
-          iconIndex += 1;
+        const segments = [];
+        let imageBatch = [];
 
-          const visual = item.image_url
-            ? `<img src="${escapeHtml(item.image_url)}" class="item-photo" alt="${escapeHtml(item.name)}" loading="lazy">`
-            : `<svg class="item-flower" viewBox="0 0 80 80" aria-hidden="true"><use href="${icon}"/></svg>`;
+        const flushImageBatch = () => {
+          if (imageBatch.length) {
+            segments.push({ type: 'scroll', items: imageBatch });
+            imageBatch = [];
+          }
+        };
 
-          const click = isSoldOut ? '' : `onclick="openCustomizeModal(${item.id})"`;
+        items.forEach(item => {
+          if (item.image_url) {
+            imageBatch.push(item);
+          } else {
+            flushImageBatch();
+            segments.push({ type: 'text', item });
+          }
+        });
+        flushImageBatch();
 
-          return `
-            <div class="menu-item-wrap${isSoldOut ? ' sold-out' : ''}" ${click}>
-              <article class="menu-item">
-                ${qty > 0 ? `<span class="qty-badge">${qty}x</span>` : ''}
-                ${isSoldOut ? '<div class="sold-out-badge">Sold Out</div>' : ''}
-                ${visual}
-              </article>
-              <div class="menu-item-meta">
-                <h4>${escapeHtml(item.name)}</h4>
-                ${item.description ? `<p class="item-desc">${escapeHtml(item.description)}</p>` : ''}
-                ${formatModifiersLine(item) ? `<p class="item-mods">${escapeHtml(formatModifiersLine(item))}</p>` : ''}
-                <p class="price">${item.price.toFixed(0)} Ks</p>
-              </div>
-            </div>`;
+        const blocksHtml = segments.map(segment => {
+          if (segment.type === 'text') {
+            const item = segment.item;
+            const isSoldOut = item.stock !== null && item.stock <= 0;
+            const qty = getItemQuantityInCart(item.id);
+            const click = isSoldOut ? '' : `onclick="openCustomizeModal(${item.id})"`;
+            return `
+              <div class="menu-list">
+                <div class="menu-row${isSoldOut ? ' sold-out' : ''}" ${click}>
+                  <div class="menu-row-body">
+                    <div class="menu-row-name">
+                      ${escapeHtml(item.name)}
+                      ${isSoldOut ? '<span class="menu-row-sold">Sold Out</span>' : ''}
+                    </div>
+                    ${item.description ? `<p class="menu-row-desc">${escapeHtml(item.description)}</p>` : ''}
+                    ${formatModifiersLine(item) ? `<p class="menu-row-mods">${escapeHtml(formatModifiersLine(item))}</p>` : ''}
+                    ${qty > 0 ? `<span class="menu-row-qty">${qty} in cart</span>` : ''}
+                  </div>
+                  <div class="menu-row-price">${item.price.toFixed(0)} Ks</div>
+                </div>
+              </div>`;
+          }
+
+          const cardsHtml = segment.items.map(item => {
+            const isSoldOut = item.stock !== null && item.stock <= 0;
+            const qty = getItemQuantityInCart(item.id);
+            const click = isSoldOut ? '' : `onclick="openCustomizeModal(${item.id})"`;
+            return `
+              <div class="menu-item-wrap${isSoldOut ? ' sold-out' : ''}" ${click}>
+                <article class="menu-item">
+                  ${qty > 0 ? `<span class="qty-badge">${qty}x</span>` : ''}
+                  ${isSoldOut ? '<div class="sold-out-badge">Sold Out</div>' : ''}
+                  <img src="${escapeHtml(item.image_url)}" class="item-photo" alt="${escapeHtml(item.name)}" loading="lazy">
+                </article>
+                <div class="menu-item-meta">
+                  <h4>${escapeHtml(item.name)}</h4>
+                  ${item.description ? `<p class="item-desc">${escapeHtml(item.description)}</p>` : ''}
+                  ${formatModifiersLine(item) ? `<p class="item-mods">${escapeHtml(formatModifiersLine(item))}</p>` : ''}
+                  <p class="price">${item.price.toFixed(0)} Ks</p>
+                </div>
+              </div>`;
+          }).join('');
+
+          return `<div class="items-scroll">${cardsHtml}</div>`;
         }).join('');
 
         const section = document.createElement('section');
         section.className = 'menu-section';
         section.innerHTML = `
           <h3 class="section-title">${escapeHtml(categoryName)}</h3>
-          <div class="items-scroll">${cardsHtml}</div>`;
+          <div class="menu-mixed">${blocksHtml}</div>`;
         container.appendChild(section);
       }
     }
