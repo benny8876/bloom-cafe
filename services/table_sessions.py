@@ -106,7 +106,8 @@ def get_active_session(db: Session, table_id: int) -> Optional[models.TableSessi
 
 
 def ensure_vip_session_started(db: Session, table: models.RestaurantTable) -> Tuple[Optional[models.TableSession], bool]:
-    if not table.is_vip_room or table.hourly_rate <= 0:
+    """Start a VIP visit session for VIP tables (hourly rate optional)."""
+    if not table.is_vip_room:
         return None, False
     existing = get_active_session(db, table.id)
     if existing:
@@ -115,14 +116,29 @@ def ensure_vip_session_started(db: Session, table: models.RestaurantTable) -> Tu
     session = models.TableSession(
         table_id=table.id,
         started_at=models.get_yangon_now(),
-        hourly_rate_snapshot=table.hourly_rate,
-        minimum_minutes_snapshot=table.minimum_minutes,
-        free_minutes_snapshot=table.free_minutes,
+        hourly_rate_snapshot=float(table.hourly_rate or 0),
+        minimum_minutes_snapshot=int(table.minimum_minutes or 30),
+        free_minutes_snapshot=int(table.free_minutes or 0),
+        entry_fee_per_guest_snapshot=float(table.entry_fee_per_guest or 0),
+        guest_count=0,
         status=models.TableSessionStatus.ACTIVE,
     )
     db.add(session)
     db.flush()
     return session, True
+
+
+def entry_fee_amount(guest_count: int, entry_fee_per_guest: float) -> float:
+    guests = max(0, int(guest_count or 0))
+    rate = float(entry_fee_per_guest or 0)
+    if guests <= 0 or rate <= 0:
+        return 0.0
+    return float(guests * rate)
+
+
+def set_session_guest_count(session: models.TableSession, guest_count: int) -> models.TableSession:
+    session.guest_count = max(0, int(guest_count or 0))
+    return session
 
 
 def end_table_session(
@@ -149,9 +165,14 @@ def end_table_session(
         )
         session.session_fee_charged = fee
         session.billable_minutes = billable
+        session.entry_fee_charged = entry_fee_amount(
+            session.guest_count,
+            session.entry_fee_per_guest_snapshot,
+        )
     else:
         session.session_fee_charged = 0.0
         session.billable_minutes = 0
+        session.entry_fee_charged = 0.0
 
     db.flush()
     return session
@@ -188,6 +209,30 @@ def session_fee_line_item(session: models.TableSession) -> dict:
     }
 
 
+def entry_fee_line_item(session: models.TableSession, *, use_charged: bool = False) -> Optional[dict]:
+    guests = int(session.guest_count or 0)
+    rate = float(session.entry_fee_per_guest_snapshot or 0)
+    fee = (
+        float(session.entry_fee_charged or 0)
+        if use_charged
+        else entry_fee_amount(guests, rate)
+    )
+    if fee <= 0 and guests <= 0:
+        return None
+    if fee <= 0:
+        return None
+    display_guests = guests if guests > 0 else 1
+    unit = rate if guests > 0 and rate > 0 else fee
+    return {
+        "name": f"VIP Entry × {display_guests}",
+        "quantity": display_guests,
+        "unit_price": unit,
+        "subtotal": fee,
+        "modifiers": [],
+        "is_entry_fee": True,
+    }
+
+
 def session_summary(session: models.TableSession, as_of: Optional[datetime] = None) -> dict:
     fee, billable, total_elapsed = calculate_session_fee(
         session.started_at,
@@ -196,6 +241,9 @@ def session_summary(session: models.TableSession, as_of: Optional[datetime] = No
         session.free_minutes_snapshot,
         as_of=as_of,
     )
+    guests = int(session.guest_count or 0)
+    entry_rate = float(session.entry_fee_per_guest_snapshot or 0)
+    entry_fee = entry_fee_amount(guests, entry_rate)
     return {
         "session_id": session.id,
         "started_at": session.started_at.isoformat(),
@@ -213,4 +261,7 @@ def session_summary(session: models.TableSession, as_of: Optional[datetime] = No
         "hourly_rate": session.hourly_rate_snapshot,
         "minimum_minutes": session.minimum_minutes_snapshot,
         "free_minutes": session.free_minutes_snapshot,
+        "guest_count": guests,
+        "entry_fee_per_guest": entry_rate,
+        "entry_fee": entry_fee,
     }

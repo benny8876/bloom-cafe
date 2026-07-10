@@ -1037,19 +1037,40 @@
                  }).join('')
                  : `<p class="text-xs text-slate-400 italic text-center py-4">${t('receipt.no_items_adjust')}</p>`;
 
-             const sessionLines = (bill.items || []).filter((item) => item.is_session_fee);
-             const sessionStr = sessionLines.map((item) => `
+             const sessionLines = (bill.items || []).filter((item) => item.is_session_fee || item.is_entry_fee);
+             const sessionStr = sessionLines.map((item) => {
+                 const lineTotal = item.subtotal != null ? item.subtotal : item.quantity * item.unit_price;
+                 return `
                  <div class="border-b border-dashed pb-1">
                      <div class="flex justify-between text-xs font-semibold">
-                         <span>${item.name}</span>
-                         <span>${formatKs(item.unit_price)}</span>
+                         <span>${escapeHtml(item.name)}</span>
+                         <span>${formatKs(lineTotal)}</span>
                      </div>
-                 </div>`).join('');
+                 </div>`;
+             }).join('');
 
              const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
                  : '';
+
+             const guestCount = bill.guest_count || 0;
+             const entryRate = bill.entry_fee_per_guest || 0;
+             const guestBlock = bill.is_vip_room ? `
+                 <div class="my-3 p-3 rounded-xl bg-violet-50 border border-violet-100">
+                     <p class="text-[10px] font-bold uppercase tracking-wider text-violet-600 mb-2">${t('vip.guests')}</p>
+                     <div class="flex items-center justify-between gap-3">
+                         <div class="flex items-center gap-2">
+                             <button type="button" onclick="adjustVipGuestCount(${liveBillTableId}, ${guestCount - 1})" class="w-8 h-8 rounded-lg border border-violet-200 bg-white text-violet-800 font-bold hover:bg-violet-100">−</button>
+                             <span class="w-8 text-center text-lg font-black text-violet-900">${guestCount}</span>
+                             <button type="button" onclick="adjustVipGuestCount(${liveBillTableId}, ${guestCount + 1})" class="w-8 h-8 rounded-lg border border-violet-200 bg-white text-violet-800 font-bold hover:bg-violet-100">+</button>
+                         </div>
+                         <div class="text-right text-xs">
+                             <p class="text-violet-500">${formatKs(entryRate)} ${t('vip.per_guest')}</p>
+                             <p class="font-bold text-violet-800">${t('vip.entry_total')}: ${formatKs(guestCount * entryRate)}</p>
+                         </div>
+                     </div>
+                 </div>` : '';
 
              return `
                  <div class="text-center border-b pb-3 border-dashed">
@@ -1062,6 +1083,7 @@
                      ${orderLine}
                      <p class="text-[10px] text-amber-600 mt-2">${t('receipt.adjust_hint')}</p>
                  </div>
+                 ${guestBlock}
                  ${sessionStr ? `<div class="space-y-2 my-4">${sessionStr}</div>` : ''}
                  <div class="space-y-2 my-4">${itemsStr}</div>
                  <div class="receipt-total-row">
@@ -1069,6 +1091,27 @@
                      <span id="live-bill-total">${formatKs(total)}</span>
                  </div>
                  <p class="receipt-footer">${t('receipt.thank_you')}</p>`;
+         }
+
+         async function adjustVipGuestCount(tableId, nextCount) {
+             if (nextCount < 0) return;
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}/guests`, {
+                     method: 'PATCH',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ guest_count: nextCount }),
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json().catch(() => ({}));
+                     showToast(err.detail || t('vip.guest_update_fail'), 'error');
+                     return;
+                 }
+                 await loadConsolidatedTableBill(tableId);
+                 fetchActiveTables();
+             } catch (err) {
+                 showToast(t('toast.network_error'), 'error');
+             }
          }
 
          async function adjustOrderItemQuantity(orderItemId, newQuantity) {
@@ -1520,12 +1563,17 @@
                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-slate-200 pt-3">
                          <label class="col-span-2 sm:col-span-4 flex items-center gap-2 text-xs font-bold text-violet-700">
                              <input type="checkbox" id="table-vip-${table.id}" ${table.is_vip_room ? 'checked' : ''} class="rounded">
-                             VIP room (hourly session fee)
+                             VIP room
                          </label>
+                         <div>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Entry / guest (Ks)</label>
+                             <input type="number" min="0" step="1" id="table-entry-${table.id}" value="${table.entry_fee_per_guest || 0}"
+                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
+                         </div>
                          <div>
                              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rate / hour (Ks)</label>
                              <input type="number" min="0" step="1" id="table-rate-${table.id}" value="${table.hourly_rate || 0}"
-                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
+                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400" placeholder="Optional">
                          </div>
                          <div>
                              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min minutes</label>
@@ -1537,8 +1585,8 @@
                              <input type="number" min="0" step="1" id="table-free-${table.id}" value="${table.free_minutes || 0}"
                                  class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
                          </div>
-                         <div class="flex items-end">
-                             <button type="button" onclick="saveTableSettings(${table.id})" class="w-full text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-3 rounded-lg transition">Save</button>
+                         <div class="col-span-2 sm:col-span-4 flex items-end">
+                             <button type="button" onclick="saveTableSettings(${table.id})" class="w-full sm:w-auto text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg transition">Save</button>
                          </div>
                      </div>
                      ${table.active_session ? `<p class="text-[10px] text-violet-600 font-semibold">⏱ Active: ${escapeHtml(table.active_session.elapsed_label)} · ${formatKs(table.active_session.current_fee)} session fee</p>` : ''}
@@ -1597,6 +1645,7 @@
              const label = document.getElementById(`table-label-input-${tableId}`)?.value.trim();
              const is_vip_room = document.getElementById(`table-vip-${tableId}`)?.checked || false;
              const hourly_rate = parseFloat(document.getElementById(`table-rate-${tableId}`)?.value || '0');
+             const entry_fee_per_guest = parseFloat(document.getElementById(`table-entry-${tableId}`)?.value || '0');
              const minimum_minutes = parseInt(document.getElementById(`table-min-${tableId}`)?.value || '30', 10);
              const free_minutes = parseInt(document.getElementById(`table-free-${tableId}`)?.value || '0', 10);
 
@@ -1604,16 +1653,19 @@
                  showToast('Table label cannot be empty.', 'error');
                  return;
              }
-             if (is_vip_room && hourly_rate <= 0) {
-                 showToast('VIP tables need an hourly rate greater than 0.', 'error');
-                 return;
-             }
 
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}`, {
                      method: 'PUT',
                      headers: getAuthHeaders(),
-                     body: JSON.stringify({ label, is_vip_room, hourly_rate, minimum_minutes, free_minutes })
+                     body: JSON.stringify({
+                         label,
+                         is_vip_room,
+                         hourly_rate,
+                         entry_fee_per_guest,
+                         minimum_minutes,
+                         free_minutes
+                     })
                  });
 
                  if (response.status === 401) { handleLogout(); return; }
@@ -1750,6 +1802,9 @@
              const sessionFeeLine = table.session_fee > 0
                  ? `<p class="text-[10px] text-violet-600">${t('floor.room_fee', { amount: formatKs(table.session_fee) })}</p>`
                  : '';
+             const entryFeeLine = table.entry_fee > 0
+                 ? `<p class="text-[10px] text-violet-600">${t('floor.entry_fee', { amount: formatKs(table.entry_fee) })}</p>`
+                 : '';
              const orderCountLabel = table.active_orders_count === 1
                  ? t('floor.order_count', { count: table.active_orders_count })
                  : t('floor.order_count_plural', { count: table.active_orders_count });
@@ -1766,6 +1821,7 @@
                          <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">${t('floor.live_session')}</p>
                          ${sessionTimer}
                          ${sessionFeeLine}
+                         ${entryFeeLine}
                          <p class="text-xs text-slate-600">${orderCountLabel}</p>
                          ${totalLine}
                      </div>

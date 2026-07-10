@@ -149,6 +149,7 @@ class TableCreate(BaseModel):
     label: str = Field(..., min_length=1, max_length=50)
     is_vip_room: bool = False
     hourly_rate: float = Field(0, ge=0)
+    entry_fee_per_guest: float = Field(0, ge=0)
     minimum_minutes: int = Field(30, ge=0)
     free_minutes: int = Field(0, ge=0)
 
@@ -156,8 +157,12 @@ class TableUpdate(BaseModel):
     label: Optional[str] = Field(None, min_length=1, max_length=50)
     is_vip_room: Optional[bool] = None
     hourly_rate: Optional[float] = Field(None, ge=0)
+    entry_fee_per_guest: Optional[float] = Field(None, ge=0)
     minimum_minutes: Optional[int] = Field(None, ge=0)
     free_minutes: Optional[int] = Field(None, ge=0)
+
+class TableGuestCountUpdate(BaseModel):
+    guest_count: int = Field(..., ge=0, le=200)
 
 class TableSessionSummary(BaseModel):
     session_id: int
@@ -169,6 +174,9 @@ class TableSessionSummary(BaseModel):
     hourly_rate: float
     minimum_minutes: int
     free_minutes: int
+    guest_count: int = 0
+    entry_fee_per_guest: float = 0
+    entry_fee: float = 0
 
 class TableManagementResponse(BaseModel):
     id: int
@@ -178,6 +186,7 @@ class TableManagementResponse(BaseModel):
     has_active_orders: bool = False
     is_vip_room: bool = False
     hourly_rate: float = 0
+    entry_fee_per_guest: float = 0
     minimum_minutes: int = 30
     free_minutes: int = 0
     active_session: Optional[TableSessionSummary] = None

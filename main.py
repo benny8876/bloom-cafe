@@ -188,6 +188,8 @@ def migrate_vip_table_settings():
         alters.append("ALTER TABLE tables ADD COLUMN minimum_minutes INTEGER NOT NULL DEFAULT 30")
     if "free_minutes" not in columns:
         alters.append("ALTER TABLE tables ADD COLUMN free_minutes INTEGER NOT NULL DEFAULT 0")
+    if "entry_fee_per_guest" not in columns:
+        alters.append("ALTER TABLE tables ADD COLUMN entry_fee_per_guest FLOAT NOT NULL DEFAULT 0")
 
     if alters:
         with engine.begin() as conn:
@@ -196,6 +198,25 @@ def migrate_vip_table_settings():
 
     if "table_sessions" not in inspector.get_table_names():
         models.TableSession.__table__.create(bind=engine)
+    else:
+        session_cols = {col["name"] for col in inspector.get_columns("table_sessions")}
+        session_alters = []
+        if "entry_fee_per_guest_snapshot" not in session_cols:
+            session_alters.append(
+                "ALTER TABLE table_sessions ADD COLUMN entry_fee_per_guest_snapshot FLOAT NOT NULL DEFAULT 0"
+            )
+        if "guest_count" not in session_cols:
+            session_alters.append(
+                "ALTER TABLE table_sessions ADD COLUMN guest_count INTEGER NOT NULL DEFAULT 0"
+            )
+        if "entry_fee_charged" not in session_cols:
+            session_alters.append(
+                "ALTER TABLE table_sessions ADD COLUMN entry_fee_charged FLOAT"
+            )
+        if session_alters:
+            with engine.begin() as conn:
+                for stmt in session_alters:
+                    conn.execute(text(stmt))
 
 
 def migrate_dining_sessions():
@@ -372,10 +393,10 @@ def ensure_default_accounts(db):
 
 @app.on_event("startup")
 def seed_initial_data():
+    migrate_vip_table_settings()
     migrate_table_labels()
     migrate_orders_payment_method()
     migrate_menu_kitchen_station()
-    migrate_vip_table_settings()
     migrate_dining_sessions()
     migrate_legacy_menu_prices()
     migrate_order_status_values()

@@ -29,6 +29,7 @@ class RestaurantTable(Base):
     is_active = Column(Boolean, default=True)
     is_vip_room = Column(Boolean, default=False)
     hourly_rate = Column(Float, nullable=False, default=0.0)
+    entry_fee_per_guest = Column(Float, nullable=False, default=0.0)
     minimum_minutes = Column(Integer, nullable=False, default=30)
     free_minutes = Column(Integer, nullable=False, default=0)
 
@@ -57,8 +58,11 @@ class TableSession(Base):
     hourly_rate_snapshot = Column(Float, nullable=False, default=0.0)
     minimum_minutes_snapshot = Column(Integer, nullable=False, default=30)
     free_minutes_snapshot = Column(Integer, nullable=False, default=0)
+    entry_fee_per_guest_snapshot = Column(Float, nullable=False, default=0.0)
+    guest_count = Column(Integer, nullable=False, default=0)
     billable_minutes = Column(Integer, nullable=True)
     session_fee_charged = Column(Float, nullable=True)
+    entry_fee_charged = Column(Float, nullable=True)
 
     table = relationship("RestaurantTable", back_populates="sessions")
 

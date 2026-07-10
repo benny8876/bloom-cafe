@@ -38,7 +38,9 @@ from services.table_sessions import (
     get_active_session,
     get_settled_session_at,
     session_fee_line_item,
+    entry_fee_line_item,
     session_summary,
+    set_session_guest_count,
 )
 from services.dining_sessions import close_dining_sessions_for_table
 from services.menu_categories import list_menu_categories, move_menu_category, sync_menu_categories
@@ -209,6 +211,7 @@ def _table_management_payload(table: models.RestaurantTable, active_table_ids: s
         "has_active_orders": table.id in active_table_ids,
         "is_vip_room": bool(table.is_vip_room),
         "hourly_rate": float(table.hourly_rate or 0),
+        "entry_fee_per_guest": float(table.entry_fee_per_guest or 0),
         "minimum_minutes": int(table.minimum_minutes or 30),
         "free_minutes": int(table.free_minutes or 0),
         "active_session": session_summary(active_session) if active_session else None,
@@ -222,10 +225,58 @@ def _apply_vip_settings(table: models.RestaurantTable, data: schemas.TableCreate
         table.is_vip_room = fields["is_vip_room"]
     if "hourly_rate" in fields:
         table.hourly_rate = fields["hourly_rate"]
+    if "entry_fee_per_guest" in fields:
+        table.entry_fee_per_guest = fields["entry_fee_per_guest"]
     if "minimum_minutes" in fields:
         table.minimum_minutes = fields["minimum_minutes"]
     if "free_minutes" in fields:
         table.free_minutes = fields["free_minutes"]
+
+
+def _append_vip_fee_lines(items_list: list, grand_total: float, session, *, use_charged: bool = False):
+    """Insert VIP session/entry fee lines and return (items, grand_total, session_fee, entry_fee, vip_session)."""
+    session_fee = 0.0
+    entry_fee = 0.0
+    vip_session = None
+    if not session:
+        return items_list, grand_total, session_fee, entry_fee, vip_session
+
+    if use_charged:
+        if (session.session_fee_charged or 0) > 0:
+            line = session_fee_line_item(session)
+            session_fee = float(line["unit_price"])
+            items_list.insert(0, line)
+            grand_total += session_fee
+        entry_line = entry_fee_line_item(session, use_charged=True)
+        if entry_line:
+            entry_fee = float(entry_line.get("subtotal") or entry_line["unit_price"] * entry_line["quantity"])
+            items_list.insert(0, entry_line)
+            grand_total += entry_fee
+    else:
+        vip_session = session_summary(session)
+        session_fee = float(vip_session["current_fee"] or 0)
+        if session_fee > 0:
+            items_list.insert(
+                0,
+                {
+                    "name": (
+                        f"VIP Room Session ({vip_session['elapsed_label']}, "
+                        f"billed {format_duration(vip_session['billable_minutes'])})"
+                    ),
+                    "quantity": 1,
+                    "unit_price": session_fee,
+                    "modifiers": [],
+                    "is_session_fee": True,
+                },
+            )
+            grand_total += session_fee
+        entry_line = entry_fee_line_item(session, use_charged=False)
+        if entry_line:
+            entry_fee = float(entry_line.get("subtotal") or 0)
+            items_list.insert(0, entry_line)
+            grand_total += entry_fee
+
+    return items_list, grand_total, session_fee, entry_fee, vip_session
 
 
 @router.get("/tables", response_model=List[schemas.TableManagementResponse])
@@ -277,6 +328,7 @@ def create_table(
         is_active=True,
         is_vip_room=data.is_vip_room,
         hourly_rate=data.hourly_rate,
+        entry_fee_per_guest=data.entry_fee_per_guest,
         minimum_minutes=data.minimum_minutes,
         free_minutes=data.free_minutes,
     )
@@ -324,6 +376,39 @@ def update_table(
     db.refresh(table)
     active_table_ids = _active_order_table_ids(db)
     return _table_management_payload(table, active_table_ids, db)
+
+
+@router.patch("/tables/{table_id}/guests")
+def update_table_guest_count(
+    table_id: int,
+    payload: schemas.TableGuestCountUpdate,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    table = (
+        db.query(models.RestaurantTable)
+        .filter(models.RestaurantTable.id == table_id)
+        .first()
+    )
+    if not table or is_counter_table(table) or not table.is_active:
+        raise HTTPException(status_code=404, detail="Table does not exist.")
+    if not table.is_vip_room:
+        raise HTTPException(status_code=400, detail="Guest count is only for VIP tables.")
+
+    active_orders = _load_active_table_orders(db, table_id)
+    if not active_orders:
+        raise HTTPException(status_code=400, detail="No active orders on this table.")
+
+    session, _ = ensure_vip_session_started(db, table)
+    if not session:
+        raise HTTPException(status_code=400, detail="Could not start VIP session.")
+
+    # Keep entry fee rate in sync with current table setting for open visits
+    session.entry_fee_per_guest_snapshot = float(table.entry_fee_per_guest or 0)
+    set_session_guest_count(session, payload.guest_count)
+    db.commit()
+    db.refresh(session)
+    return session_summary(session)
 
 
 @router.delete("/tables/{table_id}")
@@ -680,10 +765,12 @@ def get_table_floor(
         live = live_map.get(table.id)
         active_session = get_active_session(db, table.id)
         session_fee = 0.0
+        entry_fee = 0.0
         vip_session = None
         if active_session:
             vip_session = session_summary(active_session)
-            session_fee = vip_session["current_fee"]
+            session_fee = float(vip_session["current_fee"] or 0)
+            entry_fee = float(vip_session.get("entry_fee") or 0)
 
         if live:
             entry = {
@@ -694,7 +781,8 @@ def get_table_floor(
                 "total_price": live["total_price"],
                 "is_vip_room": bool(table.is_vip_room),
                 "session_fee": session_fee,
-                "total_with_session": live["total_price"] + session_fee,
+                "entry_fee": entry_fee,
+                "total_with_session": live["total_price"] + session_fee + entry_fee,
                 "vip_session": vip_session,
             }
             floor.append(entry)
@@ -941,31 +1029,18 @@ def get_consolidated_table_bill(
             consolidated_items[item_key]["quantity"] += item.quantity
             grand_total += item_unit_price * item.quantity
 
-    table_num = get_table_label(active_orders[0].table)
+    table = active_orders[0].table
+    table_num = get_table_label(table)
     items_list = list(consolidated_items.values())
-    session_fee = 0.0
-    session_line_label = None
-    vip_session = None
+
+    if table.is_vip_room:
+        ensure_vip_session_started(db, table)
+        db.commit()
 
     active_session = get_active_session(db, table_id)
-    if active_session:
-        vip_session = session_summary(active_session)
-        session_fee = vip_session["current_fee"]
-        session_line_label = (
-            f"VIP Room Session ({vip_session['elapsed_label']}, "
-            f"billed {format_duration(vip_session['billable_minutes'])})"
-        )
-        items_list.insert(
-            0,
-            {
-                "name": session_line_label,
-                "quantity": 1,
-                "unit_price": session_fee,
-                "modifiers": [],
-                "is_session_fee": True,
-            },
-        )
-        grand_total += session_fee
+    items_list, grand_total, session_fee, entry_fee, vip_session = _append_vip_fee_lines(
+        items_list, grand_total, active_session, use_charged=False
+    )
 
     return {
         "restaurant_name": RESTAURANT_NAME,
@@ -976,7 +1051,13 @@ def get_consolidated_table_bill(
         "items": items_list,
         "adjustable_items": _build_adjustable_items(active_orders),
         "session_fee": session_fee,
-        "session_line_label": session_line_label,
+        "entry_fee": entry_fee,
+        "is_vip_room": bool(table.is_vip_room),
+        "entry_fee_per_guest": float(
+            (vip_session or {}).get("entry_fee_per_guest")
+            or (table.entry_fee_per_guest or 0)
+        ),
+        "guest_count": int((vip_session or {}).get("guest_count") or 0),
         "vip_session": vip_session,
         **bill_amounts(grand_total),
     }
@@ -1129,8 +1210,9 @@ def get_settled_tables_history(
         if fee_key not in session_fee_keys:
             session_fee_keys.add(fee_key)
             table_session = get_settled_session_at(db, t_id, order.settled_at)
-            if table_session and (table_session.session_fee_charged or 0) > 0:
-                row["total_amount"] += float(table_session.session_fee_charged)
+            if table_session:
+                row["total_amount"] += float(table_session.session_fee_charged or 0)
+                row["total_amount"] += float(table_session.entry_fee_charged or 0)
 
     dining_rows = sorted(
         table_map.values(),
@@ -1196,13 +1278,10 @@ def get_historical_table_bill(
 
     table_num = get_table_label(orders[0].table)
     items_list = list(consolidated_items.values())
-    session_fee = 0.0
     table_session = get_settled_session_at(db, table_id, settled_datetime)
-    if table_session and (table_session.session_fee_charged or 0) > 0:
-        session_line = session_fee_line_item(table_session)
-        session_fee = session_line["unit_price"]
-        items_list.insert(0, session_line)
-        grand_total += session_fee
+    items_list, grand_total, session_fee, entry_fee, _vip = _append_vip_fee_lines(
+        items_list, grand_total, table_session, use_charged=True
+    )
 
     return {
         "restaurant_name": RESTAURANT_NAME,
@@ -1212,6 +1291,7 @@ def get_historical_table_bill(
         "timestamp": settled_datetime.strftime("%Y-%m-%d %H:%M:%S"),
         "items": items_list,
         "session_fee": session_fee,
+        "entry_fee": entry_fee,
         **bill_amounts(grand_total),
     }
 
@@ -1281,11 +1361,17 @@ def get_daily_table_bill(
         if fee_key not in session_fee_keys:
             session_fee_keys.add(fee_key)
             table_session = get_settled_session_at(db, table_id, order.settled_at)
-            if table_session and (table_session.session_fee_charged or 0) > 0:
-                session_line = session_fee_line_item(table_session)
-                items_list.append(session_line)
-                session_fee_total += session_line["unit_price"]
-                grand_total += session_line["unit_price"]
+            if table_session:
+                if (table_session.session_fee_charged or 0) > 0:
+                    session_line = session_fee_line_item(table_session)
+                    items_list.append(session_line)
+                    session_fee_total += session_line["unit_price"]
+                    grand_total += session_line["unit_price"]
+                entry_line = entry_fee_line_item(table_session, use_charged=True)
+                if entry_line:
+                    fee = float(entry_line.get("subtotal") or 0)
+                    items_list.append(entry_line)
+                    grand_total += fee
 
     table_num = get_table_label(orders[0].table)
     items_list.extend(consolidated_items.values())

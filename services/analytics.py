@@ -139,11 +139,14 @@ def add_settled_session_fees(
             continue
         session_fee_keys.add(fee_key)
         table_session = get_settled_session_at(db, order.table_id, order.settled_at)
-        if table_session and (table_session.session_fee_charged or 0) > 0:
-            fee = float(table_session.session_fee_charged)
-            total_fees += fee
-            if table_totals is not None and order.table_id in table_totals:
-                table_totals[order.table_id]["total_amount"] += fee
+        if table_session:
+            session_fee = float(table_session.session_fee_charged or 0)
+            entry_fee = float(table_session.entry_fee_charged or 0)
+            fee = session_fee + entry_fee
+            if fee > 0:
+                total_fees += fee
+                if table_totals is not None and order.table_id in table_totals:
+                    table_totals[order.table_id]["total_amount"] += fee
     return total_fees
 
 
