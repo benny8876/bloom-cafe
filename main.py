@@ -191,6 +191,9 @@ def migrate_legacy_menu_prices():
 
 def migrate_order_status_values():
     """Normalize legacy uppercase enum names to lowercase values in SQLite."""
+    if engine.dialect.name != "sqlite":
+        return
+
     inspector = inspect(engine)
     if "orders" not in inspector.get_table_names():
         return
@@ -274,6 +277,20 @@ def migrate_auth_tables():
         db.close()
 
 
+def migrate_menu_categories():
+    from services.menu_categories import sync_menu_categories
+
+    inspector = inspect(engine)
+    if "menu_categories" not in inspector.get_table_names():
+        models.MenuCategory.__table__.create(bind=engine)
+
+    db = SessionLocal()
+    try:
+        sync_menu_categories(db)
+    finally:
+        db.close()
+
+
 def ensure_default_accounts(db):
     """Owner (admin) + floor manager accounts."""
     owner_password = os.getenv("OWNER_DEFAULT_PASSWORD", "adminpassword123")
@@ -320,6 +337,7 @@ def seed_initial_data():
     migrate_legacy_menu_prices()
     migrate_order_status_values()
     migrate_auth_tables()
+    migrate_menu_categories()
     db = SessionLocal()
 
     ensure_default_accounts(db)

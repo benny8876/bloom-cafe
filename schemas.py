@@ -92,6 +92,19 @@ class MenuItemResponse(MenuItemBase):
         from_attributes = True
 
 
+class MenuCategoryResponse(BaseModel):
+    name: str
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class MenuCategoryMoveRequest(BaseModel):
+    category: str
+    direction: Literal["up", "down"]
+
+
 class OrderItemModifierResponse(BaseModel):
     modifier: ModifierResponse
     class Config:

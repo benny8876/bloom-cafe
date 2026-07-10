@@ -13,6 +13,7 @@ from services.dining_sessions import (
     start_dining_session,
     verify_dining_session,
 )
+from services.menu_categories import list_menu_categories
 
 router = APIRouter(prefix="/menu", tags=["Menu (Client)"])
 
@@ -82,6 +83,18 @@ def get_available_menu(
         .order_by(models.MenuItem.order_index.asc())
         .all()
     )
+
+
+@router.get("/categories", response_model=List[schemas.MenuCategoryResponse])
+def get_menu_categories(
+    table_id: int,
+    token: str,
+    session_token: str,
+    db: Session = Depends(get_db),
+):
+    _require_table_qr_token(table_id, token)
+    _require_dining_session(db, table_id, session_token)
+    return list_menu_categories(db)
 
 
 @router.post("/order", response_model=schemas.OrderResponse, status_code=status.HTTP_201_CREATED)

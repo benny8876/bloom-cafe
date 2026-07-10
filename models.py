@@ -104,6 +104,12 @@ class MenuItem(Base):
 
     modifiers = relationship("MenuItemModifier", back_populates="menu_item", cascade="all, delete-orphan")
 
+class MenuCategory(Base):
+    __tablename__ = "menu_categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False, index=True)
+    order_index = Column(Integer, default=0, index=True)
+
 class MenuItemModifier(Base):
     __tablename__ = "menu_item_modifiers"
     id = Column(Integer, primary_key=True, index=True)

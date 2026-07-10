@@ -21,7 +21,9 @@
             }
          })();
       </script>
+      <script src="/static/escpos-receipt.js"></script>
       <script src="/static/bluetooth-printer.js"></script>
+      <script src="/static/usb-printer.js"></script>
       <style>
          body { font-family: 'Montserrat', 'Noto Sans Myanmar', system-ui, sans-serif; }
          .bloom-brand {
@@ -550,6 +552,15 @@
             <div id="panel-menu" class="manager-panel hidden space-y-8">
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
+                     <div>
+                        <h2 class="text-lg font-bold text-slate-800">Category Tab Order</h2>
+                        <p class="text-xs text-slate-400 mt-1">Controls the order of tabs on the customer menu page.</p>
+                     </div>
+                  </div>
+                  <div id="category-order-list" class="space-y-2"></div>
+               </section>
+               <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
                      <h2 class="text-lg font-bold text-slate-800">Modify Menu Items &amp; Pricing</h2>
                      <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shrink-0">+ Add Menu Item</button>
                   </div>
@@ -767,6 +778,8 @@
                   <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
                   <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">Connect Bluetooth Printer</button>
                   <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm">Print to Bluetooth Printer</button>
+                  <button onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm">Connect USB Printer</button>
+                  <button onclick="printReceiptUsb()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg text-sm">Print to USB Printer</button>
                   <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Print Receipt (Browser)</button>
                </div>
                <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden">Settle &amp; Close Table Bill</button>
@@ -809,6 +822,7 @@
          updateDarkModeUi();
          const MANAGER_PANEL_KEY = 'manager_active_panel';
          let menuItemsList = [];
+         let menuCategoriesList = [];
          let kitchenCoffeeCategories = new Set();
          let managerWs = null;
          let activeTablesPollId = null;
@@ -1002,6 +1016,8 @@
              } else if (activePanel === 'menu') {
                  loadKitchenStationConfig().then(() => {
                      fetchMenuTable();
+                     fetchMenuCategories();
+                     fetchMenuCategories();
                      loadCategories();
                  });
              } else if (activePanel === 'settled') {
@@ -1133,18 +1149,34 @@
              return BluetoothPrinter.tryReconnectStoredPrinterWithRetries(statusEl, 3, 700);
          }
 
+         function reconnectUsbPrinter() {
+             const statusEl = getBluetoothStatusEl();
+             if (!localStorage.getItem('usb_printer_device')) {
+                 return Promise.resolve(false);
+             }
+
+             return UsbPrinter.tryReconnectStoredPrinterWithRetries(statusEl, 3, 700);
+         }
+
          function setupBluetoothLifecycleHooks() {
              window.addEventListener('pageshow', () => {
                  if (localStorage.getItem('manager_token')) {
                      reconnectBluetoothPrinter();
+                     reconnectUsbPrinter();
                  }
              });
 
              document.addEventListener('visibilitychange', () => {
                  if (document.visibilityState === 'visible' && localStorage.getItem('manager_token')) {
                      reconnectBluetoothPrinter();
+                     reconnectUsbPrinter();
                  }
              });
+         }
+
+         function setCurrentReceiptForPrinters(receipt) {
+             BluetoothPrinter.setCurrentReceipt(receipt);
+             UsbPrinter.setCurrentReceipt(receipt);
          }
          
          async function handleLogin(event) {
@@ -1683,7 +1715,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  const bill = await response.json();
-                 BluetoothPrinter.setCurrentReceipt(bill);
+                 setCurrentReceiptForPrinters(bill);
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill);
                  configureReceiptModalActions('live', bill.table_id);
                  toggleReceiptModal(true);
@@ -1765,7 +1797,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  const bill = await response.json();
-                 BluetoothPrinter.setCurrentReceipt(bill);
+                 setCurrentReceiptForPrinters(bill);
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
                      title: 'DAILY TABLE RECEIPT'
                  });
@@ -1785,7 +1817,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  const bill = await response.json();
-                 BluetoothPrinter.setCurrentReceipt(bill);
+                 setCurrentReceiptForPrinters(bill);
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
                      title: 'HISTORICAL TABLE SESSION RECEIPT'
                  });
@@ -1868,7 +1900,8 @@
          }
 
          async function loadCategories() {
-            const res = await fetch(`${API_BASE}/menu/`);
+            const res = await fetch(`${API_BASE}/manager/menu`, { headers: getAuthHeaders() });
+            if (!res.ok) return;
             const items = await res.json();
 
             const categories = [...new Set(items.map(i => i.category))];
@@ -1968,7 +2001,10 @@
                             </span>
                         </td>
                         <td class="py-3 text-right pr-4">
-                            <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Edit</button>
+                            <div class="flex justify-end gap-2">
+                                <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Edit</button>
+                                <button onclick="removeMenuItem(${item.id})" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Remove</button>
+                            </div>
                         </td>`;
                     tbody.appendChild(tr);
                 });
@@ -1992,12 +2028,68 @@
 
         async function fetchMenuTable() {
             try {
-                const response = await fetch(`${API_BASE}/menu/`);
+                const response = await fetch(`${API_BASE}/manager/menu`, { headers: getAuthHeaders() });
+                if (!response.ok) throw new Error('Failed to load menu');
                 menuItemsList = await response.json();
                 populateMenuCategoryFilter();
                 applyMenuFilters();
             } catch (err) {
                 console.error('Could not populate items.');
+            }
+        }
+
+        async function fetchMenuCategories() {
+            try {
+                const response = await fetch(`${API_BASE}/manager/menu/categories`, { headers: getAuthHeaders() });
+                if (response.status === 401) { handleLogout(); return; }
+                if (!response.ok) return;
+                menuCategoriesList = await response.json();
+                renderCategoryOrderList();
+            } catch (err) {
+                console.error('Could not load category order.');
+            }
+        }
+
+        function renderCategoryOrderList() {
+            const container = document.getElementById('category-order-list');
+            if (!container) return;
+            if (!menuCategoriesList.length) {
+                container.innerHTML = '<p class="text-sm text-slate-400 italic">No categories yet.</p>';
+                return;
+            }
+            container.innerHTML = menuCategoriesList.map((cat, index) => `
+                <div class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">#${index + 1}</p>
+                        <p class="text-sm font-bold text-slate-800 truncate">${escapeHtml(cat.name)}</p>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button type="button" onclick="moveMenuCategory(${index}, 'up')" ${index === 0 ? 'disabled' : ''}
+                            class="text-xs bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed border border-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg transition">↑ Up</button>
+                        <button type="button" onclick="moveMenuCategory(${index}, 'down')" ${index === menuCategoriesList.length - 1 ? 'disabled' : ''}
+                            class="text-xs bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed border border-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg transition">↓ Down</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function moveMenuCategory(index, direction) {
+            const category = menuCategoriesList[index];
+            if (!category) return;
+            try {
+                const response = await fetch(`${API_BASE}/manager/menu/categories/move`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ category: category.name, direction })
+                });
+                if (response.status === 401) { handleLogout(); return; }
+                if (!response.ok) {
+                    alert('Could not move category.');
+                    return;
+                }
+                await fetchMenuCategories();
+            } catch (err) {
+                alert('Network error.');
             }
         }
 
@@ -2098,10 +2190,38 @@
                      toggleAddModal(false);
                      document.getElementById('add-item-form').reset();
                      fetchMenuTable();
+                     fetchMenuCategories();
                      loadCategories();
                  }
              } catch (err) {
                  alert("Network error.");
+             }
+         }
+
+         async function removeMenuItem(itemId) {
+             const item = menuItemsList.find((i) => i.id === itemId);
+             if (!item) return;
+             if (!confirm(`Remove "${item.name}" from the menu? This cannot be undone.`)) return;
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/menu/${itemId}`, {
+                     method: 'DELETE',
+                     headers: getAuthHeaders(),
+                 });
+
+                 if (response.status === 401) { handleLogout(); return; }
+
+                 if (!response.ok) {
+                     const data = await response.json().catch(() => ({}));
+                     alert(data.detail || 'Could not remove item.');
+                     return;
+                 }
+
+                 await fetchMenuTable();
+            await fetchMenuCategories();
+                 await fetchMenuCategories();
+             } catch (err) {
+                 alert('Network error.');
              }
          }
          
@@ -2163,6 +2283,7 @@
                  if (response.ok) {
                      toggleEditModal(false);
                      fetchMenuTable();
+                     fetchMenuCategories();
                  }
              } catch (err) {
                  alert("Network error.");
@@ -2185,7 +2306,8 @@
          
          if (response.ok) {
             // အောင်မြင်ရင် Table ကို ပြန်ဆွဲပြီး Modal ကို ပိတ်မယ်
-            await fetchMenuTable(); 
+            await fetchMenuTable();
+            await fetchMenuCategories(); 
             toggleEditModal(false);
          } else {
             alert("Could not move item. Make sure you added the move endpoint in your backend.");
@@ -2283,7 +2405,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  const receipt = await response.json();
-                 BluetoothPrinter.setCurrentReceipt(receipt);
+                 setCurrentReceiptForPrinters(receipt);
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(receipt, {
                      title: receipt.voucher_id || 'ORDER RECEIPT'
                  });
@@ -2326,14 +2448,35 @@
                  statusEl.className = 'text-xs text-rose-600';
              }
          }
+
+         async function connectUsbPrinter() {
+             try {
+                 await UsbPrinter.connectPrinterWithStatus(getBluetoothStatusEl());
+             } catch (err) {
+                 const statusEl = getBluetoothStatusEl();
+                 statusEl.innerText = err.message || 'Could not connect to USB printer.';
+                 statusEl.className = 'text-xs text-rose-600';
+             }
+         }
+
+         async function printReceiptUsb() {
+             try {
+                 await UsbPrinter.printCurrentReceipt(getBluetoothStatusEl());
+             } catch (err) {
+                 const statusEl = getBluetoothStatusEl();
+                 statusEl.innerText = err.message || 'USB print failed.';
+                 statusEl.className = 'text-xs text-rose-600';
+             }
+         }
          
          setupBluetoothLifecycleHooks();
 
          async function loadCounterMenu() {
              try {
-                 const response = await fetch(`${API_BASE}/menu/`);
+                 const response = await fetch(`${API_BASE}/manager/menu`, { headers: getAuthHeaders() });
                  if (!response.ok) return;
-                 counterMenuItems = await response.json();
+                 const items = await response.json();
+                 counterMenuItems = items.filter((item) => item.is_available);
                  renderCounterMenu();
              } catch (err) {
                  console.error('Could not load menu for counter.');

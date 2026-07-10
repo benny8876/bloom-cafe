@@ -280,6 +280,60 @@
       }
     }
 
+    .category-tabs-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 calc(-1 * clamp(18px, 3.5vw, 36px)) clamp(18px, 3vw, 28px);
+      padding: 4px clamp(18px, 3.5vw, 36px) 0;
+      background: linear-gradient(var(--bloom-cream) 75%, rgba(250, 247, 252, 0));
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-bottom: 1px solid rgba(155, 45, 140, 0.12);
+    }
+
+    .category-tabs::-webkit-scrollbar { display: none; }
+
+    .category-tab {
+      flex-shrink: 0;
+      font-family: "Montserrat", sans-serif;
+      font-size: clamp(0.68rem, 2vw, 0.76rem);
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 10px 14px 10px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+      letter-spacing: 0.02em;
+      transition: color 0.15s ease;
+    }
+
+    .category-tab:hover { color: var(--bloom-purple); }
+
+    .category-tab.active {
+      color: var(--bloom-purple-deep);
+      font-weight: 700;
+    }
+
+    .category-tab.active::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: -1px;
+      height: 2px;
+      background: var(--bloom-purple);
+      border-radius: 1px 1px 0 0;
+    }
+
     .menu-section { margin-bottom: clamp(28px, 4vw, 40px); }
 
     .section-title {
@@ -818,7 +872,7 @@
 </head>
 <body>
 
-  <!-- SVG definitions -->
+
   <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
     <defs>
       <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -910,7 +964,7 @@
         </div>
         <p class="brand-tagline">Botanical coffee &amp; calm moments</p>
         <p class="brand-hours">Opening Daily 8:00 AM – 9:00 PM</p>
-        <p class="brand-note">欢迎光临BLOOM CAFE，祝您享受我们的服务</p>
+        <p class="brand-note">欢迎光临 BLOOM CAFÉ，愿您在此度过惬意时光，尽享美好服务</p>
       </div>
     </header>
 
@@ -946,6 +1000,10 @@
           </div>
         </div>
 
+        <div id="category-tabs-wrap" class="category-tabs-wrap hidden">
+          <div id="category-tabs" class="category-tabs" role="tablist" aria-label="Menu categories"></div>
+        </div>
+
         <div id="menu-categories-container"></div>
 
         <footer class="inner-footer">
@@ -954,7 +1012,7 @@
         </footer>
         <footer class="notice-footer">
           <strong>***အသိပေးကြေညာချက်***</strong><br>
-          <strong>ဆိုင်တွင် ဝန်ဆောင်မှုအဆင်ပြေမှုများသာမက မပြေမှုများလည်း ရှိပါက ပြောကြားပေးနိုင်ပါသည်။</strong><br>
+          <strong>အဆင်မပြေမှု တစ်စုံတစ်ရာ ရှိပါကအောက်ပါဖုန်းနံပါတ်များသိုဆက်သွယ်အကြုံပြုနိုင်ပါသည်။</strong><br>
           <strong>Phone No. - 09 693 820 039 , 09 664 419 274</strong> 
         </footer>
       </div>
@@ -966,7 +1024,7 @@
     </footer>
   </div>
 
-  <!-- Cart bar -->
+
   <div id="cart-bar" class="hidden">
     <button type="button" onclick="toggleCartModal(true)">
       <span>View My Order</span>
@@ -974,7 +1032,7 @@
     </button>
   </div>
 
-  <!-- Cart modal -->
+ 
   <div id="cart-modal" class="overlay hidden" onclick="closeCartOnBackdrop(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -990,7 +1048,7 @@
     </div>
   </div>
 
-  <!-- Customize modal -->
+
   <div id="customize-modal" class="overlay center hidden" onclick="closeCustomizeModal()">
     <div class="modal-sheet" style="border-radius:16px;" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -1019,7 +1077,7 @@
     </div>
   </div>
 
-  <!-- Payment modal -->
+
   <div id="payment-modal" class="overlay center hidden">
     <div class="modal-sheet payment-modal" onclick="event.stopPropagation()">
       <div class="payment-modal-close-row">
@@ -1050,6 +1108,9 @@
     let selectedPresets = new Set();
     let selectedModifierIds = new Set();
     let diningSessionToken = null;
+    let activeCategory = null;
+    let categoryTabList = [];
+    let categoryOrderMap = {};
 
     function diningSessionStorageKey() {
       return `dining_session_${tableId}`;
@@ -1155,6 +1216,26 @@
       return cart.filter(c => c.item.id === itemId).reduce((sum, c) => sum + c.quantity, 0);
     }
 
+    async function fetchCategoryOrder() {
+      if (!diningSessionToken) return;
+      try {
+        const params = new URLSearchParams({
+          table_id: tableId,
+          token: secureToken,
+          session_token: diningSessionToken
+        });
+        const response = await fetch(`${API_BASE}/menu/categories?${params.toString()}`);
+        if (!response.ok) return;
+        const categories = await response.json();
+        categoryOrderMap = {};
+        categories.forEach((cat) => {
+          categoryOrderMap[cat.name] = cat.order_index;
+        });
+      } catch (err) {
+        console.error('Failed to load category order.');
+      }
+    }
+
     async function fetchMenu() {
       if (!diningSessionToken) return;
       try {
@@ -1163,6 +1244,7 @@
           token: secureToken,
           session_token: diningSessionToken
         });
+        await fetchCategoryOrder();
         const response = await fetch(`${API_BASE}/menu/?${params.toString()}`);
         if (response.status === 403) {
           clearDiningSession();
@@ -1182,7 +1264,64 @@
       }
     }
 
-    function renderMenu() {
+    function getOrderedCategories(items) {
+      const names = [...new Set(items.map((item) => item.category))];
+      if (Object.keys(categoryOrderMap).length) {
+        return names.sort((a, b) => {
+          const orderA = categoryOrderMap[a] ?? 9999;
+          const orderB = categoryOrderMap[b] ?? 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.localeCompare(b);
+        });
+      }
+
+      const meta = {};
+      items.forEach(item => {
+        const idx = item.order_index ?? 0;
+        if (!meta[item.category] || idx < meta[item.category]) {
+          meta[item.category] = idx;
+        }
+      });
+      return names.sort((a, b) => meta[a] - meta[b]);
+    }
+
+    function renderCategoryTabs(categories, scrollActive = false) {
+      const wrap = document.getElementById('category-tabs-wrap');
+      const tabs = document.getElementById('category-tabs');
+      categoryTabList = categories;
+
+      if (!categories.length) {
+        wrap.classList.add('hidden');
+        return;
+      }
+
+      wrap.classList.remove('hidden');
+      if (!activeCategory || !categories.includes(activeCategory)) {
+        activeCategory = categories[0];
+      }
+
+      tabs.innerHTML = categories.map((cat, index) => `
+        <button type="button"
+          class="category-tab${cat === activeCategory ? ' active' : ''}"
+          role="tab"
+          aria-selected="${cat === activeCategory}"
+          onclick="selectCategoryByIndex(${index})">${escapeHtml(cat)}</button>
+      `).join('');
+
+      const activeBtn = tabs.querySelector('.category-tab.active');
+      if (activeBtn && scrollActive) {
+        activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function selectCategoryByIndex(index) {
+      const category = categoryTabList[index];
+      if (!category || category === activeCategory) return;
+      activeCategory = category;
+      renderMenu(true);
+    }
+
+    function renderMenu(scrollTabs = false) {
       const container = document.getElementById('menu-categories-container');
       container.innerHTML = '';
 
@@ -1192,7 +1331,14 @@
         categories[item.category].push(item);
       });
 
-      for (const [categoryName, items] of Object.entries(categories)) {
+      const orderedCategories = getOrderedCategories(menuItems);
+      renderCategoryTabs(orderedCategories, scrollTabs);
+
+      const categoriesToRender = activeCategory && categories[activeCategory]
+        ? [[activeCategory, categories[activeCategory]]]
+        : Object.entries(categories);
+
+      for (const [categoryName, items] of categoriesToRender) {
         items.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
         const segments = [];

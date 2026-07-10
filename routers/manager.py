@@ -36,6 +36,7 @@ from services.table_sessions import (
     session_summary,
 )
 from services.dining_sessions import close_dining_sessions_for_table
+from services.menu_categories import list_menu_categories, move_menu_category, sync_menu_categories
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -355,6 +356,39 @@ def delete_table(
     return {"message": f"Table {get_table_label(table)} removed."}
 
 
+# --- INVENTORY LIST (manager panel) ---
+@router.get("/menu", response_model=List[schemas.MenuItemResponse])
+def list_menu_items(
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    return (
+        db.query(models.MenuItem)
+        .options(joinedload(models.MenuItem.modifiers))
+        .order_by(models.MenuItem.order_index.asc())
+        .all()
+    )
+
+
+@router.get("/menu/categories", response_model=List[schemas.MenuCategoryResponse])
+def get_manager_menu_categories(
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    return list_menu_categories(db)
+
+
+@router.post("/menu/categories/move")
+def move_manager_menu_category(
+    payload: schemas.MenuCategoryMoveRequest,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    if not move_menu_category(db, payload.category, payload.direction):
+        raise HTTPException(status_code=400, detail="Could not move category.")
+    return {"status": "success"}
+
+
 # --- INVENTORY CREATION ---
 @router.post("/menu", response_model=schemas.MenuItemResponse)
 def create_menu_item(
@@ -387,6 +421,7 @@ def create_menu_item(
         )
         db.add(db_mod)
 
+    sync_menu_categories(db)
     db.commit()
     db.refresh(db_item)
     return db_item
@@ -423,9 +458,45 @@ def update_menu_item(
                 )
             )
 
+    sync_menu_categories(db)
     db.commit()
     db.refresh(db_item)
     return db_item
+
+
+@router.delete("/menu/{item_id}")
+def delete_menu_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    db_item = db.query(models.MenuItem).filter(models.MenuItem.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    order_refs = (
+        db.query(models.OrderItem)
+        .filter(models.OrderItem.menu_item_id == item_id)
+        .count()
+    )
+    if order_refs:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot remove this item because it appears in past orders. Mark it as Sold Out instead.",
+        )
+
+    image_url = db_item.image_url
+    item_name = db_item.name
+    db.delete(db_item)
+    db.commit()
+
+    if image_url and image_url.startswith("/static/uploads/"):
+        image_path = image_url.lstrip("/")
+        if os.path.isfile(image_path):
+            os.remove(image_path)
+
+    return {"message": f"Menu item '{item_name}' removed."}
+
 
 # --- Updated: Category-Aware & Sequential Index Swapping ---
 @router.post("/menu/items/{item_id}/move")
