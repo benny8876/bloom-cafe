@@ -175,8 +175,14 @@
     }
 
     async function connectBluetoothPrinter() {
+        if (global.PrinterSupport) {
+            global.PrinterSupport.requireSecureContext();
+        } else if (!global.isSecureContext) {
+            throw new Error('Web Bluetooth requires HTTPS in Chrome.');
+        }
+
         if (!navigator.bluetooth) {
-            throw new Error('Web Bluetooth is not supported. Use Chrome on Android over HTTPS.');
+            throw new Error('Web Bluetooth is not supported in this browser. Use Chrome on Android over HTTPS.');
         }
 
         const optionalServices = PRINTER_PROFILES.map((profile) => profile.service);
@@ -263,7 +269,7 @@
             throw new Error('Receipt formatter not loaded.');
         }
 
-        const data = global.EscPosReceipt.buildEscPosReceipt(currentReceipt);
+        const data = await global.EscPosReceipt.buildEscPosReceipt(currentReceipt);
         await sendEscPosData(data);
 
         updatePrinterStatus(
@@ -271,6 +277,12 @@
             `Printed on ${getPrinterName()}`,
             'text-xs text-emerald-600 font-semibold'
         );
+    }
+
+    function isApiAvailable() {
+        return global.PrinterSupport
+            ? global.PrinterSupport.isBluetoothAvailable()
+            : Boolean(global.isSecureContext && navigator.bluetooth);
     }
 
     global.BluetoothPrinter = {
@@ -282,5 +294,6 @@
         printCurrentReceipt,
         isPrinterConnected,
         getPrinterName,
+        isApiAvailable,
     };
 }(window));

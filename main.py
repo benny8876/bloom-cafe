@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +23,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_printer_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Permissions-Policy"] = "bluetooth=(self), usb=(self)"
+    return response
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -58,6 +65,42 @@ def serve_food_kitchen():
 @app.get("/manager")
 def serve_manager():
     return FileResponse(os.path.join("static", "manager.html"))
+
+
+@app.get("/sw-manager.js")
+def serve_sw_manager():
+    return FileResponse(
+        os.path.join("static", "sw-manager.js"),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/sw-finance.js")
+def serve_sw_finance():
+    return FileResponse(
+        os.path.join("static", "sw-finance.js"),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/manifest-manager.json")
+def serve_manifest_manager():
+    return FileResponse(
+        os.path.join("static", "manifest-manager.json"),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/manifest-finance.json")
+def serve_manifest_finance():
+    return FileResponse(
+        os.path.join("static", "manifest-finance.json"),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @app.get("/finance")
@@ -382,6 +425,6 @@ def root():
 
 
 if __name__ == "__main__":
-    import uvicorn
+    from run_https import main as run_https_main
 
-    uvicorn.run("main:app", host="0.0.0.0", port=3000)
+    run_https_main()

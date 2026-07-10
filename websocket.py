@@ -18,7 +18,7 @@ class ConnectionManager:
             try:
                 await connection.send_json(message)
             except Exception:
-                # Remove inactive/broken connections
+                
                 self.disconnect(connection)
 
 manager_ws = ConnectionManager()

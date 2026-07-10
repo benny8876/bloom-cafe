@@ -21,8 +21,11 @@
     return document.getElementById('pwa-install-panel');
   }
 
-  function headerBtnEl() {
-    return document.getElementById('pwa-install-header-btn');
+  function installButtons() {
+    return [
+      document.getElementById('pwa-install-header-btn'),
+      document.getElementById('pwa-install-login-btn'),
+    ].filter(Boolean);
   }
 
   function iosStepsEl() {
@@ -36,21 +39,18 @@
   function showPanel() {
     if (isStandalone() || isDismissed()) {
       hidePanel();
-      updateHeaderButton();
+      updateInstallButtons();
       return;
     }
     panelEl()?.classList.remove('hidden');
-    updateHeaderButton();
+    updateInstallButtons();
   }
 
-  function updateHeaderButton() {
-    const btn = headerBtnEl();
-    if (!btn) return;
-    if (isStandalone() || isDismissed()) {
-      btn.classList.add('hidden');
-    } else {
-      btn.classList.remove('hidden');
-    }
+  function updateInstallButtons() {
+    const show = !isStandalone() && !isDismissed();
+    installButtons().forEach((btn) => {
+      btn.classList.toggle('hidden', !show);
+    });
   }
 
   function configureIosUi() {
@@ -60,6 +60,13 @@
     if (isIos() && !deferredPrompt) {
       iosSteps.classList.remove('hidden');
       installBtn.textContent = 'How to install';
+    }
+  }
+
+  function refreshPwaInstallUi() {
+    updateInstallButtons();
+    if (!isStandalone() && !isDismissed() && isIos()) {
+      configureIosUi();
     }
   }
 
@@ -76,7 +83,7 @@
       const choice = await deferredPrompt.userChoice;
       deferredPrompt = null;
       if (choice.outcome === 'accepted') hidePanel();
-      updateHeaderButton();
+      updateInstallButtons();
       return;
     }
     iosStepsEl()?.classList.remove('hidden');
@@ -87,8 +94,10 @@
   window.dismissPwaInstall = function () {
     localStorage.setItem(config.dismissKey, '1');
     hidePanel();
-    updateHeaderButton();
+    updateInstallButtons();
   };
+
+  window.refreshPwaInstallUi = refreshPwaInstallUi;
 
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
@@ -102,14 +111,14 @@
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
     hidePanel();
-    updateHeaderButton();
+    updateInstallButtons();
   });
 
   if ('serviceWorker' in navigator && config.swPath) {
     navigator.serviceWorker
       .register(config.swPath, { scope: '/' })
       .then(() => {
-        updateHeaderButton();
+        refreshPwaInstallUi();
         if (!isStandalone() && !isDismissed()) {
           if (isIos()) {
             setTimeout(() => {
@@ -117,12 +126,15 @@
               configureIosUi();
             }, 1200);
           } else if (!deferredPrompt) {
-            setTimeout(updateHeaderButton, 500);
+            setTimeout(refreshPwaInstallUi, 500);
           }
         }
       })
-      .catch((err) => console.warn('Service worker registration failed:', err));
+      .catch((err) => {
+        console.warn('Service worker registration failed:', err);
+        refreshPwaInstallUi();
+      });
   } else {
-    updateHeaderButton();
+    refreshPwaInstallUi();
   }
 })();

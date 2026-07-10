@@ -25,7 +25,12 @@ from services.analytics import (
     add_settled_session_fees,
     MYANMAR_TZ,
 )
-from services.orders import create_order_from_items
+from services.orders import (
+    create_order_from_items,
+    order_item_unit_price,
+    recalculate_order_total,
+    restore_order_item_stock,
+)
 from services.table_sessions import (
     ensure_vip_session_started,
     end_table_session,
@@ -757,6 +762,148 @@ async def create_counter_sale(
     return order
 
 
+def _load_active_table_orders(db: Session, table_id: int) -> List[models.Order]:
+    return (
+        db.query(models.Order)
+        .options(
+            joinedload(models.Order.table),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.menu_item),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.selected_modifiers)
+            .joinedload(models.OrderItemModifier.modifier),
+        )
+        .filter(
+            models.Order.table_id == table_id,
+            models.Order.status.in_(OPEN_TABLE_SESSION_STATUSES),
+        )
+        .order_by(models.Order.id.asc())
+        .all()
+    )
+
+
+def _order_item_payload(item: models.OrderItem) -> dict:
+    unit_price = order_item_unit_price(item)
+    quantity = item.quantity
+    return {
+        "order_item_id": item.id,
+        "order_id": item.order_id,
+        "name": item.menu_item.name,
+        "quantity": quantity,
+        "unit_price": unit_price,
+        "modifiers": [m.modifier.name for m in item.selected_modifiers],
+        "subtotal": round(unit_price * quantity, 2),
+    }
+
+
+def _build_adjustable_items(active_orders: List[models.Order]) -> List[dict]:
+    adjustable_items = []
+    for order in active_orders:
+        for item in order.items:
+            adjustable_items.append(_order_item_payload(item))
+    return adjustable_items
+
+
+# --- ADJUST ORDER ITEM QTY (before settle) ---
+@router.patch("/order-items/{order_item_id}/quantity", response_model=schemas.OrderResponse)
+async def adjust_order_item_quantity(
+    order_item_id: int,
+    data: schemas.OrderItemQuantityAdjust,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    order_item = (
+        db.query(models.OrderItem)
+        .options(
+            joinedload(models.OrderItem.menu_item),
+            joinedload(models.OrderItem.selected_modifiers)
+            .joinedload(models.OrderItemModifier.modifier),
+            joinedload(models.OrderItem.order).joinedload(models.Order.table),
+        )
+        .filter(models.OrderItem.id == order_item_id)
+        .first()
+    )
+    if not order_item:
+        raise HTTPException(status_code=404, detail="Order item not found.")
+
+    order = order_item.order
+    if order.status not in OPEN_TABLE_SESSION_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail="Can only adjust items on active table orders before settle.",
+        )
+    if is_counter_table(order.table):
+        raise HTTPException(
+            status_code=400,
+            detail="Counter sales cannot be adjusted here. Use order refund instead.",
+        )
+
+    current_qty = order_item.quantity
+    new_qty = data.quantity
+    if new_qty > current_qty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot increase quantity before settle. Current quantity is {current_qty}.",
+        )
+
+    if new_qty == current_qty:
+        return (
+            db.query(models.Order)
+            .options(
+                joinedload(models.Order.table),
+                joinedload(models.Order.items)
+                .joinedload(models.OrderItem.menu_item),
+                joinedload(models.Order.items)
+                .joinedload(models.OrderItem.selected_modifiers)
+                .joinedload(models.OrderItemModifier.modifier),
+            )
+            .filter(models.Order.id == order.id)
+            .first()
+        )
+
+    removed_qty = current_qty - new_qty
+    restore_order_item_stock(order_item, removed_qty, db)
+
+    if new_qty == 0:
+        db.delete(order_item)
+    else:
+        order_item.quantity = new_qty
+
+    db.flush()
+
+    remaining_items = (
+        db.query(models.OrderItem)
+        .filter(models.OrderItem.order_id == order.id)
+        .count()
+    )
+    if remaining_items == 0:
+        order.status = models.OrderStatus.CANCELLED
+        order.total_price = 0.0
+    else:
+        recalculate_order_total(order)
+
+    db.commit()
+
+    order = (
+        db.query(models.Order)
+        .options(
+            joinedload(models.Order.table),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.menu_item),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.selected_modifiers)
+            .joinedload(models.OrderItemModifier.modifier),
+        )
+        .filter(models.Order.id == order.id)
+        .first()
+    )
+
+    response_payload = schemas.OrderResponse.model_validate(order).model_dump(mode="json")
+    await manager_ws.broadcast({"event": "status_update", "order": response_payload})
+
+    return order
+
+
 # --- GENERATE UNIFIED MASTER BILL ---
 @router.get("/tables/{table_id}/bill")
 def get_consolidated_table_bill(
@@ -764,14 +911,7 @@ def get_consolidated_table_bill(
     db: Session = Depends(get_db),
     authenticated: bool = Depends(verify_manager_token),
 ):
-    active_orders = (
-        db.query(models.Order)
-        .filter(
-            models.Order.table_id == table_id,
-            models.Order.status.in_(OPEN_TABLE_SESSION_STATUSES),
-        )
-        .all()
-    )
+    active_orders = _load_active_table_orders(db, table_id)
 
     if not active_orders:
         raise HTTPException(status_code=404, detail="No active dining sessions found.")
@@ -783,9 +923,7 @@ def get_consolidated_table_bill(
     for order in active_orders:
         order_ids.append(order.id)
         for item in order.items:
-            item_unit_price = item.menu_item.price
-            for mod_assoc in item.selected_modifiers:
-                item_unit_price += mod_assoc.modifier.price
+            item_unit_price = order_item_unit_price(item)
 
             mod_key = "-".join(
                 sorted([str(m.modifier_id) for m in item.selected_modifiers])
@@ -836,6 +974,7 @@ def get_consolidated_table_bill(
         "order_ids": order_ids,
         "timestamp": datetime.now(MYANMAR_TZ).strftime("%Y-%m-%d %H:%M:%S"),
         "items": items_list,
+        "adjustable_items": _build_adjustable_items(active_orders),
         "session_fee": session_fee,
         "session_line_label": session_line_label,
         "vip_session": vip_session,
@@ -932,13 +1071,13 @@ def get_settled_tables_history(
 
     range_start, range_end = day_bounds(target_date)
 
-    completed_orders = (
+    settled_orders = (
         db.query(models.Order)
         .options(joinedload(models.Order.table))
         .filter(
-            models.Order.status == models.OrderStatus.COMPLETED,
             models.Order.settled_at.isnot(None),
             models.Order.settled_at.between(range_start, range_end),
+            models.Order.status != models.OrderStatus.CANCELLED,
         )
         .order_by(models.Order.settled_at.desc())
         .all()
@@ -946,8 +1085,29 @@ def get_settled_tables_history(
 
     table_map: dict = {}
     session_fee_keys: set = set()
+    counter_rows: list = []
+    target_date_str = target_date.strftime("%Y-%m-%d")
 
-    for order in completed_orders:
+    for order in settled_orders:
+        if is_counter_table(order.table):
+            counter_rows.append(
+                {
+                    "table_id": order.table_id,
+                    "table_number": f"{get_table_label(order.table)} #{order.id}",
+                    "order_count": 1,
+                    "total_amount": order.total_price,
+                    "order_ids": [order.id],
+                    "order_id": order.id,
+                    "is_counter_sale": True,
+                    "date": target_date_str,
+                    "settled_at": order.settled_at.isoformat(),
+                }
+            )
+            continue
+
+        if order.status != models.OrderStatus.COMPLETED:
+            continue
+
         t_id = order.table_id
         if t_id not in table_map:
             table_map[t_id] = {
@@ -956,7 +1116,9 @@ def get_settled_tables_history(
                 "order_count": 0,
                 "total_amount": 0.0,
                 "order_ids": [],
-                "date": target_date.strftime("%Y-%m-%d"),
+                "order_id": None,
+                "is_counter_sale": False,
+                "date": target_date_str,
             }
         row = table_map[t_id]
         row["order_count"] += 1
@@ -970,10 +1132,13 @@ def get_settled_tables_history(
             if table_session and (table_session.session_fee_charged or 0) > 0:
                 row["total_amount"] += float(table_session.session_fee_charged)
 
-    return sorted(
+    dining_rows = sorted(
         table_map.values(),
         key=lambda row: (-row["total_amount"], row["table_number"]),
     )
+    counter_rows.sort(key=lambda row: row["settled_at"], reverse=True)
+
+    return counter_rows + dining_rows
 
 
 # --- DYNAMICALLY RECONSTRUCT COMPLETED TABLE BILLS ---

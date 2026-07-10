@@ -9,6 +9,36 @@ import models
 from schemas import OrderItemCreate
 
 
+def order_item_unit_price(order_item: models.OrderItem) -> float:
+    unit_price = float(order_item.menu_item.price)
+    for mod_assoc in order_item.selected_modifiers:
+        unit_price += float(mod_assoc.modifier.price)
+    return unit_price
+
+
+def order_item_line_total(order_item: models.OrderItem) -> float:
+    return order_item_unit_price(order_item) * order_item.quantity
+
+
+def recalculate_order_total(order: models.Order) -> float:
+    total_price = sum(order_item_line_total(item) for item in order.items)
+    order.total_price = round(total_price, 2)
+    return order.total_price
+
+
+def restore_order_item_stock(
+    order_item: models.OrderItem, quantity: int, db: Session
+) -> None:
+    if quantity <= 0:
+        return
+
+    menu_item = order_item.menu_item
+    if menu_item.stock is not None:
+        menu_item.stock += quantity
+        if not menu_item.is_available and menu_item.stock > 0:
+            menu_item.is_available = True
+
+
 def create_order_from_items(
     db: Session,
     table_id: int,

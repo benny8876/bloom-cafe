@@ -4,7 +4,7 @@
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>BLOOM CAFÉ — Manager</title>
-      <link rel="manifest" href="/static/manifest-manager.json">
+      <link rel="manifest" href="/manifest-manager.json">
       <meta name="theme-color" content="#9b2d8c">
       <meta name="apple-mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-title" content="POS">
@@ -21,6 +21,9 @@
             }
          })();
       </script>
+      <script src="/static/manager-i18n.js"></script>
+      <script src="/static/login-remember.js"></script>
+      <script src="/static/printer-support.js"></script>
       <script src="/static/escpos-receipt.js"></script>
       <script src="/static/bluetooth-printer.js"></script>
       <script src="/static/usb-printer.js"></script>
@@ -95,6 +98,30 @@
          html.dark .text-violet-700 { color: #a78bfa !important; }
          html.dark #pwa-install-header-btn { border-color: #475569 !important; color: #a78bfa !important; }
          html.dark #pwa-install-header-btn:hover { background: rgba(139, 92, 246, 0.15) !important; }
+         .lang-switch {
+            display: inline-flex;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            flex-shrink: 0;
+         }
+         .lang-switch button {
+            padding: 0.375rem 0.625rem;
+            background: #fff;
+            color: #64748b;
+            transition: background 0.15s, color 0.15s;
+         }
+         .lang-switch button:hover { background: #f8fafc; }
+         .lang-switch-btn--active {
+            background: #0f172a !important;
+            color: #fff !important;
+         }
+         html.dark .lang-switch { border-color: #475569; }
+         html.dark .lang-switch button { background: #1e293b; color: #cbd5e1; }
+         html.dark .lang-switch button:hover { background: #334155; }
+         html.dark .lang-switch-btn--active { background: #64748b !important; color: #f8fafc !important; }
          html.dark a.hover\:bg-indigo-50:hover { background: rgba(99, 102, 241, 0.15) !important; }
          html.dark button.hover\:bg-rose-50:hover { background: rgba(190, 18, 60, 0.15) !important; }
          .mgr-date-pill {
@@ -278,14 +305,14 @@
          <div class="flex items-start gap-3">
             <img src="/static/bloom-logo.png" alt="" class="w-12 h-12 rounded-xl object-contain shrink-0" aria-hidden="true">
             <div class="flex-1 min-w-0">
-               <p class="font-bold text-slate-800 text-sm">Install POS on your phone</p>
-               <p class="text-xs text-slate-500 mt-1">Add to home screen for quick access like a native app.</p>
+               <p class="font-bold text-slate-800 text-sm" data-i18n="pwa.title">Install POS on your phone</p>
+               <p class="text-xs text-slate-500 mt-1" data-i18n="pwa.subtitle">Add to home screen for quick access like a native app.</p>
                <div id="pwa-ios-steps" class="hidden mt-2 text-xs text-slate-600 bg-slate-50 rounded-lg p-2 leading-relaxed">
                   iPhone/iPad: tap <strong>Share</strong> <span aria-hidden="true">⎋</span> then <strong>Add to Home Screen</strong>.
                </div>
                <div class="flex gap-2 mt-3">
-                  <button type="button" id="pwa-install-action-btn" onclick="installPwaApp()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-lg transition">Install</button>
-                  <button type="button" onclick="dismissPwaInstall()" class="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-2">Not now</button>
+                  <button type="button" id="pwa-install-action-btn" onclick="installPwaApp()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-lg transition" data-i18n="pwa.install">Install</button>
+                  <button type="button" onclick="dismissPwaInstall()" class="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-2" data-i18n="pwa.not_now">Not now</button>
                </div>
             </div>
          </div>
@@ -294,8 +321,15 @@
       <div id="login-view" class="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
          <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn absolute top-4 right-4 z-[60]" aria-label="Toggle dark mode">
             <span id="login-dark-mode-icon" aria-hidden="true">🌙</span>
-            <span id="login-dark-mode-label">Dark</span>
+            <span id="login-dark-mode-label" data-i18n="theme.dark">Dark</span>
          </button>
+         <div class="absolute top-4 left-4 z-[60] flex items-center gap-2">
+            <button type="button" id="pwa-install-login-btn" onclick="showPwaInstallPanel()" class="hidden text-xs font-bold text-violet-700 hover:text-violet-900 px-3 py-2 rounded-lg hover:bg-violet-50 transition border border-violet-200 bg-white/90" data-i18n="common.install_app">Install app</button>
+            <div class="lang-switch" role="group" aria-label="Language">
+               <button type="button" data-lang-btn="en" onclick="ManagerI18n.setLang('en')">EN</button>
+               <button type="button" data-lang-btn="mm" onclick="ManagerI18n.setLang('mm')">MM</button>
+            </div>
+         </div>
          <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-6">
             <div class="text-center space-y-3">
                <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img mx-auto" aria-hidden="true" />
@@ -303,18 +337,22 @@
                   <h2 class="text-2xl bloom-brand">BLOOM CAFÉ</h2>
                   <p class="text-xs font-semibold text-slate-400 tracking-widest uppercase mt-1">POS</p>
                </div>
-               <p class="text-xs text-slate-400">Floor manager login — use <strong>manager</strong> account (owner uses Finance panel)</p>
+               <p class="text-xs text-slate-400" data-i18n="login.hint">Floor manager login — use manager account (owner uses Finance panel)</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Username</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="common.username">Username</label>
                   <input type="text" id="login-username" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-800">
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="common.password">Password</label>
                   <input type="password" id="login-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-800">
                </div>
-               <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg text-sm transition">
+               <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" id="login-remember" class="rounded border-slate-300 text-slate-800 focus:ring-slate-800">
+                  <span class="text-xs font-semibold text-slate-600" data-i18n="login.remember">Remember me</span>
+               </label>
+               <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg text-sm transition" data-i18n="login.submit">
                Authenticate Session
                </button>
             </form>
@@ -330,30 +368,34 @@
                      <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img hidden sm:block" aria-hidden="true" />
                      <div>
                         <h1 class="text-xl bloom-brand leading-tight">BLOOM CAFÉ <span class="text-slate-400 font-medium text-sm tracking-widest">POS</span></h1>
-                        <p id="section-subtitle" class="text-xs text-slate-400 mt-0.5">Daily operations — tables, menu &amp; bills</p>
+                        <p id="section-subtitle" class="text-xs text-slate-400 mt-0.5" data-i18n="app.subtitle">Daily operations — tables, menu &amp; bills</p>
                      </div>
                   </div>
                   <div class="flex items-center gap-2 flex-wrap">
-                     <button type="button" id="pwa-install-header-btn" onclick="showPwaInstallPanel()" class="hidden text-xs font-bold text-violet-700 hover:text-violet-900 px-3 py-2 rounded-lg hover:bg-violet-50 transition border border-violet-200">Install app</button>
-                     <a href="/finance" id="finance-nav-link" class="hidden text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition">Finance →</a>
+                     <div class="lang-switch" role="group" aria-label="Language">
+                        <button type="button" data-lang-btn="en" onclick="ManagerI18n.setLang('en')">EN</button>
+                        <button type="button" data-lang-btn="mm" onclick="ManagerI18n.setLang('mm')">MM</button>
+                     </div>
+                     <button type="button" id="pwa-install-header-btn" onclick="showPwaInstallPanel()" class="hidden text-xs font-bold text-violet-700 hover:text-violet-900 px-3 py-2 rounded-lg hover:bg-violet-50 transition border border-violet-200" data-i18n="common.install_app">Install app</button>
+                     <a href="/finance" id="finance-nav-link" class="hidden text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition" data-i18n="common.finance">Finance →</a>
                      <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn" aria-label="Toggle dark mode">
                         <span id="dark-mode-icon" aria-hidden="true">🌙</span>
-                        <span id="dark-mode-label">Dark</span>
+                        <span id="dark-mode-label" data-i18n="theme.dark">Dark</span>
                      </button>
-                     <button onclick="togglePasswordModal(true)" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-50 transition">Password</button>
-                     <button onclick="handleLogout()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-3 py-2 rounded-lg hover:bg-rose-50 transition">Logout</button>
+                     <button onclick="togglePasswordModal(true)" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-50 transition" data-i18n="common.password">Password</button>
+                     <button onclick="handleLogout()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-3 py-2 rounded-lg hover:bg-rose-50 transition" data-i18n="common.logout">Logout</button>
                   </div>
                </div>
                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div id="ops-toolbar" class="flex flex-wrap items-center gap-2">
                      <div class="mgr-date-pill shrink-0">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase" data-i18n="common.date">Date</span>
                         <input type="date" id="analytics-date" onchange="fetchAnalytics()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
                      <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-bold">
-                        <button type="button" onclick="exportReport('day')" class="px-3 py-2 bg-amber-600 text-white hover:bg-amber-700 transition">Today</button>
-                        <button type="button" onclick="exportReport('week')" class="mgr-export-btn">Week</button>
-                        <button type="button" onclick="exportReport('month')" class="mgr-export-btn">Month</button>
+                        <button type="button" onclick="exportReport('day')" class="px-3 py-2 bg-amber-600 text-white hover:bg-amber-700 transition" data-i18n="export.today">Today</button>
+                        <button type="button" onclick="exportReport('week')" class="mgr-export-btn" data-i18n="export.week">Week</button>
+                        <button type="button" onclick="exportReport('month')" class="mgr-export-btn" data-i18n="export.month">Month</button>
                      </div>
                   </div>
                </div>
@@ -366,35 +408,27 @@
          <div id="operations-section">
          <nav id="ops-subnav" class="bg-white border-b border-slate-100">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap gap-2 py-3">
-               <button type="button" data-panel="main" class="panel-tab panel-tab-active">Main</button>
-               <button type="button" data-panel="settled" class="panel-tab panel-tab-inactive">Settled</button>
-               <button type="button" data-panel="counter" class="panel-tab panel-tab-inactive">Counter</button>
-               <button type="button" data-panel="qr" class="panel-tab panel-tab-inactive">QR Panel</button>
-               <button type="button" data-panel="orders" class="panel-tab panel-tab-inactive">Single Tickets</button>
-               <button type="button" data-panel="menu" class="panel-tab panel-tab-inactive">Menu</button>
+               <button type="button" data-panel="main" class="panel-tab panel-tab-active" data-i18n="nav.main">Main</button>
+               <button type="button" data-panel="settled" class="panel-tab panel-tab-inactive" data-i18n="nav.settled">Settled</button>
+               <button type="button" data-panel="counter" class="panel-tab panel-tab-inactive" data-i18n="nav.counter">Counter</button>
+               <button type="button" data-panel="qr" class="panel-tab panel-tab-inactive" data-i18n="nav.qr">QR Panel</button>
+               <button type="button" data-panel="orders" class="panel-tab panel-tab-inactive" data-i18n="nav.orders">Single Tickets</button>
+               <button type="button" data-panel="menu" class="panel-tab panel-tab-inactive" data-i18n="nav.menu">Menu</button>
             </div>
          </nav>
          <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
 
             <!-- MAIN PANEL -->
             <div id="panel-main" class="manager-panel space-y-8">
-            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <section class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" id="revenue-title">Selected Day's Revenue</span>
-                  <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-revenue">0 Ks</h3>
-               </div>
-               <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" id="monthly-revenue-title">Selected Month's Revenue</span>
-                  <h3 class="text-3xl font-black text-emerald-600 mt-2" id="stat-monthly-revenue">0 Ks</h3>
-               </div>
-               <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Completed Transactions</span>
+                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" data-i18n="stats.completed">Completed Transactions</span>
                   <h3 class="text-3xl font-black text-slate-800 mt-2" id="stat-count">0</h3>
                </div>
                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2 block">Top Selling Items</span>
+                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2 block" data-i18n="stats.top_items">Top Selling Items</span>
                   <ol id="stat-top-items" class="text-sm list-decimal list-inside space-y-1 text-slate-600">
-                     <li>No items logged yet</li>
+                     <li data-i18n="stats.no_items">No items logged yet</li>
                   </ol>
                </div>
             </section>
@@ -402,16 +436,15 @@
             <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col w-full min-w-0">
                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                   <div class="min-w-0">
-                     <h2 class="text-lg font-bold text-slate-800">Table Floor Plan</h2>
-                     <p class="text-xs text-slate-400 mt-1">All tables — green when a session is active.</p>
+                     <h2 class="text-lg font-bold text-slate-800" data-i18n="floor.title">Table Floor Plan</h2>
+                     <p class="text-xs text-slate-400 mt-1" data-i18n="floor.subtitle">All tables — green when a session is active.</p>
                   </div>
                   <div id="table-floor-legend" class="flex flex-wrap gap-3 text-[10px] font-bold uppercase tracking-wide shrink-0">
-                     <span class="inline-flex items-center gap-1.5 text-emerald-700"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Live</span>
-                     <span class="inline-flex items-center gap-1.5 text-slate-500"><span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span> Available</span>
+                     <span class="inline-flex items-center gap-1.5 text-emerald-700"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> <span data-i18n="common.live">Live</span></span>
+                     <span class="inline-flex items-center gap-1.5 text-slate-500"><span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span> <span data-i18n="common.available">Available</span></span>
                   </div>
                </div>
-               <div id="table-floor-empty" class="hidden py-10 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl">
-                  No tables configured in the system
+               <div id="table-floor-empty" class="hidden py-10 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl" data-i18n="floor.empty">
                </div>
                <div id="table-floor-grid" class="table-floor-grid w-full min-w-0"></div>
             </section>
@@ -422,11 +455,11 @@
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 w-full min-w-0">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                      <div>
-                        <h2 class="text-lg font-bold text-slate-800">Settled Table Sessions</h2>
-                        <p class="text-xs text-slate-400">Daily total per table — counted when bill was settled</p>
+                        <h2 class="text-lg font-bold text-slate-800" data-i18n="settled.title">Settled Table Sessions</h2>
+                        <p class="text-xs text-slate-400" data-i18n="settled.subtitle">Daily total per table — counted when bill was settled</p>
                      </div>
                      <div class="mgr-date-pill shrink-0">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase" data-i18n="common.date">Date</span>
                         <input type="date" id="settled-date" onchange="fetchSettledTablesHistory()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
                   </div>
@@ -434,10 +467,10 @@
                      <table class="fin-table w-full text-left text-sm">
                         <thead>
                            <tr class="text-[10px] uppercase">
-                              <th class="py-2.5 px-4 font-bold">Table</th>
-                              <th class="py-2.5 px-2 font-bold text-center">Orders</th>
-                              <th class="py-2.5 px-4 font-bold text-right">Amount</th>
-                              <th class="py-2.5 px-4 font-bold text-right">Receipt</th>
+                              <th class="py-2.5 px-4 font-bold" data-i18n="common.table">Table</th>
+                              <th class="py-2.5 px-2 font-bold text-center" data-i18n="common.orders">Orders</th>
+                              <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.amount">Amount</th>
+                              <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.receipt">Receipt</th>
                            </tr>
                         </thead>
                         <tbody id="settled-tables-history-log"></tbody>
@@ -451,27 +484,27 @@
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-slate-100 pb-4">
                      <div>
-                        <h2 class="text-lg font-bold text-slate-800">Walk-in / Counter Sale</h2>
-                        <p class="text-xs text-slate-400 mt-1">Ring up takeaway or counter orders — no table QR needed.</p>
+                        <h2 class="text-lg font-bold text-slate-800" data-i18n="counter.title">Walk-in / Counter Sale</h2>
+                        <p class="text-xs text-slate-400 mt-1" data-i18n="counter.subtitle">Ring up takeaway or counter orders — no table QR needed.</p>
                      </div>
-                     <button type="button" onclick="clearCounterCart()" class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-lg hover:bg-rose-50 transition">Clear cart</button>
+                     <button type="button" onclick="clearCounterCart()" class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-lg hover:bg-rose-50 transition" data-i18n="counter.clear_cart">Clear cart</button>
                   </div>
                   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                      <div class="lg:col-span-2 space-y-3">
-                        <input type="search" id="counter-menu-search" placeholder="Search menu..." oninput="renderCounterMenu()" class="w-full bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-violet-500">
+                        <input type="search" id="counter-menu-search" data-i18n-placeholder="counter.search" placeholder="Search menu..." oninput="renderCounterMenu()" class="w-full bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-violet-500">
                         <div id="counter-menu-grid" class="space-y-5 max-h-[min(60vh,28rem)] overflow-y-auto pr-1"></div>
                      </div>
                      <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col min-h-[20rem]">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3">Current sale</h3>
+                        <h3 class="text-sm font-bold text-slate-700 mb-3" data-i18n="counter.current_sale">Current sale</h3>
                         <div id="counter-cart-lines" class="flex-1 space-y-2 overflow-y-auto text-sm mb-4 min-h-[8rem]">
-                           <p class="text-slate-400 italic text-xs">Tap menu items to add</p>
+                           <p class="text-slate-400 italic text-xs" data-i18n="counter.tap_to_add">Tap menu items to add</p>
                         </div>
                         <div class="border-t border-slate-200 pt-3 space-y-3">
                            <div class="flex justify-between items-center">
-                              <span class="text-xs font-bold uppercase text-slate-400">Total</span>
+                              <span class="text-xs font-bold uppercase text-slate-400" data-i18n="common.total">Total</span>
                               <span id="counter-cart-total" class="text-xl font-black text-violet-600">0 Ks</span>
                            </div>
-                           <button type="button" onclick="submitCounterSale()" id="counter-checkout-btn" disabled class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl text-sm transition">Complete sale</button>
+                           <button type="button" onclick="submitCounterSale()" id="counter-checkout-btn" disabled class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl text-sm transition" data-i18n="counter.complete_sale">Complete sale</button>
                         </div>
                      </div>
                   </div>
@@ -483,37 +516,37 @@
             <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-slate-100 pb-4">
                   <div>
-                     <h2 class="text-lg font-bold text-slate-800">Manage Tables</h2>
-                     <p class="text-xs text-slate-400 mt-1">Add, rename, or remove tables. Enable VIP hourly session billing per table.</p>
+                     <h2 class="text-lg font-bold text-slate-800" data-i18n="qr.manage_title">Manage Tables</h2>
+                     <p class="text-xs text-slate-400 mt-1" data-i18n="qr.manage_subtitle">Add, rename, or remove tables. Enable VIP hourly session billing per table.</p>
                   </div>
                </div>
                <form id="add-table-form" onsubmit="submitAddTable(event)" class="flex flex-wrap items-end gap-2 mb-4">
                   <div class="flex-1 min-w-[180px]">
-                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">New table label</label>
-                     <input type="text" id="add-table-label" maxlength="50" placeholder="e.g. V-3, A8, VIP-1" required class="w-full bg-slate-100 border-none rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500">
+                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="qr.new_label">New table label</label>
+                     <input type="text" id="add-table-label" maxlength="50" data-i18n-placeholder="qr.new_placeholder" placeholder="e.g. V-3, A8, VIP-1" required class="w-full bg-slate-100 border-none rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500">
                   </div>
-                  <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition shrink-0">+ Add Table</button>
+                  <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition shrink-0" data-i18n="qr.add_table">+ Add Table</button>
                </form>
-               <div id="qr-tables-empty" class="hidden py-8 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl mb-4">No tables yet. Add your first table above.</div>
+               <div id="qr-tables-empty" class="hidden py-8 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl mb-4" data-i18n="qr.empty">No tables yet. Add your first table above.</div>
                <div id="qr-tables-list" class="space-y-2 mb-6 max-h-[32rem] overflow-y-auto"></div>
             </section>
             <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-               <h2 class="text-lg font-bold mb-2 text-slate-800">Tamper-Proof Dining QR Generator</h2>
-               <p class="text-xs text-slate-400 mb-4">Generates cryptographically signed URLs for tables.</p>
+               <h2 class="text-lg font-bold mb-2 text-slate-800" data-i18n="qr.generator_title">Tamper-Proof Dining QR Generator</h2>
+               <p class="text-xs text-slate-400 mb-4" data-i18n="qr.generator_subtitle">Generates cryptographically signed URLs for tables.</p>
                <div class="flex flex-wrap items-center gap-3">
                   <select id="qr-table-select" class="bg-slate-100 border-none rounded px-4 py-2.5 text-sm font-semibold outline-none">
-                     <option value="">Loading tables...</option>
+                     <option value="" data-i18n="qr.loading_tables">Loading tables...</option>
                   </select>
-                  <button onclick="requestSignedToken()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">Generate Signed Link</button>
-                  <button onclick="requestAllTableLinks()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition">Generate All Table Links</button>
+                  <button onclick="requestSignedToken()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_link">Generate Signed Link</button>
+                  <button onclick="requestAllTableLinks()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_all">Generate All Table Links</button>
                </div>
                <div id="qr-output-container" class="mt-4 p-4 bg-slate-50 border rounded-xl hidden text-sm font-semibold space-y-2">
-                  <p class="text-xs text-slate-400 uppercase font-bold">Secure Path Signature:</p>
+                  <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="qr.signature">Secure Path Signature:</p>
                   <input type="text" id="signed-url-input" readonly class="w-full bg-white p-2 border rounded font-mono text-xs select-all text-amber-600">
-                  <a id="signed-url-anchor" target="_blank" class="inline-block text-xs bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Open Secure Menu Panel</a>
+                  <a id="signed-url-anchor" target="_blank" class="inline-block text-xs bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-200" data-i18n="qr.open_menu">Open Secure Menu Panel</a>
                </div>
                <div id="all-qr-links-container" class="mt-4 hidden">
-                  <p class="text-xs text-slate-400 uppercase font-bold mb-2">All Table Secure Links</p>
+                  <p class="text-xs text-slate-400 uppercase font-bold mb-2" data-i18n="qr.all_links">All Table Secure Links</p>
                   <div id="all-qr-links-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
                </div>
             </section>
@@ -522,26 +555,26 @@
             <!-- SINGLE TICKETS PANEL -->
             <div id="panel-orders" class="manager-panel hidden space-y-8">
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                  <h2 class="text-lg font-bold mb-2 text-slate-800">Consolidated Orders Record</h2>
-                  <p class="text-xs text-slate-400 mb-4">Filter by date, status, or table.</p>
+                  <h2 class="text-lg font-bold mb-2 text-slate-800" data-i18n="orders.title">Consolidated Orders Record</h2>
+                  <p class="text-xs text-slate-400 mb-4" data-i18n="orders.subtitle">Filter by date, status, or table.</p>
                   <div class="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-slate-100">
                      <div class="mgr-date-pill">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Date</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase" data-i18n="common.date">Date</span>
                         <input type="date" id="orders-filter-date" onchange="fetchOrdersLog()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
                      <select id="orders-filter-status" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
-                        <option value="">All statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="preparing">Preparing</option>
-                        <option value="served">Served</option>
-                        <option value="awaiting_payment">Awaiting payment</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="" data-i18n="orders.all_statuses">All statuses</option>
+                        <option value="pending" data-i18n="status.pending">Pending</option>
+                        <option value="preparing" data-i18n="status.preparing">Preparing</option>
+                        <option value="served" data-i18n="status.served">Served</option>
+                        <option value="awaiting_payment" data-i18n="status.awaiting_payment">Awaiting payment</option>
+                        <option value="completed" data-i18n="status.completed">Completed</option>
+                        <option value="cancelled" data-i18n="status.cancelled">Cancelled</option>
                      </select>
                      <select id="orders-filter-table" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
-                        <option value="">All tables</option>
+                        <option value="" data-i18n="orders.all_tables">All tables</option>
                      </select>
-                     <button type="button" onclick="clearOrderFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-3 rounded-lg text-xs transition">Clear</button>
+                     <button type="button" onclick="clearOrderFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-3 rounded-lg text-xs transition" data-i18n="common.clear">Clear</button>
                   </div>
                   <p id="orders-filter-count" class="text-xs text-slate-400 mb-3"></p>
                   <div class="space-y-3 overflow-y-auto max-h-[70vh]" id="orders-record-log"></div>
@@ -553,16 +586,16 @@
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
                      <div>
-                        <h2 class="text-lg font-bold text-slate-800">Category Tab Order</h2>
-                        <p class="text-xs text-slate-400 mt-1">Controls the order of tabs on the customer menu page.</p>
+                        <h2 class="text-lg font-bold text-slate-800" data-i18n="menu.category_order_title">Category Tab Order</h2>
+                        <p class="text-xs text-slate-400 mt-1" data-i18n="menu.category_order_subtitle">Controls the order of tabs on the customer menu page.</p>
                      </div>
                   </div>
                   <div id="category-order-list" class="space-y-2"></div>
                </section>
                <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
-                     <h2 class="text-lg font-bold text-slate-800">Modify Menu Items &amp; Pricing</h2>
-                     <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shrink-0">+ Add Menu Item</button>
+                     <h2 class="text-lg font-bold text-slate-800" data-i18n="menu.modify_title">Modify Menu Items &amp; Pricing</h2>
+                     <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shrink-0" data-i18n="menu.add_item">+ Add Menu Item</button>
                   </div>
                   <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 mb-3">
                      <div class="relative flex-1 min-w-[200px]">
@@ -570,31 +603,31 @@
                            <circle cx="11" cy="11" r="7"></circle>
                            <path stroke-linecap="round" d="M20 20l-3-3"></path>
                         </svg>
-                        <input type="search" id="menu-item-search" placeholder="Search by name or category..." oninput="applyMenuFilters()" class="w-full bg-slate-100 border-none rounded-lg pl-9 pr-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500">
+                        <input type="search" id="menu-item-search" data-i18n-placeholder="menu.search" placeholder="Search by name or category..." oninput="applyMenuFilters()" class="w-full bg-slate-100 border-none rounded-lg pl-9 pr-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500">
                      </div>
                      <select id="menu-category-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[160px]">
-                        <option value="">All categories</option>
+                        <option value="" data-i18n="menu.all_categories">All categories</option>
                      </select>
                      <select id="menu-kitchen-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
-                        <option value="">All kitchens</option>
-                        <option value="coffee">☕ Coffee bar</option>
-                        <option value="food">🍳 Food kitchen</option>
+                        <option value="" data-i18n="menu.all_kitchens">All kitchens</option>
+                        <option value="coffee" data-i18n="menu.kitchen_coffee">☕ Coffee bar</option>
+                        <option value="food" data-i18n="menu.kitchen_food">🍳 Food kitchen</option>
                      </select>
-                     <button type="button" onclick="clearMenuFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">Clear</button>
+                     <button type="button" onclick="clearMenuFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2.5 px-4 rounded-lg text-sm transition" data-i18n="common.clear">Clear</button>
                   </div>
                   <p id="menu-filter-count" class="text-xs text-slate-400 mb-3"></p>
                   <div class="mgr-table-wrap max-h-[65vh]">
                      <table class="w-full text-left border-collapse">
                         <thead>
                            <tr class="text-xs border-b">
-                              <th class="py-2 px-4">Item Name</th>
-                              <th class="py-2">Category</th>
-                              <th class="py-2">Kitchen</th>
-                              <th class="py-2">Price</th>
-                              <th class="py-2">Modifiers</th>
-                              <th class="py-2">Stock</th>
-                              <th class="py-2">Status</th>
-                              <th class="py-2 text-right pr-4">Action</th>
+                              <th class="py-2 px-4" data-i18n="menu.col_name">Item Name</th>
+                              <th class="py-2" data-i18n="menu.col_category">Category</th>
+                              <th class="py-2" data-i18n="menu.col_kitchen">Kitchen</th>
+                              <th class="py-2" data-i18n="menu.col_price">Price</th>
+                              <th class="py-2" data-i18n="menu.col_modifiers">Modifiers</th>
+                              <th class="py-2" data-i18n="menu.col_stock">Stock</th>
+                              <th class="py-2" data-i18n="menu.col_status">Status</th>
+                              <th class="py-2 text-right pr-4" data-i18n="menu.col_action">Action</th>
                            </tr>
                         </thead>
                         <tbody id="menu-management-table" class="text-sm divide-y"></tbody>
@@ -610,21 +643,21 @@
       <div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
          <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl relative space-y-4">
             <button onclick="togglePasswordModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            <h3 class="text-lg font-bold text-slate-800">Change Admin Password</h3>
+            <h3 class="text-lg font-bold text-slate-800" data-i18n="password.title">Change Admin Password</h3>
             <form onsubmit="submitChangePassword(event)" class="space-y-4">
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Old Password</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="password.old">Old Password</label>
                   <input type="password" id="p-old-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">New Password</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="password.new">New Password</label>
                   <input type="password" id="p-new-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Confirm New Password</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="password.confirm">Confirm New Password</label>
                   <input type="password" id="p-confirm-password" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                </div>
-               <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm transition">
+               <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm transition" data-i18n="password.update">
                Update Password
                </button>
             </form>
@@ -762,10 +795,10 @@
       <div id="counter-modifier-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
          <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-100">
             <button type="button" onclick="closeCounterModifierModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            <h3 id="counter-modifier-title" class="text-lg font-bold text-slate-800 mb-1">Customize item</h3>
-            <p class="text-xs text-slate-400 mb-4">Select add-ons (optional)</p>
+            <h3 id="counter-modifier-title" class="text-lg font-bold text-slate-800 mb-1" data-i18n="counter.customize">Customize item</h3>
+            <p class="text-xs text-slate-400 mb-4" data-i18n="counter.addons">Select add-ons (optional)</p>
             <div id="counter-modifier-options" class="space-y-2 max-h-48 overflow-y-auto mb-4"></div>
-            <button type="button" onclick="confirmCounterModifierAdd()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Add to cart</button>
+            <button type="button" onclick="confirmCounterModifierAdd()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-lg text-sm transition" data-i18n="counter.add_to_cart">Add to cart</button>
          </div>
       </div>
       <!-- Master Receipt Printer Modal -->
@@ -776,13 +809,13 @@
             <div id="receipt-actions" class="mt-6 space-y-2 print:hidden">
                <div id="receipt-print-actions" class="space-y-2">
                   <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
-                  <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">Connect Bluetooth Printer</button>
-                  <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm">Print to Bluetooth Printer</button>
-                  <button onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm">Connect USB Printer</button>
-                  <button onclick="printReceiptUsb()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg text-sm">Print to USB Printer</button>
-                  <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Print Receipt (Browser)</button>
+                  <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_bt">Connect Bluetooth Printer</button>
+                  <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_bt">Print to Bluetooth Printer</button>
+                  <button onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_usb">Connect USB Printer</button>
+                  <button onclick="printReceiptUsb()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_usb">Print to USB Printer</button>
+                  <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_browser">Print Receipt (Browser)</button>
                </div>
-               <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden">Settle &amp; Close Table Bill</button>
+               <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden" data-i18n="receipt.settle">Settle &amp; Close Table Bill</button>
             </div>
          </div>
       </div>
@@ -798,7 +831,7 @@
          function updateDarkModeUi() {
              const enabled = isDarkModeEnabled();
              const icon = enabled ? '☀️' : '🌙';
-             const label = enabled ? 'Light' : 'Dark';
+             const label = enabled ? t('theme.light') : t('theme.dark');
              ['dark-mode-icon', 'login-dark-mode-icon'].forEach((id) => {
                  const el = document.getElementById(id);
                  if (el) el.textContent = icon;
@@ -829,6 +862,7 @@
          let counterMenuItems = [];
          let counterCart = [];
          let counterPendingItem = null;
+         let liveBillTableId = null;
          let floorTablesCache = [];
          let floorTimerIntervalId = null;
          let managerAudioCtx = null;
@@ -852,9 +886,9 @@
 
          function formatServiceRequestLabel(requestType) {
              const key = String(requestType || '').toLowerCase();
-             if (key === 'water') return 'Water refill';
-             if (key === 'waiter') return 'Call staff';
-             return requestType || 'Assistance';
+             if (key === 'water') return t('service.water');
+             if (key === 'waiter') return t('service.waiter');
+             return requestType || t('service.assistance');
          }
 
          function unlockManagerAudio() {
@@ -902,8 +936,10 @@
 
          function showServiceRequestAlert(tableNumber, requestType) {
              const label = formatServiceRequestLabel(requestType);
-             const tableLabel = tableNumber ? `Table ${tableNumber}` : 'A table';
-             const message = `${tableLabel} requested: ${label}`;
+             const tableLabel = tableNumber
+                 ? t('service.table', { table: tableNumber })
+                 : t('service.a_table');
+             const message = t('service.requested', { table: tableLabel, label });
 
              showToast(`🛎️ ${message}`, 'warn', 7000);
 
@@ -913,10 +949,10 @@
                  banner.className = 'service-alert-banner';
                  banner.innerHTML = `
                      <div class="service-alert-banner__text">
-                         <strong>Guest assistance</strong>
+                         <strong>${t('service.guest')}</strong>
                          <span>${message}</span>
                      </div>
-                     <button type="button" class="service-alert-banner__dismiss">Dismiss</button>
+                     <button type="button" class="service-alert-banner__dismiss">${t('common.dismiss')}</button>
                  `;
                  banner.querySelector('.service-alert-banner__dismiss').onclick = () => banner.remove();
                  container.prepend(banner);
@@ -937,7 +973,7 @@
          }
 
          function renderBillReceiptHtml(bill, options = {}) {
-             const { title = 'TABLE SESSION MASTER INVOICE', showSettle = true } = options;
+             const { title = t('receipt.table_invoice') } = options;
              const itemsStr = (bill.items || []).map(i => {
                  const modsLabel = (i.modifiers || []).length > 0
                      ? `<div class="text-[10px] text-slate-500 pl-4">+ ${i.modifiers.join(', ')}</div>` : '';
@@ -953,7 +989,7 @@
              }).join('');
              const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
              const orderLine = bill.order_ids
-                 ? `<p class="text-[10px] text-slate-400">Consolidated dockets: ${bill.order_ids.map(id => `#${id}`).join(', ')}</p>`
+                 ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
                  : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
              return `
                  <div class="text-center border-b pb-3 border-dashed">
@@ -962,15 +998,108 @@
                      <p class="text-[10px] text-slate-400">${bill.timestamp || ''}</p>
                  </div>
                  <div class="text-xs">
-                     <p><b>Table:</b> ${bill.table_number}</p>
+                     <p><b>${t('common.table')}:</b> ${bill.table_number}</p>
                      ${orderLine}
                  </div>
                  <div class="space-y-2 my-4">${itemsStr}</div>
                  <div class="receipt-total-row">
-                     <span>TOTAL</span>
+                     <span>${t('receipt.total')}</span>
                      <span>${formatKs(total)}</span>
                  </div>
-                 <p class="receipt-footer">Thank You For Supporting BLOOM CAFÉ</p>`;
+                 <p class="receipt-footer">${t('receipt.thank_you')}</p>`;
+         }
+
+         function renderLiveBillHtml(bill) {
+             const adjustableItems = bill.adjustable_items || [];
+             const itemsStr = adjustableItems.length > 0
+                 ? adjustableItems.map((item) => {
+                     const modsLabel = (item.modifiers || []).length > 0
+                         ? `<div class="text-[10px] text-slate-500 pl-4">+ ${item.modifiers.join(', ')}</div>` : '';
+                     return `
+                         <div class="border-b border-dashed pb-2">
+                             <div class="flex justify-between items-start gap-2 text-xs font-semibold">
+                                 <div class="min-w-0">
+                                     <span>${item.name}</span>
+                                     <span class="text-slate-400 font-normal"> · ${t('receipt.order_num', { id: item.order_id })}</span>
+                                 </div>
+                                 <span class="shrink-0">${formatKs(item.subtotal)}</span>
+                             </div>
+                             ${modsLabel}
+                             <div class="flex items-center justify-between mt-2">
+                                 <span class="text-[10px] text-slate-500">${t('receipt.each', { price: formatKs(item.unit_price) })}</span>
+                                 <div class="flex items-center gap-2">
+                                     <button type="button" onclick="adjustOrderItemQuantity(${item.order_item_id}, ${item.quantity - 1})" class="w-7 h-7 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-100" aria-label="Reduce quantity">−</button>
+                                     <span class="w-6 text-center text-sm font-bold">${item.quantity}</span>
+                                     <button type="button" disabled class="w-7 h-7 rounded-lg border border-slate-200 text-slate-300 font-bold cursor-not-allowed" aria-label="Increase quantity" title="Cannot increase before settle">+</button>
+                                 </div>
+                             </div>
+                         </div>`;
+                 }).join('')
+                 : `<p class="text-xs text-slate-400 italic text-center py-4">${t('receipt.no_items_adjust')}</p>`;
+
+             const sessionLines = (bill.items || []).filter((item) => item.is_session_fee);
+             const sessionStr = sessionLines.map((item) => `
+                 <div class="border-b border-dashed pb-1">
+                     <div class="flex justify-between text-xs font-semibold">
+                         <span>${item.name}</span>
+                         <span>${formatKs(item.unit_price)}</span>
+                     </div>
+                 </div>`).join('');
+
+             const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
+             const orderLine = bill.order_ids
+                 ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
+                 : '';
+
+             return `
+                 <div class="text-center border-b pb-3 border-dashed">
+                     <h2 class="text-lg font-bold bloom-brand">${bill.restaurant_name || 'BLOOM CAFÉ'}</h2>
+                     <p class="text-[10px] text-slate-400">${t('receipt.live_title')}</p>
+                     <p class="text-[10px] text-slate-400">${bill.timestamp || ''}</p>
+                 </div>
+                 <div class="text-xs">
+                     <p><b>${t('common.table')}:</b> ${bill.table_number}</p>
+                     ${orderLine}
+                     <p class="text-[10px] text-amber-600 mt-2">${t('receipt.adjust_hint')}</p>
+                 </div>
+                 ${sessionStr ? `<div class="space-y-2 my-4">${sessionStr}</div>` : ''}
+                 <div class="space-y-2 my-4">${itemsStr}</div>
+                 <div class="receipt-total-row">
+                     <span>${t('receipt.total')}</span>
+                     <span id="live-bill-total">${formatKs(total)}</span>
+                 </div>
+                 <p class="receipt-footer">${t('receipt.thank_you')}</p>`;
+         }
+
+         async function adjustOrderItemQuantity(orderItemId, newQuantity) {
+             if (newQuantity < 0) return;
+             if (!liveBillTableId) return;
+
+             const label = newQuantity === 0
+                 ? t('confirm.remove_item')
+                 : t('confirm.reduce_qty', { qty: newQuantity });
+             if (!confirm(label)) return;
+
+             try {
+                 const response = await fetch(`${API_BASE}/manager/order-items/${orderItemId}/quantity`, {
+                     method: 'PATCH',
+                     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ quantity: newQuantity }),
+                 });
+
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json();
+                     showToast(err.detail || 'Could not adjust quantity.', 'error');
+                     return;
+                 }
+
+                 showToast(t('toast.bill_updated'), 'success');
+                 await loadConsolidatedTableBill(liveBillTableId);
+                 fetchActiveTables();
+             } catch (err) {
+                 showToast('Network error while adjusting quantity.', 'error');
+             }
          }
 
          function configureReceiptModalActions(mode, tableId) {
@@ -1005,6 +1134,11 @@
              });
 
              sessionStorage.setItem(MANAGER_PANEL_KEY, activePanel);
+
+             const subtitleEl = document.getElementById('section-subtitle');
+             if (subtitleEl) {
+                 subtitleEl.textContent = t(`panel.subtitle.${activePanel}`);
+             }
 
              if (activePanel === 'qr') {
                  loadQrTableSelect();
@@ -1043,7 +1177,7 @@
          }
 
          function getAuthHeaders() {
-             const token = localStorage.getItem('manager_token');
+             const token = LoginRemember.getToken();
              return {
                  'Authorization': `Bearer ${token}`,
                  'Content-Type': 'application/json'
@@ -1051,7 +1185,7 @@
          }
          
          function updateManagerRoleUi() {
-             const role = localStorage.getItem('manager_role');
+             const role = LoginRemember.getRole();
              const financeLink = document.getElementById('finance-nav-link');
              if (financeLink) {
                  financeLink.classList.toggle('hidden', role !== 'owner');
@@ -1059,18 +1193,19 @@
          }
 
          function checkAuthState() {
-             const token = localStorage.getItem('manager_token');
+             const token = LoginRemember.getToken();
              const loginView = document.getElementById('login-view');
              const dashboardView = document.getElementById('dashboard-view');
          
              if (!token) {
                  loginView.classList.remove('hidden');
                  dashboardView.classList.add('hidden');
+                 LoginRemember.fillLoginForm('login-username', 'login-password', 'login-remember');
              } else {
                  loginView.classList.add('hidden');
                  dashboardView.classList.remove('hidden');
                  updateManagerRoleUi();
-                 
+
                  setDefaultDatePicker();
                  initManagerNavigation();
                  connectManagerWS();
@@ -1078,6 +1213,8 @@
                  reconnectBluetoothPrinter();
                  setupManagerNotifications();
              }
+
+             window.refreshPwaInstallUi?.();
          }
 
          function refreshLiveDashboard() {
@@ -1100,7 +1237,7 @@
          }
 
          function connectManagerWS() {
-             const token = localStorage.getItem('manager_token');
+             const token = LoginRemember.getToken();
              if (!token) return;
 
              if (managerWs) {
@@ -1158,16 +1295,33 @@
              return UsbPrinter.tryReconnectStoredPrinterWithRetries(statusEl, 3, 700);
          }
 
+         function initPrinterSecureContextStatus() {
+             const statusEl = getBluetoothStatusEl();
+             if (!statusEl || !window.PrinterSupport) {
+                 return;
+             }
+
+             const secureContextError = window.PrinterSupport.getSecureContextError();
+             if (secureContextError) {
+                 statusEl.innerText = secureContextError;
+                 statusEl.className = 'text-xs text-amber-600 text-center';
+             }
+         }
+
          function setupBluetoothLifecycleHooks() {
+             initPrinterSecureContextStatus();
+
              window.addEventListener('pageshow', () => {
-                 if (localStorage.getItem('manager_token')) {
+                 if (LoginRemember.getToken()) {
+                     initPrinterSecureContextStatus();
                      reconnectBluetoothPrinter();
                      reconnectUsbPrinter();
                  }
              });
 
              document.addEventListener('visibilitychange', () => {
-                 if (document.visibilityState === 'visible' && localStorage.getItem('manager_token')) {
+                 if (document.visibilityState === 'visible' && LoginRemember.getToken()) {
+                     initPrinterSecureContextStatus();
                      reconnectBluetoothPrinter();
                      reconnectUsbPrinter();
                  }
@@ -1193,15 +1347,14 @@
          
                  if (response.ok) {
                      const data = await response.json();
-                     localStorage.setItem('manager_token', data.token);
-                     localStorage.setItem('manager_role', data.role || 'manager');
-                     localStorage.setItem('manager_username', data.username || '');
+                     const remember = document.getElementById('login-remember')?.checked;
+                     LoginRemember.setSession(data, remember, usernameInput, passwordInput);
                      checkAuthState();
                  } else {
-                     showToast('Invalid username or password.', 'error');
+                     showToast(t('toast.invalid_login'), 'error');
                  }
              } catch (err) {
-                 showToast('Network error occurred.', 'error');
+                 showToast(t('toast.network_error'), 'error');
              }
          }
          
@@ -1212,9 +1365,7 @@
                      headers: getAuthHeaders()
                  });
              } catch (err) { /* ignore */ }
-             localStorage.removeItem('manager_token');
-             localStorage.removeItem('manager_role');
-             localStorage.removeItem('manager_username');
+             LoginRemember.clearSession();
              window.location.reload();
          }
          
@@ -1233,7 +1384,7 @@
              const confirmPassword = document.getElementById('p-confirm-password').value;
          
              if (newPassword !== confirmPassword) {
-                 showToast('New passwords do not match.', 'error');
+                 showToast(t('toast.password_mismatch'), 'error');
                  return;
              }
          
@@ -1247,7 +1398,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  if (response.ok) {
-                     showToast('Password updated. Please log in again.', 'success');
+                     showToast(t('toast.password_updated'), 'success');
                      handleLogout();
                  } else {
                      const err = await response.json();
@@ -1269,13 +1420,7 @@
          
          async function fetchAnalytics() {
             const selectedDate = document.getElementById('analytics-date').value;
-            document.getElementById('revenue-title').innerText = `${selectedDate} Revenue`;
-         
-            // Calculate the Name of the month selected for UI labeling (e.g. "June 2026")
-            const dateObj = new Date(selectedDate);
-            const monthNameLabel = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            document.getElementById('monthly-revenue-title').innerText = `${monthNameLabel} Revenue`;
-         
+
             try {
                 const response = await fetch(`${API_BASE}/manager/analytics/daily?date=${selectedDate}`, {
                     headers: getAuthHeaders()
@@ -1284,18 +1429,15 @@
                 if (response.status === 401) { handleLogout(); return; }
          
                 const data = await response.json();
-                
-                 document.getElementById('stat-revenue').innerText = formatKs(data.total_revenue);
-                 document.getElementById('stat-monthly-revenue').innerText = formatKs(data.total_monthly_revenue);
                 document.getElementById('stat-count').innerText = data.total_orders_completed;
                  
                  const list = document.getElementById('stat-top-items');
                  list.innerHTML = "";
                  if (data.top_selling_items.length === 0) {
-                     list.innerHTML = "<li>No sales recorded on this date</li>";
+                     list.innerHTML = `<li>${t('stats.no_sales')}</li>`;
                  } else {
                      data.top_selling_items.forEach(item => {
-                         list.innerHTML += `<li>${item.name} (${item.sold_qty} sold)</li>`;
+                         list.innerHTML += `<li>${item.name} (${t('stats.sold', { qty: item.sold_qty })})</li>`;
                      });
                  }
 
@@ -1601,32 +1743,35 @@
                  ? `table-floor-tile rounded-2xl border-2 ${vipBorder} p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full`
                  : `table-floor-tile rounded-2xl border-2 border-slate-200 bg-slate-50 p-3 sm:p-4 flex flex-col items-stretch text-center gap-1.5 shadow-sm h-full opacity-90${availableVipClass}`;
 
-             const vipBadge = table.is_vip_room ? '<p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">VIP Room</p>' : '';
+             const vipBadge = table.is_vip_room ? `<p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">${t('floor.vip_room')}</p>` : '';
              const sessionTimer = (table.vip_session && table.vip_session.started_at)
                  ? `<p class="text-xs font-mono font-bold text-violet-700" data-vip-timer data-started-at="${table.vip_session.started_at}">⏱ ${formatLiveTimer(table.vip_session.started_at)}</p>`
                  : '';
              const sessionFeeLine = table.session_fee > 0
-                 ? `<p class="text-[10px] text-violet-600">Room: ${formatKs(table.session_fee)}</p>`
+                 ? `<p class="text-[10px] text-violet-600">${t('floor.room_fee', { amount: formatKs(table.session_fee) })}</p>`
                  : '';
+             const orderCountLabel = table.active_orders_count === 1
+                 ? t('floor.order_count', { count: table.active_orders_count })
+                 : t('floor.order_count_plural', { count: table.active_orders_count });
              const totalLine = table.total_with_session > table.total_price
-                 ? `<p class="text-sm font-black text-amber-600">${formatKs(table.total_with_session)} total</p><p class="text-[10px] text-slate-500">Orders: ${formatKs(table.total_price)}</p>`
+                 ? `<p class="text-sm font-black text-amber-600">${t('floor.total_line', { amount: formatKs(table.total_with_session) })}</p><p class="text-[10px] text-slate-500">${t('floor.orders_line', { amount: formatKs(table.total_price) })}</p>`
                  : `<p class="text-sm font-black text-amber-600">${formatKs(table.total_price)}</p>`;
 
              if (isLive) {
                  tile.innerHTML = `
                      <div class="flex flex-col items-center gap-1.5">
                          <span class="h-2.5 w-2.5 rounded-full ${table.is_vip_room ? 'bg-violet-500 ring-4 ring-violet-300/40' : 'bg-emerald-500 ring-4 ring-emerald-300/40'} shrink-0"></span>
-                         <p class="text-base sm:text-lg font-black text-slate-800 leading-tight break-words w-full">Table ${escapeHtml(table.table_number)}</p>
+                         <p class="text-base sm:text-lg font-black text-slate-800 leading-tight break-words w-full">${t('common.table')} ${escapeHtml(table.table_number)}</p>
                          ${vipBadge}
-                         <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">Live Session</p>
+                         <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">${t('floor.live_session')}</p>
                          ${sessionTimer}
                          ${sessionFeeLine}
-                         <p class="text-xs text-slate-600">${table.active_orders_count} order${table.active_orders_count === 1 ? '' : 's'}</p>
+                         <p class="text-xs text-slate-600">${orderCountLabel}</p>
                          ${totalLine}
                      </div>
                      <div class="flex flex-col gap-2 w-full mt-auto pt-2">
-                         <button type="button" data-action="bill" class="w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition">Bill</button>
-                         <button type="button" data-action="cancel" class="w-full text-xs bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-lg transition">Cancel</button>
+                         <button type="button" data-action="bill" class="w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition">${t('common.bill')}</button>
+                         <button type="button" data-action="cancel" class="w-full text-xs bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-lg transition">${t('common.cancel')}</button>
                      </div>`;
                  tile.querySelector('[data-action="bill"]')?.addEventListener('click', (e) => {
                      e.stopPropagation();
@@ -1640,9 +1785,9 @@
                  tile.innerHTML = `
                      <div class="flex flex-col items-center gap-1.5 justify-center flex-1 py-2">
                          <span class="h-2.5 w-2.5 rounded-full bg-slate-300 shrink-0"></span>
-                         <p class="text-base sm:text-lg font-black text-slate-600 leading-tight break-words w-full">Table ${escapeHtml(table.table_number)}</p>
-                         ${table.is_vip_room ? '<p class="text-[10px] font-bold uppercase tracking-wide text-violet-500">VIP</p>' : ''}
-                         <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Available</p>
+                         <p class="text-base sm:text-lg font-black text-slate-600 leading-tight break-words w-full">${t('common.table')} ${escapeHtml(table.table_number)}</p>
+                         ${table.is_vip_room ? `<p class="text-[10px] font-bold uppercase tracking-wide text-violet-500">${t('floor.vip')}</p>` : ''}
+                         <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">${t('common.available')}</p>
                      </div>`;
              }
              return tile;
@@ -1685,7 +1830,7 @@
          }
 
          async function cancelTableSession(tableId) {
-             if (!confirm('Cancel all active orders for this table? Stock will be restored.')) return;
+             if (!confirm(t('confirm.cancel_table'))) return;
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/cancel`, {
                      method: 'POST',
@@ -1694,7 +1839,7 @@
                  if (response.status === 401) { handleLogout(); return; }
                  if (response.ok) {
                      const data = await response.json();
-                     showToast(data.message || 'Table session cancelled.', 'success');
+                     showToast(data.message || t('toast.table_cancelled'), 'success');
                      fetchActiveTables();
                      fetchOrdersLog();
                  } else {
@@ -1713,10 +1858,22 @@
                  });
          
                  if (response.status === 401) { handleLogout(); return; }
-         
+                 if (!response.ok) {
+                     const err = await response.json().catch(() => ({}));
+                     if (response.status === 404) {
+                         showToast(err.detail || 'No active items on this table.', 'success');
+                         toggleReceiptModal(false);
+                         fetchActiveTables();
+                         return;
+                     }
+                     showToast(err.detail || 'Could not load consolidated bill.', 'error');
+                     return;
+                 }
+
                  const bill = await response.json();
+                 liveBillTableId = tableId;
                  setCurrentReceiptForPrinters(bill);
-                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill);
+                 document.getElementById('receipt-payload').innerHTML = renderLiveBillHtml(bill);
                  configureReceiptModalActions('live', bill.table_id);
                  toggleReceiptModal(true);
              } catch (err) {
@@ -1725,7 +1882,7 @@
          }
          
          async function settleTableBill(tableId) {
-             if (!confirm('Confirm payment received and settle this table?')) return;
+             if (!confirm(t('confirm.settle'))) return;
 
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/settle`, {
@@ -1736,7 +1893,7 @@
                  if (response.status === 401) { handleLogout(); return; }
          
                  if (response.ok) {
-                     showToast('Bill settled. Table cleared.', 'success');
+                     showToast(t('toast.bill_settled'), 'success');
                      toggleReceiptModal(false);
                      configureReceiptModalActions('historical');
                      fetchActiveTables();
@@ -1767,19 +1924,25 @@
                  tbody.innerHTML = "";
          
                  if (history.length === 0) {
-                     tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 italic text-sm">No settled sales on this date</td></tr>`;
+                     tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 italic text-sm">${t('settled.empty')}</td></tr>`;
                      return;
                  }
          
                  history.forEach(row => {
                      const tr = document.createElement("tr");
                      tr.className = "fin-table-row";
+                     const label = row.is_counter_sale
+                         ? row.table_number
+                         : `${t('common.table')} ${row.table_number}`;
+                     const receiptAction = row.is_counter_sale && row.order_id
+                         ? `loadReceipt(${row.order_id})`
+                         : `loadDailyTableBill(${row.table_id}, '${row.date}')`;
                      tr.innerHTML = `
-                         <td class="py-3 px-4 font-semibold text-slate-800">Table ${row.table_number}</td>
+                         <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(label)}</td>
                          <td class="py-3 px-2 text-center text-slate-600">${row.order_count}</td>
                          <td class="py-3 px-4 text-right font-bold text-amber-600">${formatKs(row.total_amount)}</td>
                          <td class="py-3 px-4 text-right">
-                             <button onclick="loadDailyTableBill(${row.table_id}, '${row.date}')" class="fin-receipt-btn transition">Receipt</button>
+                             <button onclick="${receiptAction}" class="fin-receipt-btn transition">${t('common.receipt')}</button>
                          </td>`;
                      tbody.appendChild(tr);
                  });
@@ -1836,7 +1999,7 @@
              formData.append("file", fileInput.files[0]);
          
              try {
-                 const token = localStorage.getItem('manager_token');
+                 const token = LoginRemember.getToken();
                  const response = await fetch(`${API_BASE}/manager/upload-image`, {
                      method: 'POST',
                      headers: { 'Authorization': `Bearer ${token}` },
@@ -2369,12 +2532,14 @@
 
                  if (countEl) {
                      countEl.innerText = orders.length === 0
-                         ? 'No orders match these filters'
-                         : `Showing ${orders.length} order${orders.length === 1 ? '' : 's'}`;
+                         ? t('orders.none_match')
+                         : (orders.length === 1
+                             ? t('orders.showing_one')
+                             : t('orders.showing_many', { count: orders.length }));
                  }
 
                  if (orders.length === 0) {
-                     container.innerHTML = `<div class="text-center text-slate-400 italic py-8 border border-dashed border-slate-200 rounded-xl">No orders found</div>`;
+                     container.innerHTML = `<div class="text-center text-slate-400 italic py-8 border border-dashed border-slate-200 rounded-xl">${t('orders.none')}</div>`;
                      return;
                  }
          
@@ -2384,10 +2549,10 @@
                      const created = order.created_at ? new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                      card.innerHTML = `
                          <div>
-                             <p class="font-bold text-slate-800">Order ID #${order.id} - Table ${order.table.label}</p>
-                             <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}Total: ${formatKs(order.total_price)} · Status: <span class="capitalize font-semibold text-amber-600">${order.status}</span></p>
+                             <p class="font-bold text-slate-800">${t('orders.order_line', { id: order.id, table: order.table.label })}</p>
+                             <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}${t('orders.total_status', { total: formatKs(order.total_price), status: ManagerI18n.statusLabel(order.status) })}</p>
                          </div>
-                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition">Receipt</button>
+                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition">${t('common.receipt')}</button>
                      `;
                      container.appendChild(card);
                  });
@@ -2421,6 +2586,7 @@
              if (show) modal.classList.remove('hidden');
              else {
                  modal.classList.add('hidden');
+                 liveBillTableId = null;
                  configureReceiptModalActions('historical');
              }
          }
@@ -2595,7 +2761,7 @@
              if (!container) return;
 
              if (counterCart.length === 0) {
-                 container.innerHTML = `<p class="text-slate-400 italic text-xs">Tap menu items to add</p>`;
+                 container.innerHTML = `<p class="text-slate-400 italic text-xs">${t('counter.tap_to_add')}</p>`;
                  document.getElementById('counter-cart-total').innerText = formatKs(0);
                  if (checkoutBtn) checkoutBtn.disabled = true;
                  return;
@@ -2607,7 +2773,7 @@
                          <div class="min-w-0">
                              <p class="font-semibold text-slate-800 text-sm truncate">${escapeHtml(line.name)}</p>
                              ${line.modifier_names.length ? `<p class="text-[10px] text-slate-400 truncate">+ ${line.modifier_names.map(escapeHtml).join(', ')}</p>` : ''}
-                             <p class="text-xs text-violet-600 font-bold mt-0.5">${formatKs(line.unit_price)} each</p>
+                             <p class="text-xs text-violet-600 font-bold mt-0.5">${t('receipt.each', { price: formatKs(line.unit_price) })}</p>
                          </div>
                          <div class="flex items-center gap-1 shrink-0">
                              <button type="button" onclick="changeCounterQty('${line.key}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">−</button>
@@ -2654,7 +2820,7 @@
                  clearCounterCart();
                  loadCounterMenu();
                  fetchAnalytics();
-                 showToast(`Counter sale #${order.id} completed.`, 'success');
+                 showToast(t('toast.counter_done', { id: order.id }), 'success');
                  loadReceipt(order.id);
              } catch (err) {
                  showToast('Network error completing sale.', 'error');
@@ -2662,11 +2828,22 @@
          }
 
          // Initialize session protection on page load
+         window.onManagerLanguageChange = function () {
+             updateDarkModeUi();
+             ManagerI18n.apply();
+             const panel = sessionStorage.getItem(MANAGER_PANEL_KEY) || 'main';
+             if (!document.getElementById('dashboard-view')?.classList.contains('hidden')) {
+                 showManagerPanel(panel);
+             }
+         };
+
+         ManagerI18n.apply();
+         updateDarkModeUi();
          checkAuthState();
       </script>
       <script>
          window.PWA_CONFIG = {
-            swPath: '/static/sw-manager.js',
+            swPath: '/sw-manager.js',
             dismissKey: 'pwa_install_dismiss_manager'
          };
       </script>

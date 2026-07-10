@@ -111,8 +111,14 @@
     }
 
     async function connectUsbPrinter() {
+        if (global.PrinterSupport) {
+            global.PrinterSupport.requireSecureContext();
+        } else if (!global.isSecureContext) {
+            throw new Error('Web USB requires HTTPS in Chrome.');
+        }
+
         if (!navigator.usb) {
-            throw new Error('Web USB is not supported. Use Chrome or Edge over HTTPS.');
+            throw new Error('Web USB is not supported in this browser. Use Chrome or Edge over HTTPS.');
         }
 
         const device = await navigator.usb.requestDevice({ filters: USB_FILTERS });
@@ -265,7 +271,7 @@
 
         await ensurePrinterConnected(statusEl);
 
-        const data = global.EscPosReceipt.buildEscPosReceipt(currentReceipt);
+        const data = await global.EscPosReceipt.buildEscPosReceipt(currentReceipt);
         await sendEscPosData(data);
 
         updatePrinterStatus(
@@ -295,6 +301,12 @@
         });
     }
 
+    function isApiAvailable() {
+        return global.PrinterSupport
+            ? global.PrinterSupport.isUsbAvailable()
+            : Boolean(global.isSecureContext && navigator.usb);
+    }
+
     global.UsbPrinter = {
         setCurrentReceipt,
         connectUsbPrinter,
@@ -304,5 +316,6 @@
         printCurrentReceipt,
         isPrinterConnected,
         getPrinterName,
+        isApiAvailable,
     };
 }(window));

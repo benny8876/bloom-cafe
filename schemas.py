@@ -125,6 +125,10 @@ class OrderCreate(BaseModel):
 class CounterSaleCreate(BaseModel):
     items: List[OrderItemCreate]
 
+
+class OrderItemQuantityAdjust(BaseModel):
+    quantity: int = Field(..., ge=0)
+
 class OrderItemResponse(BaseModel):
     id: int
     menu_item: MenuItemResponse

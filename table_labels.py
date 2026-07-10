@@ -1,6 +1,6 @@
 """Table display labels for BLOOM CAFÉ dining areas."""
 
-# Section A (7 tables) + Section B (6 tables) = 13 tables
+
 TABLE_LABELS = [
     "A1", "A2", "B1", "B2", "C1", "C2", "D1",
     "D2", "V-1", "V-2", "Order", "Main", "Extra",
@@ -8,7 +8,7 @@ TABLE_LABELS = [
 
 RESTAURANT_NAME = "BLOOM CAFÉ"
 
-# Walk-in / counter sales (not a physical dining table)
+
 COUNTER_TABLE_NUMBER = 0
 COUNTER_TABLE_LABEL = "Counter"
 

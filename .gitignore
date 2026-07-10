@@ -11,3 +11,6 @@ restaurant.db
 venv/
 .vscode/
 .idea/
+
+# Local HTTPS development certs
+certs/
