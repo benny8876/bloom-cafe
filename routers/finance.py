@@ -21,6 +21,8 @@ from services.analytics import (
     completed_orders_for_range,
     resolve_range_bounds,
     add_settled_session_fees,
+    add_fee_only_settled_sessions,
+    fee_only_settled_sessions_for_range,
 )
 from services.pdf_fonts import bilingual_category_paragraph, mixed_text_paragraph
 
@@ -105,7 +107,39 @@ def _build_finance_summary(
             row["last_settled_at"] = settled
 
     session_fees_total = add_settled_session_fees(db, completed_orders, table_income)
+    for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
+        table = (
+            db.query(models.RestaurantTable)
+            .filter(models.RestaurantTable.id == session.table_id)
+            .first()
+        )
+        if not table:
+            continue
+        fee = float(session.session_fee_charged or 0) + float(
+            session.entry_fee_charged or 0
+        )
+        if fee <= 0:
+            continue
+        t_id = session.table_id
+        if t_id not in table_income:
+            table_income[t_id] = {
+                "table_id": t_id,
+                "table_label": get_table_label(table),
+                "order_count": 0,
+                "total_amount": 0.0,
+                "order_ids": [],
+                "last_settled_at": None,
+            }
+        row = table_income[t_id]
+        row["total_amount"] += fee
+        if session.ended_at and (
+            row["last_settled_at"] is None or session.ended_at > row["last_settled_at"]
+        ):
+            row["last_settled_at"] = session.ended_at
+
+    session_fees_total += add_fee_only_settled_sessions(db, range_start, range_end)
     monthly_session_fees = add_settled_session_fees(db, monthly_orders)
+    monthly_session_fees += add_fee_only_settled_sessions(db, month_start, month_end)
     income_total = income_total_orders + session_fees_total
     monthly_income = monthly_income_orders + monthly_session_fees
 

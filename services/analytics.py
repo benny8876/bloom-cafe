@@ -121,6 +121,55 @@ def income_timestamp(order: models.Order) -> datetime:
     return order.settled_at or order.created_at
 
 
+def fee_only_settled_sessions_for_range(
+    db: Session,
+    range_start: datetime,
+    range_end: datetime,
+) -> List[models.TableSession]:
+    """Settled VIP visits with fees but no completed orders at the same timestamp."""
+    sessions = (
+        db.query(models.TableSession)
+        .filter(
+            models.TableSession.status == models.TableSessionStatus.SETTLED,
+            models.TableSession.ended_at.isnot(None),
+            models.TableSession.ended_at.between(range_start, range_end),
+        )
+        .all()
+    )
+    fee_only: List[models.TableSession] = []
+    for session in sessions:
+        fee = float(session.session_fee_charged or 0) + float(
+            session.entry_fee_charged or 0
+        )
+        if fee <= 0:
+            continue
+        has_orders = (
+            db.query(models.Order)
+            .filter(
+                models.Order.table_id == session.table_id,
+                models.Order.status == models.OrderStatus.COMPLETED,
+                models.Order.settled_at == session.ended_at,
+            )
+            .first()
+        )
+        if not has_orders:
+            fee_only.append(session)
+    return fee_only
+
+
+def add_fee_only_settled_sessions(
+    db: Session,
+    range_start: datetime,
+    range_end: datetime,
+) -> float:
+    total = 0.0
+    for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
+        total += float(session.session_fee_charged or 0) + float(
+            session.entry_fee_charged or 0
+        )
+    return total
+
+
 def add_settled_session_fees(
     db: Session,
     orders: List[models.Order],

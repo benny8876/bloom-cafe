@@ -1081,7 +1081,7 @@
                  <div class="text-xs">
                      <p><b>${t('common.table')}:</b> ${bill.table_number}</p>
                      ${orderLine}
-                     <p class="text-[10px] text-amber-600 mt-2">${t('receipt.adjust_hint')}</p>
+                     ${bill.visit_only ? '' : `<p class="text-[10px] text-amber-600 mt-2">${t('receipt.adjust_hint')}</p>`}
                  </div>
                  ${guestBlock}
                  ${sessionStr ? `<div class="space-y-2 my-4">${sessionStr}</div>` : ''}
@@ -1805,9 +1805,11 @@
              const entryFeeLine = table.entry_fee > 0
                  ? `<p class="text-[10px] text-violet-600">${t('floor.entry_fee', { amount: formatKs(table.entry_fee) })}</p>`
                  : '';
-             const orderCountLabel = table.active_orders_count === 1
-                 ? t('floor.order_count', { count: table.active_orders_count })
-                 : t('floor.order_count_plural', { count: table.active_orders_count });
+             const orderCountLabel = table.visit_only
+                 ? `<p class="text-xs text-violet-600 font-semibold">${t('floor.visit_only')}</p>`
+                 : (table.active_orders_count === 1
+                     ? t('floor.order_count', { count: table.active_orders_count })
+                     : t('floor.order_count_plural', { count: table.active_orders_count }));
              const totalLine = table.total_with_session > table.total_price
                  ? `<p class="text-sm font-black text-amber-600">${t('floor.total_line', { amount: formatKs(table.total_with_session) })}</p><p class="text-[10px] text-slate-500">${t('floor.orders_line', { amount: formatKs(table.total_price) })}</p>`
                  : `<p class="text-sm font-black text-amber-600">${formatKs(table.total_price)}</p>`;
@@ -1844,7 +1846,15 @@
                          <p class="text-base sm:text-lg font-black text-slate-600 leading-tight break-words w-full">${t('common.table')} ${escapeHtml(table.table_number)}</p>
                          ${table.is_vip_room ? `<p class="text-[10px] font-bold uppercase tracking-wide text-violet-500">${t('floor.vip')}</p>` : ''}
                          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">${t('common.available')}</p>
-                     </div>`;
+                     </div>
+                     ${table.is_vip_room ? `
+                     <div class="flex flex-col gap-2 w-full mt-auto pt-2">
+                         <button type="button" data-action="start-visit" class="w-full text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-3 rounded-lg transition">${t('vip.start_visit')}</button>
+                     </div>` : ''}`;
+                 tile.querySelector('[data-action="start-visit"]')?.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     startVipVisit(table.table_id);
+                 });
              }
              return tile;
          }
@@ -1885,8 +1895,30 @@
              }
          }
 
+         async function startVipVisit(tableId) {
+             try {
+                 const response = await fetch(`${API_BASE}/manager/tables/${tableId}/start-visit`, {
+                     method: 'POST',
+                     headers: getAuthHeaders(),
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json().catch(() => ({}));
+                     showToast(err.detail || t('vip.visit_start_fail'), 'error');
+                     return;
+                 }
+                 showToast(t('vip.visit_started'), 'success');
+                 await fetchActiveTables();
+                 await loadConsolidatedTableBill(tableId);
+             } catch (err) {
+                 showToast(t('toast.network_error'), 'error');
+             }
+         }
+
          async function cancelTableSession(tableId) {
-             if (!confirm(t('confirm.cancel_table'))) return;
+             const table = floorTablesCache.find((row) => row.table_id === tableId);
+             const confirmKey = table?.visit_only ? 'confirm.cancel_visit' : 'confirm.cancel_table';
+             if (!confirm(t(confirmKey))) return;
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/cancel`, {
                      method: 'POST',
@@ -1989,8 +2021,12 @@
                      tr.className = "fin-table-row";
                      const label = row.is_counter_sale
                          ? row.table_number
-                         : `${t('common.table')} ${row.table_number}`;
-                     const receiptAction = row.is_counter_sale && row.order_id
+                         : row.is_visit_only
+                             ? `${t('common.table')} ${row.table_number} · ${t('vip.visit_only')}`
+                             : `${t('common.table')} ${row.table_number}`;
+                     const receiptAction = row.is_visit_only && row.settled_at
+                         ? `loadHistoricalTableBill(${row.table_id}, '${row.settled_at}')`
+                         : row.is_counter_sale && row.order_id
                          ? `loadReceipt(${row.order_id})`
                          : `loadDailyTableBill(${row.table_id}, '${row.date}')`;
                      tr.innerHTML = `

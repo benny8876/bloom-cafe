@@ -23,6 +23,8 @@ from services.analytics import (
     income_timestamp,
     resolve_range_bounds,
     add_settled_session_fees,
+    add_fee_only_settled_sessions,
+    fee_only_settled_sessions_for_range,
     MYANMAR_TZ,
 )
 from services.orders import (
@@ -378,13 +380,7 @@ def update_table(
     return _table_management_payload(table, active_table_ids, db)
 
 
-@router.patch("/tables/{table_id}/guests")
-def update_table_guest_count(
-    table_id: int,
-    payload: schemas.TableGuestCountUpdate,
-    db: Session = Depends(get_db),
-    authenticated: bool = Depends(verify_manager_token),
-):
+def _get_dining_table(db: Session, table_id: int) -> models.RestaurantTable:
     table = (
         db.query(models.RestaurantTable)
         .filter(models.RestaurantTable.id == table_id)
@@ -392,16 +388,68 @@ def update_table_guest_count(
     )
     if not table or is_counter_table(table) or not table.is_active:
         raise HTTPException(status_code=404, detail="Table does not exist.")
+    return table
+
+
+@router.post("/tables/{table_id}/start-visit")
+async def start_vip_visit(
+    table_id: int,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    table = _get_dining_table(db, table_id)
+    if not table.is_vip_room:
+        raise HTTPException(
+            status_code=400, detail="Start Visit is only available for VIP rooms."
+        )
+
+    if _load_active_table_orders(db, table_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Table already has active orders. Open Bill from the floor plan.",
+        )
+
+    if get_active_session(db, table_id):
+        raise HTTPException(status_code=400, detail="A visit is already in progress.")
+
+    session, started = ensure_vip_session_started(db, table)
+    if not session:
+        raise HTTPException(status_code=400, detail="Could not start VIP visit.")
+
+    db.commit()
+    db.refresh(session)
+
+    if started:
+        await manager_ws.broadcast(
+            {
+                "event": "table_session_started",
+                "table_id": table.id,
+                "table_number": get_table_label(table),
+            }
+        )
+
+    return session_summary(session)
+
+
+@router.patch("/tables/{table_id}/guests")
+def update_table_guest_count(
+    table_id: int,
+    payload: schemas.TableGuestCountUpdate,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    table = _get_dining_table(db, table_id)
     if not table.is_vip_room:
         raise HTTPException(status_code=400, detail="Guest count is only for VIP tables.")
 
-    active_orders = _load_active_table_orders(db, table_id)
-    if not active_orders:
-        raise HTTPException(status_code=400, detail="No active orders on this table.")
-
-    session, _ = ensure_vip_session_started(db, table)
+    session = get_active_session(db, table_id)
     if not session:
-        raise HTTPException(status_code=400, detail="Could not start VIP session.")
+        session, _ = ensure_vip_session_started(db, table)
+    if not session:
+        raise HTTPException(
+            status_code=400,
+            detail="No active VIP visit. Use Start Visit on the floor plan first.",
+        )
 
     # Keep entry fee rate in sync with current table setting for open visits
     session.entry_fee_per_guest_snapshot = float(table.entry_fee_per_guest or 0)
@@ -772,17 +820,20 @@ def get_table_floor(
             session_fee = float(vip_session["current_fee"] or 0)
             entry_fee = float(vip_session.get("entry_fee") or 0)
 
-        if live:
+        if live or active_session:
+            orders_total = live["total_price"] if live else 0.0
+            orders_count = live["active_orders_count"] if live else 0
             entry = {
                 "table_id": table.id,
                 "table_number": get_table_label(table),
                 "status": "live",
-                "active_orders_count": live["active_orders_count"],
-                "total_price": live["total_price"],
+                "active_orders_count": orders_count,
+                "total_price": orders_total,
                 "is_vip_room": bool(table.is_vip_room),
+                "visit_only": bool(active_session and not live),
                 "session_fee": session_fee,
                 "entry_fee": entry_fee,
-                "total_with_session": live["total_price"] + session_fee + entry_fee,
+                "total_with_session": orders_total + session_fee + entry_fee,
                 "vip_session": vip_session,
             }
             floor.append(entry)
@@ -1000,9 +1051,20 @@ def get_consolidated_table_bill(
     authenticated: bool = Depends(verify_manager_token),
 ):
     active_orders = _load_active_table_orders(db, table_id)
+    active_session = get_active_session(db, table_id)
 
-    if not active_orders:
-        raise HTTPException(status_code=404, detail="No active dining sessions found.")
+    if active_orders:
+        table = active_orders[0].table
+    else:
+        table = (
+            db.query(models.RestaurantTable)
+            .filter(models.RestaurantTable.id == table_id)
+            .first()
+        )
+        if not table or is_counter_table(table) or not table.is_active:
+            raise HTTPException(status_code=404, detail="Table does not exist.")
+        if not (table.is_vip_room and active_session):
+            raise HTTPException(status_code=404, detail="No active dining sessions found.")
 
     consolidated_items = {}
     grand_total = 0.0
@@ -1029,15 +1091,14 @@ def get_consolidated_table_bill(
             consolidated_items[item_key]["quantity"] += item.quantity
             grand_total += item_unit_price * item.quantity
 
-    table = active_orders[0].table
     table_num = get_table_label(table)
     items_list = list(consolidated_items.values())
 
-    if table.is_vip_room:
+    if table.is_vip_room and active_orders:
         ensure_vip_session_started(db, table)
         db.commit()
+        active_session = get_active_session(db, table_id)
 
-    active_session = get_active_session(db, table_id)
     items_list, grand_total, session_fee, entry_fee, vip_session = _append_vip_fee_lines(
         items_list, grand_total, active_session, use_charged=False
     )
@@ -1053,6 +1114,7 @@ def get_consolidated_table_bill(
         "session_fee": session_fee,
         "entry_fee": entry_fee,
         "is_vip_room": bool(table.is_vip_room),
+        "visit_only": not active_orders,
         "entry_fee_per_guest": float(
             (vip_session or {}).get("entry_fee_per_guest")
             or (table.entry_fee_per_guest or 0)
@@ -1078,9 +1140,24 @@ async def settle_table_bill(
         )
         .all()
     )
+    active_session = get_active_session(db, table_id)
 
-    if not active_orders:
-        raise HTTPException(status_code=400, detail="No active orders found to settle.")
+    if not active_orders and not active_session:
+        raise HTTPException(
+            status_code=400,
+            detail="No active visit or orders found to settle.",
+        )
+
+    table = active_orders[0].table if active_orders else _get_dining_table(db, table_id)
+
+    if not active_orders and active_session:
+        entry_rate = float(active_session.entry_fee_per_guest_snapshot or 0)
+        guests = int(active_session.guest_count or 0)
+        if entry_rate > 0 and guests <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Set guest count before settling this visit.",
+            )
 
     now_settled_time = datetime.now(MYANMAR_TZ).replace(tzinfo=None)
 
@@ -1092,7 +1169,7 @@ async def settle_table_bill(
     close_dining_sessions_for_table(db, table_id, as_of=now_settled_time)
 
     db.commit()
-    table_label = get_table_label(active_orders[0].table)
+    table_label = get_table_label(table)
     await manager_ws.broadcast(
         {"event": "table_settled", "table_id": table_id, "table_number": table_label}
     )
@@ -1113,11 +1190,16 @@ async def cancel_table_session(
         )
         .all()
     )
+    active_session = get_active_session(db, table_id)
 
-    if not active_orders:
-        raise HTTPException(status_code=400, detail="No active orders found to cancel.")
+    if not active_orders and not active_session:
+        raise HTTPException(
+            status_code=400,
+            detail="No active visit or orders found to cancel.",
+        )
 
-    table_label = get_table_label(active_orders[0].table)
+    table = active_orders[0].table if active_orders else _get_dining_table(db, table_id)
+    table_label = get_table_label(table)
 
     for order in active_orders:
         security.restore_order_stock(order, db)
@@ -1218,6 +1300,34 @@ def get_settled_tables_history(
         table_map.values(),
         key=lambda row: (-row["total_amount"], row["table_number"]),
     )
+
+    for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
+        table = (
+            db.query(models.RestaurantTable)
+            .filter(models.RestaurantTable.id == session.table_id)
+            .first()
+        )
+        if not table or is_counter_table(table):
+            continue
+        total_amount = float(session.session_fee_charged or 0) + float(
+            session.entry_fee_charged or 0
+        )
+        dining_rows.append(
+            {
+                "table_id": session.table_id,
+                "table_number": get_table_label(table),
+                "order_count": 0,
+                "total_amount": total_amount,
+                "order_ids": [],
+                "order_id": None,
+                "is_counter_sale": False,
+                "is_visit_only": True,
+                "date": target_date_str,
+                "settled_at": session.ended_at.isoformat(),
+            }
+        )
+
+    dining_rows.sort(key=lambda row: (-row["total_amount"], row["table_number"]))
     counter_rows.sort(key=lambda row: row["settled_at"], reverse=True)
 
     return counter_rows + dining_rows
@@ -1246,39 +1356,52 @@ def get_historical_table_bill(
         .all()
     )
 
-    if not orders:
-        raise HTTPException(status_code=404, detail="No historical records found.")
-
-    consolidated_items = {}
-    grand_total = 0.0
-    order_ids = []
-
-    for order in orders:
-        order_ids.append(order.id)
-        for item in order.items:
-            item_unit_price = item.menu_item.price
-            for mod_assoc in item.selected_modifiers:
-                item_unit_price += mod_assoc.modifier.price
-
-            mod_key = "-".join(
-                sorted([str(m.modifier_id) for m in item.selected_modifiers])
-            )
-            item_key = f"{item.menu_item.id}_{mod_key}"
-
-            if item_key not in consolidated_items:
-                consolidated_items[item_key] = {
-                    "name": item.menu_item.name,
-                    "quantity": 0,
-                    "unit_price": item_unit_price,
-                    "modifiers": [m.modifier.name for m in item.selected_modifiers],
-                }
-
-            consolidated_items[item_key]["quantity"] += item.quantity
-            grand_total += item_unit_price * item.quantity
-
-    table_num = get_table_label(orders[0].table)
-    items_list = list(consolidated_items.values())
     table_session = get_settled_session_at(db, table_id, settled_datetime)
+    if not orders:
+        if not table_session:
+            raise HTTPException(status_code=404, detail="No historical records found.")
+        table = (
+            db.query(models.RestaurantTable)
+            .filter(models.RestaurantTable.id == table_id)
+            .first()
+        )
+        if not table:
+            raise HTTPException(status_code=404, detail="Table does not exist.")
+        table_num = get_table_label(table)
+        items_list: list = []
+        grand_total = 0.0
+        order_ids: list = []
+    else:
+        consolidated_items = {}
+        grand_total = 0.0
+        order_ids = []
+
+        for order in orders:
+            order_ids.append(order.id)
+            for item in order.items:
+                item_unit_price = item.menu_item.price
+                for mod_assoc in item.selected_modifiers:
+                    item_unit_price += mod_assoc.modifier.price
+
+                mod_key = "-".join(
+                    sorted([str(m.modifier_id) for m in item.selected_modifiers])
+                )
+                item_key = f"{item.menu_item.id}_{mod_key}"
+
+                if item_key not in consolidated_items:
+                    consolidated_items[item_key] = {
+                        "name": item.menu_item.name,
+                        "quantity": 0,
+                        "unit_price": item_unit_price,
+                        "modifiers": [m.modifier.name for m in item.selected_modifiers],
+                    }
+
+                consolidated_items[item_key]["quantity"] += item.quantity
+                grand_total += item_unit_price * item.quantity
+
+        table_num = get_table_label(orders[0].table)
+        items_list = list(consolidated_items.values())
+
     items_list, grand_total, session_fee, entry_fee, _vip = _append_vip_fee_lines(
         items_list, grand_total, table_session, use_charged=True
     )
@@ -1412,6 +1535,8 @@ def get_daily_analytics(
     revenue_monthly_orders = sum(order.total_price for order in monthly_orders)
     session_fees_day = add_settled_session_fees(db, completed_orders)
     session_fees_month = add_settled_session_fees(db, monthly_orders)
+    session_fees_day += add_fee_only_settled_sessions(db, day_start, day_end)
+    session_fees_month += add_fee_only_settled_sessions(db, month_start, month_end)
     total_revenue = revenue_orders + session_fees_day
     total_monthly_revenue = revenue_monthly_orders + session_fees_month
 
@@ -1444,6 +1569,7 @@ def export_daily_report(
     period_orders = completed_orders_for_range(db, range_start, range_end)
     revenue_orders = sum(order.total_price for order in period_orders)
     session_fees = add_settled_session_fees(db, period_orders)
+    session_fees += add_fee_only_settled_sessions(db, range_start, range_end)
     total_revenue = revenue_orders + session_fees
     total_transactions = len(period_orders)
     show_date_column = range_key != "day"
