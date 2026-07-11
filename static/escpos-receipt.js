@@ -1,8 +1,4 @@
-/**
- * Shared ESC/POS receipt formatting for 80mm (3-inch) thermal printers.
- * Header / thanks / footer are rendered as centered bitmaps so alignment
- * stays correct even when the printer ignores ESC a (justify) commands.
- */
+
 (function (global) {
     const ESC = '\x1B';
     const GS = '\x1D';
@@ -48,6 +44,11 @@
         }
         return logoImagePromise;
     }
+
+    function dashedLine() {
+        return '-'.repeat(LINE_WIDTH) + '\n';
+    }
+    
 
     function canvasToEscPosRaster(canvas) {
         const width = canvas.width;
