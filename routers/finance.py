@@ -23,6 +23,9 @@ from services.analytics import (
     add_settled_session_fees,
     add_fee_only_settled_sessions,
     fee_only_settled_sessions_for_range,
+    subtract_settlement_discounts,
+    settlement_discount_amount,
+    settlement_discounts_for_range,
 )
 from services.pdf_fonts import bilingual_category_paragraph, mixed_text_paragraph
 
@@ -107,6 +110,19 @@ def _build_finance_summary(
             row["last_settled_at"] = settled
 
     session_fees_total = add_settled_session_fees(db, completed_orders, table_income)
+
+    discount_keys: set = set()
+    for order in completed_orders:
+        if not order.settled_at:
+            continue
+        key = (order.table_id, order.settled_at.isoformat())
+        if key in discount_keys:
+            continue
+        discount_keys.add(key)
+        discount = settlement_discount_amount(db, order.table_id, order.settled_at)
+        if discount > 0 and order.table_id in table_income:
+            table_income[order.table_id]["total_amount"] -= discount
+
     for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
         table = (
             db.query(models.RestaurantTable)
@@ -132,6 +148,7 @@ def _build_finance_summary(
             }
         row = table_income[t_id]
         row["total_amount"] += fee
+        row["total_amount"] -= float(session.discount_amount or 0)
         if session.ended_at and (
             row["last_settled_at"] is None or session.ended_at > row["last_settled_at"]
         ):
@@ -140,8 +157,10 @@ def _build_finance_summary(
     session_fees_total += add_fee_only_settled_sessions(db, range_start, range_end)
     monthly_session_fees = add_settled_session_fees(db, monthly_orders)
     monthly_session_fees += add_fee_only_settled_sessions(db, month_start, month_end)
-    income_total = income_total_orders + session_fees_total
-    monthly_income = monthly_income_orders + monthly_session_fees
+    period_discounts = settlement_discounts_for_range(db, range_start, range_end)
+    monthly_discounts = settlement_discounts_for_range(db, month_start, month_end)
+    income_total = income_total_orders + session_fees_total - period_discounts
+    monthly_income = monthly_income_orders + monthly_session_fees - monthly_discounts
 
     income_entries = [
         schemas.FinanceTableIncomeEntry(**row)

@@ -126,8 +126,31 @@ class CounterSaleCreate(BaseModel):
     items: List[OrderItemCreate]
 
 
+class EntryFeeSettingsResponse(BaseModel):
+    entry_fee_per_guest: float = 0
+
+
+class EntryFeeSettingsUpdate(BaseModel):
+    entry_fee_per_guest: float = Field(..., ge=0)
+
+
+class EntryCheckoutRequest(BaseModel):
+    guest_count: int = Field(..., ge=1, le=200)
+
+
+class EntryCheckoutResponse(BaseModel):
+    order_id: int
+    guest_count: int
+    total: float
+    receipt: dict
+
+
 class OrderItemQuantityAdjust(BaseModel):
     quantity: int = Field(..., ge=0)
+
+
+class SettleTableBillRequest(BaseModel):
+    discount_percent: float = Field(0, ge=0, le=100)
 
 class OrderItemResponse(BaseModel):
     id: int
@@ -209,6 +232,8 @@ class DailyAnalytics(BaseModel):
     total_revenue: float
     total_monthly_revenue: float
     total_orders_completed: int
+    entry_guests_today: int = 0
+    entry_checkouts_today: int = 0
     top_selling_items: List[dict]
 
 

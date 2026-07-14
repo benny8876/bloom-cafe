@@ -63,6 +63,8 @@ class TableSession(Base):
     billable_minutes = Column(Integer, nullable=True)
     session_fee_charged = Column(Float, nullable=True)
     entry_fee_charged = Column(Float, nullable=True)
+    discount_percent = Column(Float, nullable=True)
+    discount_amount = Column(Float, nullable=True)
 
     table = relationship("RestaurantTable", back_populates="sessions")
 
@@ -142,6 +144,8 @@ class Order(Base):
     
     settled_at = Column(DateTime, nullable=True)
     payment_method = Column(String, nullable=True)
+    discount_percent = Column(Float, nullable=True)
+    discount_amount = Column(Float, nullable=True)
 
     table = relationship("RestaurantTable")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
@@ -195,3 +199,10 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     description = Column(String, nullable=True)
     recorded_at = Column(DateTime, default=get_yangon_now, index=True)
+
+
+class ShopSettings(Base):
+    """Singleton shop-wide POS settings (row id=1)."""
+    __tablename__ = "shop_settings"
+    id = Column(Integer, primary_key=True)
+    entry_fee_per_guest = Column(Float, nullable=False, default=0.0)

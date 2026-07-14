@@ -11,7 +11,7 @@
       <link rel="apple-touch-icon" href="/static/bloom-logo.png">
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
       <script src="https://cdn.tailwindcss.com"></script>
       <script>
          (function () {
@@ -217,7 +217,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             padding: 0.875rem 1rem;
             border-radius: 0.875rem;
             background: linear-gradient(135deg, #9b2d8c 0%, #7a1f72 100%);
@@ -230,6 +231,8 @@
             flex-direction: column;
             gap: 0.15rem;
             font-size: 0.8125rem;
+            min-width: 0;
+            flex: 1 1 auto;
          }
          .service-alert-banner__text strong {
             font-size: 0.6875rem;
@@ -263,6 +266,14 @@
             font-weight: 700;
             color: #0f172a !important;
          }
+         #receipt-modal .receipt-discount-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #b45309 !important;
+         }
          #receipt-modal .receipt-footer {
             margin-top: 1rem;
             padding-top: 0.75rem;
@@ -271,6 +282,107 @@
             font-size: 0.625rem;
             line-height: 1.4;
             color: #64748b !important;
+         }
+         #receipt-modal .receipt-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 24rem;
+            max-height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            min-height: 0;
+            height: auto;
+            overflow: hidden;
+         }
+         #receipt-modal #receipt-payload {
+            overflow-y: auto;
+            flex: 0 1 auto;
+            min-height: 0;
+            max-height: min(55vh, 28rem);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-right: 0.25rem;
+         }
+         #receipt-modal #receipt-summary {
+            flex-shrink: 0;
+            padding-top: 0.5rem;
+         }
+         #receipt-modal #receipt-actions {
+            flex-shrink: 0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+            background: #fff;
+         }
+         @media (max-width: 639px) {
+            #receipt-modal #receipt-payload {
+               max-height: 42vh;
+            }
+            #receipt-modal #receipt-actions {
+               flex: 0 0 auto;
+               overflow-y: visible;
+            }
+         }
+         @media (max-width: 767px) {
+            .mgr-menu-col-kitchen,
+            .mgr-menu-col-modifiers,
+            .mgr-menu-col-stock { display: none; }
+         }
+         #edit-item-modal .menu-item-modal-panel,
+         #add-item-modal .menu-item-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 28rem;
+            height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            max-height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            min-height: 0;
+            overflow: hidden;
+         }
+         #edit-item-modal #edit-item-form,
+         #add-item-modal #add-item-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+         }
+         #edit-item-modal .menu-item-modal-body,
+         #add-item-modal .menu-item-modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-right: 0.25rem;
+         }
+         #edit-item-modal .menu-item-modal-footer,
+         #add-item-modal .menu-item-modal-footer {
+            flex-shrink: 0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+         }
+         html.dark #edit-item-modal .menu-item-modal-footer,
+         html.dark #add-item-modal .menu-item-modal-footer {
+            border-top-color: #334155;
+         }
+         html.dark #edit-item-modal input[type="file"],
+         html.dark #add-item-modal input[type="file"] {
+            color-scheme: dark;
+         }
+         .entry-guest-btn.is-selected {
+            background: #d97706 !important;
+            border-color: #b45309 !important;
+            color: #fff !important;
+            box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+         }
+         html.dark .entry-guest-btn {
+            background: rgba(180, 83, 9, 0.2) !important;
+            border-color: rgba(217, 119, 6, 0.45) !important;
+            color: #fcd34d !important;
+         }
+         html.dark .entry-guest-btn.is-selected {
+            background: #d97706 !important;
+            color: #fff !important;
          }
          html.dark .table-floor-tile.border-emerald-500 { border-color: #10b981 !important; }
          html.dark .table-floor-tile.bg-emerald-50 { background-color: rgba(6, 78, 59, 0.35) !important; }
@@ -420,12 +532,60 @@
 
             <!-- MAIN PANEL -->
             <div id="panel-main" class="manager-panel space-y-8">
-            <section class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-               <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                  <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" data-i18n="stats.completed">Completed Transactions</span>
-                  <h3 class="text-3xl font-black text-slate-800 mt-2" id="stat-count">0</h3>
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+               <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-amber-200/80 flex flex-col">
+                  <div class="mb-4">
+                     <span class="text-xs text-amber-700 uppercase font-bold tracking-wider" data-i18n="entry.title">Photo Entry Checkout</span>
+                     <p class="text-[11px] text-slate-400 mt-1" data-i18n="entry.subtitle">Pay entry fee at counter before photos &amp; table dining</p>
+                  </div>
+                  <div class="space-y-4 flex-1">
+                     <div class="flex flex-wrap items-end gap-2">
+                        <div class="flex-1 min-w-[8rem]">
+                           <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="entry.rate_label">Rate / guest (Ks)</label>
+                           <input type="number" min="0" step="1" id="entry-fee-rate" class="w-full bg-slate-100 border-none rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <button type="button" onclick="saveEntryFeeRate()" class="shrink-0 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white py-2 px-3 rounded-lg transition" data-i18n="entry.save_rate">Save</button>
+                     </div>
+                     <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center" data-i18n="entry.guests">Guests</p>
+                        <div class="grid grid-cols-5 gap-2 mb-3">
+                           <button type="button" onclick="setEntryGuests(3)" class="entry-guest-btn py-3 rounded-xl text-sm font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-amber-200 transition" data-guests="1">3</button>
+                           <button type="button" onclick="setEntryGuests(5)" class="entry-guest-btn py-3 rounded-xl text-sm font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-amber-200 transition" data-guests="2">5</button>
+                           <button type="button" onclick="setEntryGuests(8)" class="entry-guest-btn py-3 rounded-xl text-sm font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-amber-200 transition" data-guests="3">8</button>
+                           <button type="button" onclick="setEntryGuests(12)" class="entry-guest-btn py-3 rounded-xl text-sm font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-amber-200 transition" data-guests="4">12</button>
+                           <button type="button" onclick="setEntryGuests(15)" class="entry-guest-btn py-3 rounded-xl text-sm font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-amber-200 transition" data-guests="5">15</button>
+                        </div>
+                        <div class="flex items-center justify-center gap-3">
+                           <button type="button" onclick="adjustEntryGuests(-1)" class="w-10 h-10 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold hover:bg-slate-50">−</button>
+                           <div class="text-center min-w-[4rem]">
+                              <span id="entry-guest-count" class="text-3xl font-black text-slate-800">1</span>
+                              <p class="text-[10px] text-slate-400 uppercase font-bold" data-i18n="entry.guests">Guests</p>
+                           </div>
+                           <button type="button" onclick="adjustEntryGuests(1)" class="w-10 h-10 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold hover:bg-slate-50">+</button>
+                        </div>
+                     </div>
+                     <div class="text-center py-1">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold" data-i18n="common.total">Total</p>
+                        <p id="entry-checkout-total" class="text-2xl font-black text-amber-600">0 Ks</p>
+                     </div>
+                     <button type="button" id="entry-checkout-btn" onclick="submitEntryCheckout()" class="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl text-sm transition shadow-sm" data-i18n="entry.print_pay">Print Receipt &amp; Complete</button>
+                  </div>
                </div>
-               <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+               <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <p class="text-xs text-slate-400 uppercase font-bold tracking-wider" data-i18n="stats.completed">Completed Transactions</p>
+                  <div class="mt-4 space-y-4">
+                     <div>
+                        <p class="text-4xl font-black text-slate-800 leading-none tabular-nums" id="stat-count">0</p>
+                        <p class="text-xs text-slate-500 mt-2" data-i18n="stats.completed_hint">Table &amp; counter orders</p>
+                     </div>
+                     <div class="border-t border-slate-100 pt-4">
+                        <p class="text-xs text-amber-700 uppercase font-bold tracking-wider" data-i18n="stats.entry_guests">Entry guests today</p>
+                        <p class="text-3xl font-black text-amber-600 leading-none tabular-nums mt-1.5" id="stat-entry-guests">0</p>
+                        <p class="text-xs text-slate-500 mt-2" id="stat-entry-checkouts-label">—</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sm:col-span-2 lg:col-span-1">
                   <span class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2 block" data-i18n="stats.top_items">Top Selling Items</span>
                   <ol id="stat-top-items" class="text-sm list-decimal list-inside space-y-1 text-slate-600">
                      <li data-i18n="stats.no_items">No items logged yet</li>
@@ -470,6 +630,7 @@
                               <th class="py-2.5 px-4 font-bold" data-i18n="common.table">Table</th>
                               <th class="py-2.5 px-2 font-bold text-center" data-i18n="common.orders">Orders</th>
                               <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.amount">Amount</th>
+                              <th class="py-2.5 px-2 font-bold text-right" data-i18n="settled.col_discount">Discount</th>
                               <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.receipt">Receipt</th>
                            </tr>
                         </thead>
@@ -521,11 +682,11 @@
                   </div>
                </div>
                <form id="add-table-form" onsubmit="submitAddTable(event)" class="flex flex-wrap items-end gap-2 mb-4">
-                  <div class="flex-1 min-w-[180px]">
+                  <div class="w-full sm:flex-1 sm:min-w-[180px]">
                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="qr.new_label">New table label</label>
                      <input type="text" id="add-table-label" maxlength="50" data-i18n-placeholder="qr.new_placeholder" placeholder="e.g. V-3, A8, VIP-1" required class="w-full bg-slate-100 border-none rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500">
                   </div>
-                  <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition shrink-0" data-i18n="qr.add_table">+ Add Table</button>
+                  <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition shrink-0" data-i18n="qr.add_table">+ Add Table</button>
                </form>
                <div id="qr-tables-empty" class="hidden py-8 text-center text-slate-400 italic text-sm border border-dashed border-slate-200 rounded-xl mb-4" data-i18n="qr.empty">No tables yet. Add your first table above.</div>
                <div id="qr-tables-list" class="space-y-2 mb-6 max-h-[32rem] overflow-y-auto"></div>
@@ -533,12 +694,12 @@
             <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                <h2 class="text-lg font-bold mb-2 text-slate-800" data-i18n="qr.generator_title">Tamper-Proof Dining QR Generator</h2>
                <p class="text-xs text-slate-400 mb-4" data-i18n="qr.generator_subtitle">Generates cryptographically signed URLs for tables.</p>
-               <div class="flex flex-wrap items-center gap-3">
-                  <select id="qr-table-select" class="bg-slate-100 border-none rounded px-4 py-2.5 text-sm font-semibold outline-none">
+               <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+                  <select id="qr-table-select" class="w-full sm:w-auto bg-slate-100 border-none rounded px-4 py-2.5 text-sm font-semibold outline-none">
                      <option value="" data-i18n="qr.loading_tables">Loading tables...</option>
                   </select>
-                  <button onclick="requestSignedToken()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_link">Generate Signed Link</button>
-                  <button onclick="requestAllTableLinks()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_all">Generate All Table Links</button>
+                  <button onclick="requestSignedToken()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_link">Generate Signed Link</button>
+                  <button onclick="requestAllTableLinks()" class="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition" data-i18n="qr.generate_all">Generate All Table Links</button>
                </div>
                <div id="qr-output-container" class="mt-4 p-4 bg-slate-50 border rounded-xl hidden text-sm font-semibold space-y-2">
                   <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="qr.signature">Secure Path Signature:</p>
@@ -562,7 +723,7 @@
                         <span class="text-[10px] font-bold text-slate-400 uppercase" data-i18n="common.date">Date</span>
                         <input type="date" id="orders-filter-date" onchange="fetchOrdersLog()" class="bg-transparent border-none text-sm font-semibold focus:outline-none cursor-pointer text-slate-700">
                      </div>
-                     <select id="orders-filter-status" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
+                     <select id="orders-filter-status" onchange="fetchOrdersLog()" class="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="" data-i18n="orders.all_statuses">All statuses</option>
                         <option value="pending" data-i18n="status.pending">Pending</option>
                         <option value="preparing" data-i18n="status.preparing">Preparing</option>
@@ -571,7 +732,7 @@
                         <option value="completed" data-i18n="status.completed">Completed</option>
                         <option value="cancelled" data-i18n="status.cancelled">Cancelled</option>
                      </select>
-                     <select id="orders-filter-table" onchange="fetchOrdersLog()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
+                     <select id="orders-filter-table" onchange="fetchOrdersLog()" class="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 sm:min-w-[140px]">
                         <option value="" data-i18n="orders.all_tables">All tables</option>
                      </select>
                      <button type="button" onclick="clearOrderFilters()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-3 rounded-lg text-xs transition" data-i18n="common.clear">Clear</button>
@@ -598,17 +759,17 @@
                      <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shrink-0" data-i18n="menu.add_item">+ Add Menu Item</button>
                   </div>
                   <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 mb-3">
-                     <div class="relative flex-1 min-w-[200px]">
+                     <div class="relative w-full sm:flex-1 sm:min-w-[200px]">
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                            <circle cx="11" cy="11" r="7"></circle>
                            <path stroke-linecap="round" d="M20 20l-3-3"></path>
                         </svg>
                         <input type="search" id="menu-item-search" data-i18n-placeholder="menu.search" placeholder="Search by name or category..." oninput="applyMenuFilters()" class="w-full bg-slate-100 border-none rounded-lg pl-9 pr-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500">
                      </div>
-                     <select id="menu-category-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[160px]">
+                     <select id="menu-category-filter" onchange="applyMenuFilters()" class="w-full sm:w-auto bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 sm:min-w-[160px]">
                         <option value="" data-i18n="menu.all_categories">All categories</option>
                      </select>
-                     <select id="menu-kitchen-filter" onchange="applyMenuFilters()" class="bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]">
+                     <select id="menu-kitchen-filter" onchange="applyMenuFilters()" class="w-full sm:w-auto bg-slate-100 border-none rounded-lg px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 sm:min-w-[140px]">
                         <option value="" data-i18n="menu.all_kitchens">All kitchens</option>
                         <option value="coffee" data-i18n="menu.kitchen_coffee">☕ Coffee bar</option>
                         <option value="food" data-i18n="menu.kitchen_food">🍳 Food kitchen</option>
@@ -622,10 +783,10 @@
                            <tr class="text-xs border-b">
                               <th class="py-2 px-4" data-i18n="menu.col_name">Item Name</th>
                               <th class="py-2" data-i18n="menu.col_category">Category</th>
-                              <th class="py-2" data-i18n="menu.col_kitchen">Kitchen</th>
+                              <th class="py-2 mgr-menu-col-kitchen" data-i18n="menu.col_kitchen">Kitchen</th>
                               <th class="py-2" data-i18n="menu.col_price">Price</th>
-                              <th class="py-2" data-i18n="menu.col_modifiers">Modifiers</th>
-                              <th class="py-2" data-i18n="menu.col_stock">Stock</th>
+                              <th class="py-2 mgr-menu-col-modifiers" data-i18n="menu.col_modifiers">Modifiers</th>
+                              <th class="py-2 mgr-menu-col-stock" data-i18n="menu.col_stock">Stock</th>
                               <th class="py-2" data-i18n="menu.col_status">Status</th>
                               <th class="py-2 text-right pr-4" data-i18n="menu.col_action">Action</th>
                            </tr>
@@ -640,7 +801,7 @@
          </div>
       </div>
       <!-- Change Password Modal -->
-      <div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+      <div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
          <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl relative space-y-4">
             <button onclick="togglePasswordModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
             <h3 class="text-lg font-bold text-slate-800" data-i18n="password.title">Change Admin Password</h3>
@@ -664,130 +825,140 @@
          </div>
       </div>
       <!-- Add Menu Item Modal -->
-      <div id="add-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
-         <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl relative space-y-4">
-            <button onclick="toggleAddModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            <h3 class="text-lg font-bold text-slate-800">Add New Menu Item</h3>
-            <form id="add-item-form" onsubmit="submitAddItem(event)" class="space-y-4">
+      <div id="add-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4 overflow-hidden">
+         <div class="menu-item-modal-panel bg-white p-6 rounded-xl w-full shadow-2xl relative">
+            <button onclick="toggleAddModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl z-10">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800 mb-4 pr-8" data-i18n="menu.modal_add_title">Add New Menu Item</h3>
+            <form id="add-item-form" onsubmit="submitAddItem(event)">
+               <div class="menu-item-modal-body space-y-4">
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.item_name">Item Name</label>
                   <input type="text" id="add-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Kitchen</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2" data-i18n="menu.kitchen_label">Kitchen</label>
                   <input type="hidden" id="add-item-kitchen" value="food">
                   <div class="flex gap-2">
-                     <button type="button" id="add-kitchen-coffee" onclick="setKitchenStation('add', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300">☕ Cafe</button>
-                     <button type="button" id="add-kitchen-food" onclick="setKitchenStation('add', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800">🍳 Food</button>
+                     <button type="button" id="add-kitchen-coffee" onclick="setKitchenStation('add', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300" data-i18n="menu.kitchen_cafe">☕ Cafe</button>
+                     <button type="button" id="add-kitchen-food" onclick="setKitchenStation('add', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800" data-i18n="menu.kitchen_food_btn">🍳 Food</button>
                   </div>
-                  <p class="text-[10px] text-slate-400 mt-1">Choose which kitchen display receives orders for this item.</p>
+                  <p class="text-[10px] text-slate-400 mt-1" data-i18n="menu.kitchen_hint">Choose which kitchen display receives orders for this item.</p>
                </div>
-               <div class="grid grid-cols-3 gap-4">
+               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.category">Category</label>
                      <input type="text"
                             id="add-item-category"
                             list="category-list"
+                            data-i18n-placeholder="menu.category_placeholder"
                             placeholder="e.g. Coffee Classics, Snacks"
-                            required>
+                            required
+                            class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                       <datalist id="category-list"></datalist>
                   </div>
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Price (Ks)</label>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.price">Price (Ks)</label>
                      <input type="number" step="0.01" min="0.01" id="add-item-price" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                   </div>
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Stock Limit</label>
-                     <input type="number" id="add-item-stock" placeholder="Empty = Infinite" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.stock_limit">Stock Limit</label>
+                     <input type="number" id="add-item-stock" data-i18n-placeholder="menu.stock_infinite_ph" placeholder="Empty = Infinite" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                   </div>
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Product Photo</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.photo">Product Photo</label>
                   <input type="file" id="add-item-image" accept="image/*" class="w-full bg-slate-100 border-none rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                  <p class="text-[10px] text-slate-400 mt-1">Upload a photo to show this item as a photo card. Name and category can be anything you choose.</p>
+                  <p class="text-[10px] text-slate-400 mt-1" data-i18n="menu.photo_hint">Upload a photo to show this item as a photo card. Name and category can be anything you choose.</p>
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.description">Description</label>
                   <textarea id="add-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                </div>
                <div>
                   <div class="flex items-center justify-between mb-2">
-                     <label class="block text-xs font-semibold text-slate-400 uppercase">Modifiers (optional)</label>
-                     <button type="button" onclick="addModifierRow('add-modifiers-list')" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900">+ Add modifier</button>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase" data-i18n="menu.modifiers_optional">Modifiers (optional)</label>
+                     <button type="button" onclick="addModifierRow('add-modifiers-list')" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900" data-i18n="menu.add_modifier">+ Add modifier</button>
                   </div>
                   <div id="add-modifiers-list" class="space-y-2"></div>
-                  <p class="text-[10px] text-slate-400 mt-1">Extra options customers can add (e.g. Extra shot +500 Ks).</p>
+                  <p class="text-[10px] text-slate-400 mt-1" data-i18n="menu.modifiers_hint">Extra options customers can add (e.g. Extra shot +500 Ks).</p>
                </div>
-               <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition">
+               </div>
+               <div class="menu-item-modal-footer space-y-2">
+               <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition" data-i18n="menu.save_db">
                Save to Database
                </button>
+               </div>
             </form>
          </div>
       </div>
       <!-- Edit Menu Item Modal -->
-      <div id="edit-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
-         <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl relative space-y-4">
-            <button onclick="toggleEditModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            <h3 class="text-lg font-bold text-slate-800">Edit Menu Item</h3>
-            <form id="edit-item-form" onsubmit="submitEditItem(event)" class="space-y-4">
+      <div id="edit-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4 overflow-hidden">
+         <div class="menu-item-modal-panel bg-white p-6 rounded-xl w-full shadow-2xl relative">
+            <button onclick="toggleEditModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl z-10">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800 mb-4 pr-8" data-i18n="menu.modal_edit_title">Edit Menu Item</h3>
+            <form id="edit-item-form" onsubmit="submitEditItem(event)">
+               <div class="menu-item-modal-body space-y-4">
                <input type="hidden" id="edit-item-id">
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.item_name">Item Name</label>
                   <input type="text" id="edit-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Kitchen</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-2" data-i18n="menu.kitchen_label">Kitchen</label>
                   <input type="hidden" id="edit-item-kitchen" value="food">
                   <div class="flex gap-2">
-                     <button type="button" id="edit-kitchen-coffee" onclick="setKitchenStation('edit', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300">☕ Cafe</button>
-                     <button type="button" id="edit-kitchen-food" onclick="setKitchenStation('edit', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800">🍳 Food</button>
+                     <button type="button" id="edit-kitchen-coffee" onclick="setKitchenStation('edit', 'coffee')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300" data-i18n="menu.kitchen_cafe">☕ Cafe</button>
+                     <button type="button" id="edit-kitchen-food" onclick="setKitchenStation('edit', 'food')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition border-2 bg-emerald-100 border-emerald-500 text-emerald-800" data-i18n="menu.kitchen_food_btn">🍳 Food</button>
                   </div>
                </div>
-               <div class="grid grid-cols-3 gap-4">
+               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.category">Category</label>
                      <input type="text" id="edit-item-category" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                   </div>
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Price (Ks)</label>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.price">Price (Ks)</label>
                      <input type="number" step="0.01" min="0.01" id="edit-item-price" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                   </div>
                   <div>
-                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Stock</label>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.stock">Stock</label>
                      <input type="number" id="edit-item-stock" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                   </div>
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Update Photo</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.photo_update">Update Photo</label>
                   <input type="file" id="edit-item-image" accept="image/*" class="w-full bg-slate-100 border-none rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
-                  <p class="text-[10px] text-slate-400 mt-1">Items with a photo appear as swipeable photo cards on the customer menu.</p>
+                  <p class="text-[10px] text-slate-400 mt-1" data-i18n="menu.photo_update_hint">Items with a photo appear as swipeable photo cards on the customer menu.</p>
                </div>
                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="menu.description">Description</label>
                   <textarea id="edit-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
                </div>
                <div>
                   <div class="flex items-center justify-between mb-2">
-                     <label class="block text-xs font-semibold text-slate-400 uppercase">Modifiers</label>
-                     <button type="button" onclick="addModifierRow('edit-modifiers-list')" class="text-[10px] font-bold text-amber-700 hover:text-amber-900">+ Add modifier</button>
+                     <label class="block text-xs font-semibold text-slate-400 uppercase" data-i18n="menu.modifiers">Modifiers</label>
+                     <button type="button" onclick="addModifierRow('edit-modifiers-list')" class="text-[10px] font-bold text-amber-700 hover:text-amber-900" data-i18n="menu.add_modifier">+ Add modifier</button>
                   </div>
                   <div id="edit-modifiers-list" class="space-y-2"></div>
                </div>
                <div class="flex items-center gap-2 pt-2">
                   <input type="checkbox" id="edit-item-available" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
-                  <label for="edit-item-available" class="text-sm font-semibold text-slate-600">Mark as available / in stock</label>
+                  <label for="edit-item-available" class="text-sm font-semibold text-slate-600" data-i18n="menu.mark_available">Mark as available / in stock</label>
                </div>
-               <div class="flex gap-2 py-2">
-                  <button type="button" onclick="moveItem('up')" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-lg text-sm transition">
+               </div>
+               <div class="menu-item-modal-footer space-y-2">
+               <div class="flex gap-2">
+                  <button type="button" onclick="moveItem('up')" class="flex-1 panel-tab-inactive font-bold py-2 rounded-lg text-sm transition" data-i18n="menu.move_up">
                   Move Up
                   </button>
-                  <button type="button" onclick="moveItem('down')" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-lg text-sm transition">
+                  <button type="button" onclick="moveItem('down')" class="flex-1 panel-tab-inactive font-bold py-2 rounded-lg text-sm transition" data-i18n="menu.move_down">
                   Move Down
                   </button>
                </div>
-               <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-sm transition">
+               <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-sm transition" data-i18n="menu.apply_changes">
                Apply Changes
                </button>
+               </div>
             </form>
          </div>
       </div>
@@ -802,20 +973,32 @@
          </div>
       </div>
       <!-- Master Receipt Printer Modal -->
-      <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
-         <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative">
-            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl print:hidden">&times;</button>
+      <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4 overflow-hidden">
+         <div class="receipt-modal-panel bg-white p-6 sm:p-8 rounded-xl w-full font-mono shadow-2xl relative">
+            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl print:hidden z-10">&times;</button>
             <div id="receipt-payload" class="space-y-4"></div>
-            <div id="receipt-actions" class="mt-6 space-y-2 print:hidden">
+            <div id="receipt-summary" class="space-y-2"></div>
+            <div id="receipt-actions" class="space-y-2 print:hidden">
                <div id="receipt-print-actions" class="space-y-2">
                   <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
-                  <button onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_bt">Connect Bluetooth Printer</button>
-                  <button onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_bt">Print to Bluetooth Printer</button>
-                  <button onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_usb">Connect USB Printer</button>
-                  <button onclick="printReceiptUsb()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_usb">Print to USB Printer</button>
-                  <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_browser">Print Receipt (Browser)</button>
+                  <button type="button" id="receipt-smart-print-btn" onclick="smartPrintReceipt()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-sm" data-i18n="receipt.print">Print Receipt</button>
+                  <button type="button" id="receipt-more-toggle" onclick="toggleReceiptMoreOptions()" class="w-full text-xs font-bold text-slate-500 hover:text-slate-700 py-1.5" data-i18n="receipt.more_options">More options ▾</button>
+                  <div id="receipt-more-options" class="hidden space-y-2 pt-1 border-t border-slate-100">
+                     <button type="button" onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_usb">Connect USB Printer</button>
+                     <button type="button" onclick="connectBluetoothPrinter()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_bt">Connect Bluetooth Printer</button>
+                     <button type="button" onclick="printReceiptBluetooth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_bt">Print to Bluetooth Printer</button>
+                     <button type="button" onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.print_browser">Print Receipt (Browser)</button>
+                  </div>
                </div>
-               <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm hidden" data-i18n="receipt.settle">Settle &amp; Close Table Bill</button>
+               <div id="settle-live-actions" class="hidden space-y-2">
+                  <button id="settle-discount-btn" type="button" onclick="toggleSettleDiscountPanel()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.discount_btn">Discount</button>
+                  <div id="settle-discount-panel" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                     <label for="settle-discount-input" class="block text-xs font-bold text-amber-800" data-i18n="receipt.discount_label">Custom discount (%)</label>
+                     <input id="settle-discount-input" type="number" min="0" max="100" step="1" inputmode="decimal" placeholder="10" oninput="onSettleDiscountInput()" class="w-full rounded-lg border border-amber-200 px-3 py-2 text-sm font-semibold text-slate-800">
+                     <p class="text-[10px] text-amber-700" data-i18n="receipt.discount_hint">Enter any percentage, e.g. 10 or 20.</p>
+                  </div>
+                  <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.settle">Settle &amp; Close Table Bill</button>
+               </div>
             </div>
          </div>
       </div>
@@ -862,7 +1045,11 @@
          let counterMenuItems = [];
          let counterCart = [];
          let counterPendingItem = null;
+         let entryGuestCount = 1;
+         let entryFeeRate = 0;
          let liveBillTableId = null;
+         let liveBillReceipt = null;
+         let liveBillDiscountPercent = 0;
          let floorTablesCache = [];
          let floorTimerIntervalId = null;
          let managerAudioCtx = null;
@@ -988,6 +1175,19 @@
                      </div>`;
              }).join('');
              const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
+             const subtotal = bill.subtotal != null ? bill.subtotal : total;
+             const subtotalRow = (bill.discount_amount || 0) > 0
+                 ? `<div class="flex justify-between text-xs font-semibold text-slate-600 border-t border-dashed pt-2 mt-2">
+                        <span>${t('receipt.subtotal')}</span>
+                        <span>${formatKs(subtotal)}</span>
+                    </div>`
+                 : '';
+             const discountRow = (bill.discount_amount || 0) > 0
+                 ? `<div class="receipt-discount-row">
+                        <span>${t('receipt.discount_line', { percent: bill.discount_percent })}</span>
+                        <span>-${formatKs(bill.discount_amount)}</span>
+                    </div>`
+                 : '';
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
                  : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
@@ -1002,6 +1202,8 @@
                      ${orderLine}
                  </div>
                  <div class="space-y-2 my-4">${itemsStr}</div>
+                 ${subtotalRow}
+                 ${discountRow}
                  <div class="receipt-total-row">
                      <span>${t('receipt.total')}</span>
                      <span>${formatKs(total)}</span>
@@ -1049,28 +1251,9 @@
                  </div>`;
              }).join('');
 
-             const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
                  : '';
-
-             const guestCount = bill.guest_count || 0;
-             const entryRate = bill.entry_fee_per_guest || 0;
-             const guestBlock = bill.is_vip_room ? `
-                 <div class="my-3 p-3 rounded-xl bg-violet-50 border border-violet-100">
-                     <p class="text-[10px] font-bold uppercase tracking-wider text-violet-600 mb-2">${t('vip.guests')}</p>
-                     <div class="flex items-center justify-between gap-3">
-                         <div class="flex items-center gap-2">
-                             <button type="button" onclick="adjustVipGuestCount(${liveBillTableId}, ${guestCount - 1})" class="w-8 h-8 rounded-lg border border-violet-200 bg-white text-violet-800 font-bold hover:bg-violet-100">−</button>
-                             <span class="w-8 text-center text-lg font-black text-violet-900">${guestCount}</span>
-                             <button type="button" onclick="adjustVipGuestCount(${liveBillTableId}, ${guestCount + 1})" class="w-8 h-8 rounded-lg border border-violet-200 bg-white text-violet-800 font-bold hover:bg-violet-100">+</button>
-                         </div>
-                         <div class="text-right text-xs">
-                             <p class="text-violet-500">${formatKs(entryRate)} ${t('vip.per_guest')}</p>
-                             <p class="font-bold text-violet-800">${t('vip.entry_total')}: ${formatKs(guestCount * entryRate)}</p>
-                         </div>
-                     </div>
-                 </div>` : '';
 
              return `
                  <div class="text-center border-b pb-3 border-dashed">
@@ -1083,9 +1266,17 @@
                      ${orderLine}
                      ${bill.visit_only ? '' : `<p class="text-[10px] text-amber-600 mt-2">${t('receipt.adjust_hint')}</p>`}
                  </div>
-                 ${guestBlock}
                  ${sessionStr ? `<div class="space-y-2 my-4">${sessionStr}</div>` : ''}
-                 <div class="space-y-2 my-4">${itemsStr}</div>
+                 <div class="space-y-2 my-4">${itemsStr}</div>`;
+         }
+
+         function renderLiveBillSummaryHtml(bill) {
+             const total = bill.grand_total != null ? bill.grand_total : (bill.subtotal != null ? bill.subtotal : 0);
+             return `
+                 <div id="live-bill-discount-row" class="hidden receipt-discount-row">
+                     <span id="live-bill-discount-label">${t('receipt.discount_line', { percent: 0 })}</span>
+                     <span id="live-bill-discount-amount">-0 Ks</span>
+                 </div>
                  <div class="receipt-total-row">
                      <span>${t('receipt.total')}</span>
                      <span id="live-bill-total">${formatKs(total)}</span>
@@ -1145,19 +1336,78 @@
              }
          }
 
+         function applyDiscountedBill(bill, percent) {
+             const subtotal = bill.subtotal != null ? bill.subtotal : (bill.grand_total != null ? bill.grand_total : 0);
+             const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+             const discountAmount = pct > 0 ? Math.round(subtotal * pct / 100) : 0;
+             const grandTotal = subtotal - discountAmount;
+             return {
+                 ...bill,
+                 subtotal,
+                 discount_percent: pct,
+                 discount_amount: discountAmount,
+                 grand_total: grandTotal,
+             };
+         }
+
+         function updateLiveBillDiscountDisplay() {
+             if (!liveBillReceipt) return;
+             const discounted = applyDiscountedBill(liveBillReceipt, liveBillDiscountPercent);
+             const discountRow = document.getElementById('live-bill-discount-row');
+             const totalEl = document.getElementById('live-bill-total');
+             const labelEl = document.getElementById('live-bill-discount-label');
+             const amountEl = document.getElementById('live-bill-discount-amount');
+
+             if (liveBillDiscountPercent > 0) {
+                 discountRow?.classList.remove('hidden');
+                 if (labelEl) labelEl.textContent = t('receipt.discount_line', { percent: liveBillDiscountPercent });
+                 if (amountEl) amountEl.textContent = `-${formatKs(discounted.discount_amount)}`;
+             } else {
+                 discountRow?.classList.add('hidden');
+             }
+
+             if (totalEl) totalEl.textContent = formatKs(discounted.grand_total);
+             setCurrentReceiptForPrinters(discounted);
+         }
+
+         function toggleSettleDiscountPanel() {
+             const panel = document.getElementById('settle-discount-panel');
+             panel?.classList.toggle('hidden');
+             if (panel && !panel.classList.contains('hidden')) {
+                 document.getElementById('settle-discount-input')?.focus();
+             }
+         }
+
+         function onSettleDiscountInput() {
+             const input = document.getElementById('settle-discount-input');
+             liveBillDiscountPercent = Math.max(0, Math.min(100, Number(input?.value) || 0));
+             updateLiveBillDiscountDisplay();
+         }
+
+         function resetSettleDiscountUi() {
+             liveBillDiscountPercent = 0;
+             liveBillReceipt = null;
+             const input = document.getElementById('settle-discount-input');
+             if (input) input.value = '';
+             document.getElementById('settle-discount-panel')?.classList.add('hidden');
+             document.getElementById('live-bill-discount-row')?.classList.add('hidden');
+         }
+
          function configureReceiptModalActions(mode, tableId) {
              const printActions = document.getElementById('receipt-print-actions');
+             const liveActions = document.getElementById('settle-live-actions');
              const settleBtn = document.getElementById('settle-bill-btn');
 
              if (mode === 'live') {
                  printActions?.classList.add('hidden');
-                 settleBtn?.classList.remove('hidden');
+                 liveActions?.classList.remove('hidden');
                  if (tableId) settleBtn?.setAttribute('onclick', `settleTableBill(${tableId})`);
                  return;
              }
 
              printActions?.classList.remove('hidden');
-             settleBtn?.classList.add('hidden');
+             liveActions?.classList.add('hidden');
+             resetSettleDiscountUi();
          }
 
          function showManagerPanel(panelId) {
@@ -1317,10 +1567,10 @@
          }
 
          function reconnectBluetoothPrinter() {
-             const statusEl = getBluetoothStatusEl();
+             const statusEl = getPrinterStatusEl();
              if (!localStorage.getItem('bluetooth_printer_device_id')) {
-                 if (statusEl) {
-                     statusEl.innerText = 'No saved printer yet. Tap Connect Bluetooth Printer.';
+                 if (statusEl && !(window.UsbPrinter && UsbPrinter.isPrinterConnected())) {
+                     statusEl.innerText = t('receipt.no_printer');
                      statusEl.className = 'text-xs text-slate-500 text-center';
                  }
                  return Promise.resolve(false);
@@ -1330,7 +1580,10 @@
          }
 
          function reconnectUsbPrinter() {
-             const statusEl = getBluetoothStatusEl();
+             const statusEl = getPrinterStatusEl();
+             if (window.UsbPrinter && typeof UsbPrinter.startAutoConnect === 'function') {
+                 UsbPrinter.startAutoConnect(statusEl);
+             }
              if (!localStorage.getItem('usb_printer_device')) {
                  return Promise.resolve(false);
              }
@@ -1473,6 +1726,16 @@
          
                 const data = await response.json();
                 document.getElementById('stat-count').innerText = data.total_orders_completed;
+                const entryGuestsEl = document.getElementById('stat-entry-guests');
+                const entryCheckoutsLabel = document.getElementById('stat-entry-checkouts-label');
+                if (entryGuestsEl) entryGuestsEl.innerText = data.entry_guests_today ?? 0;
+                if (entryCheckoutsLabel) {
+                    const n = data.entry_checkouts_today ?? 0;
+                    entryCheckoutsLabel.textContent = n > 0
+                        ? t('stats.entry_checkouts', { count: n })
+                        : t('stats.entry_none');
+                }
+                if (typeof ManagerI18n !== 'undefined') ManagerI18n.apply();
                  
                  const list = document.getElementById('stat-top-items');
                  list.innerHTML = "";
@@ -1487,6 +1750,149 @@
              } catch (err) {
                  console.error("Could not fetch metrics.");
              }
+             fetchEntryFeeSettings();
+         }
+
+         async function fetchEntryFeeSettings() {
+             try {
+                 const response = await fetch(`${API_BASE}/manager/settings/entry-fee`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) return;
+                 const data = await response.json();
+                 entryFeeRate = parseFloat(data.entry_fee_per_guest || 0);
+                 const rateInput = document.getElementById('entry-fee-rate');
+                 if (rateInput) rateInput.value = entryFeeRate > 0 ? entryFeeRate : '';
+                 updateEntryCheckoutUi();
+             } catch (err) {
+                 console.warn('Could not load entry fee settings.');
+             }
+         }
+
+         async function saveEntryFeeRate() {
+             const rate = parseFloat(document.getElementById('entry-fee-rate')?.value || '0');
+             if (Number.isNaN(rate) || rate < 0) {
+                 showToast(t('entry.rate_invalid'), 'error');
+                 return;
+             }
+             try {
+                 const response = await fetch(`${API_BASE}/manager/settings/entry-fee`, {
+                     method: 'PUT',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ entry_fee_per_guest: rate })
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json();
+                     showToast(err.detail || t('entry.rate_save_fail'), 'error');
+                     return;
+                 }
+                 const data = await response.json();
+                 entryFeeRate = parseFloat(data.entry_fee_per_guest || 0);
+                 updateEntryCheckoutUi();
+                 showToast(t('entry.rate_saved'), 'success');
+             } catch (err) {
+                 showToast(t('entry.rate_save_fail'), 'error');
+             }
+         }
+
+         function setEntryGuests(count) {
+             entryGuestCount = Math.max(1, Math.min(200, parseInt(count, 10) || 1));
+             updateEntryCheckoutUi();
+         }
+
+         function adjustEntryGuests(delta) {
+             setEntryGuests(entryGuestCount + delta);
+         }
+
+         function updateEntryCheckoutUi() {
+             const countEl = document.getElementById('entry-guest-count');
+             const totalEl = document.getElementById('entry-checkout-total');
+             const btn = document.getElementById('entry-checkout-btn');
+             if (countEl) countEl.textContent = String(entryGuestCount);
+             document.querySelectorAll('.entry-guest-btn').forEach((el) => {
+                 const n = parseInt(el.dataset.guests, 10);
+                 el.classList.toggle('is-selected', n === entryGuestCount);
+             });
+             const total = entryFeeRate > 0 ? entryGuestCount * entryFeeRate : 0;
+             if (totalEl) totalEl.textContent = formatKs(total);
+             if (btn) btn.disabled = entryFeeRate <= 0;
+         }
+
+         async function submitEntryCheckout() {
+             if (entryFeeRate <= 0) {
+                 showToast(t('entry.set_rate_first'), 'warn');
+                 return;
+             }
+             const btn = document.getElementById('entry-checkout-btn');
+             if (btn) btn.disabled = true;
+             try {
+                 const response = await fetch(`${API_BASE}/manager/entry-checkout`, {
+                     method: 'POST',
+                     headers: getAuthHeaders(),
+                     body: JSON.stringify({ guest_count: entryGuestCount })
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json();
+                     showToast(err.detail || t('entry.checkout_fail'), 'error');
+                     return;
+                 }
+                 const data = await response.json();
+                 setCurrentReceiptForPrinters(data.receipt);
+                 document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(data.receipt, {
+                     title: t('entry.receipt_title')
+                 });
+                 document.getElementById('receipt-summary').innerHTML = '';
+                 configureReceiptModalActions('historical');
+                 showToast(t('entry.checkout_done', { count: data.guest_count, total: formatKs(data.total) }), 'success');
+                 setEntryGuests(1);
+                 fetchAnalytics();
+
+                 // Option B: auto-print when printer ready; only open modal if print fails / no printer.
+                 const printed = await autoPrintEntryReceiptIfConnected();
+                 if (!printed) {
+                     toggleReceiptModal(true);
+                     showToast(t('entry.auto_print_fail'), 'warn');
+                 }
+             } catch (err) {
+                 showToast(t('entry.checkout_fail'), 'error');
+             } finally {
+                 updateEntryCheckoutUi();
+             }
+         }
+
+         async function autoPrintEntryReceiptIfConnected() {
+             const statusEl = getPrinterStatusEl();
+             try {
+                 if (window.UsbPrinter) {
+                     let usbReady = UsbPrinter.isPrinterConnected();
+                     if (!usbReady && typeof UsbPrinter.tryReconnectStoredPrinter === 'function') {
+                         usbReady = await UsbPrinter.tryReconnectStoredPrinter(statusEl);
+                     }
+                     if (usbReady) {
+                         await UsbPrinter.printCurrentReceipt(statusEl);
+                         showToast(t('entry.auto_printed'), 'success');
+                         return true;
+                     }
+                 }
+
+                 if (window.BluetoothPrinter) {
+                     let btReady = BluetoothPrinter.isPrinterConnected();
+                     if (!btReady && typeof BluetoothPrinter.tryReconnectStoredPrinter === 'function') {
+                         btReady = await BluetoothPrinter.tryReconnectStoredPrinter(statusEl);
+                     }
+                     if (btReady) {
+                         await BluetoothPrinter.printCurrentReceipt(statusEl);
+                         showToast(t('entry.auto_printed'), 'success');
+                         return true;
+                     }
+                 }
+             } catch (err) {
+                 return false;
+             }
+             return false;
          }
          
          // --- Updated: Secure Excel (CSV) Exporter using Auth-Headers & Blob Streaming ---
@@ -1540,56 +1946,51 @@
              if (!tables.length) {
                  listEl.innerHTML = '';
                  emptyEl.classList.remove('hidden');
-                 select.innerHTML = '<option value="">No tables available</option>';
+                 select.innerHTML = `<option value="">${t('qr.no_tables_option')}</option>`;
                  return;
              }
 
              emptyEl.classList.add('hidden');
              select.innerHTML = tables.map((table) =>
-                 `<option value="${table.id}">Table ${escapeHtml(table.label)}</option>`
+                 `<option value="${table.id}">${t('qr.table_label', { label: escapeHtml(table.label) })}</option>`
              ).join('');
 
              listEl.innerHTML = tables.map((table) => `
                  <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
-                     <div class="flex flex-wrap items-center gap-2">
-                         <div class="flex-1 min-w-[120px]">
-                             <p class="text-sm font-black text-slate-800">Table ${escapeHtml(table.label)}</p>
-                             <p class="text-[10px] text-slate-400 font-mono">#${table.number}${table.has_active_orders ? ' · Live session' : ''}${table.is_vip_room ? ' · VIP' : ''}</p>
+                     <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+                         <div class="flex-1 min-w-0">
+                             <p class="text-sm font-black text-slate-800">${t('qr.table_label', { label: escapeHtml(table.label) })}</p>
+                             <p class="text-[10px] text-slate-400 font-mono">#${table.number}${table.has_active_orders ? ` · ${t('qr.live_session')}` : ''}${table.is_vip_room ? ' · VIP' : ''}</p>
                          </div>
                          <input type="text" id="table-label-input-${table.id}" value="${escapeHtml(table.label)}" maxlength="50"
-                             class="flex-1 min-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
-                         <button type="button" onclick="removeTable(${table.id})" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 px-3 rounded-lg transition">Remove</button>
+                             class="w-full sm:flex-1 sm:min-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                         <button type="button" onclick="removeTable(${table.id})" class="w-full sm:w-auto text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 px-3 rounded-lg transition">${t('common.remove')}</button>
                      </div>
-                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-slate-200 pt-3">
-                         <label class="col-span-2 sm:col-span-4 flex items-center gap-2 text-xs font-bold text-violet-700">
+                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-slate-200 pt-3">
+                         <label class="col-span-2 sm:col-span-3 flex items-center gap-2 text-xs font-bold text-violet-700">
                              <input type="checkbox" id="table-vip-${table.id}" ${table.is_vip_room ? 'checked' : ''} class="rounded">
-                             VIP room
+                             ${t('qr.vip_room')}
                          </label>
                          <div>
-                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Entry / guest (Ks)</label>
-                             <input type="number" min="0" step="1" id="table-entry-${table.id}" value="${table.entry_fee_per_guest || 0}"
-                                 class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
-                         </div>
-                         <div>
-                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rate / hour (Ks)</label>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${t('qr.rate_hour')}</label>
                              <input type="number" min="0" step="1" id="table-rate-${table.id}" value="${table.hourly_rate || 0}"
                                  class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400" placeholder="Optional">
                          </div>
                          <div>
-                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min minutes</label>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${t('qr.min_minutes')}</label>
                              <input type="number" min="0" step="1" id="table-min-${table.id}" value="${table.minimum_minutes ?? 30}"
                                  class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
                          </div>
                          <div>
-                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Free minutes</label>
+                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${t('qr.free_minutes')}</label>
                              <input type="number" min="0" step="1" id="table-free-${table.id}" value="${table.free_minutes || 0}"
                                  class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400">
                          </div>
                          <div class="col-span-2 sm:col-span-4 flex items-end">
-                             <button type="button" onclick="saveTableSettings(${table.id})" class="w-full sm:w-auto text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg transition">Save</button>
+                             <button type="button" onclick="saveTableSettings(${table.id})" class="w-full sm:w-auto text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg transition">${t('qr.save_settings')}</button>
                          </div>
                      </div>
-                     ${table.active_session ? `<p class="text-[10px] text-violet-600 font-semibold">⏱ Active: ${escapeHtml(table.active_session.elapsed_label)} · ${formatKs(table.active_session.current_fee)} session fee</p>` : ''}
+                     ${table.active_session ? `<p class="text-[10px] text-violet-600 font-semibold">${t('qr.active_session', { elapsed: escapeHtml(table.active_session.elapsed_label), fee: formatKs(table.active_session.current_fee) })}</p>` : ''}
                  </div>
              `).join('');
          }
@@ -1645,7 +2046,6 @@
              const label = document.getElementById(`table-label-input-${tableId}`)?.value.trim();
              const is_vip_room = document.getElementById(`table-vip-${tableId}`)?.checked || false;
              const hourly_rate = parseFloat(document.getElementById(`table-rate-${tableId}`)?.value || '0');
-             const entry_fee_per_guest = parseFloat(document.getElementById(`table-entry-${tableId}`)?.value || '0');
              const minimum_minutes = parseInt(document.getElementById(`table-min-${tableId}`)?.value || '30', 10);
              const free_minutes = parseInt(document.getElementById(`table-free-${tableId}`)?.value || '0', 10);
 
@@ -1662,7 +2062,7 @@
                          label,
                          is_vip_room,
                          hourly_rate,
-                         entry_fee_per_guest,
+                         entry_fee_per_guest: 0,
                          minimum_minutes,
                          free_minutes
                      })
@@ -1802,9 +2202,6 @@
              const sessionFeeLine = table.session_fee > 0
                  ? `<p class="text-[10px] text-violet-600">${t('floor.room_fee', { amount: formatKs(table.session_fee) })}</p>`
                  : '';
-             const entryFeeLine = table.entry_fee > 0
-                 ? `<p class="text-[10px] text-violet-600">${t('floor.entry_fee', { amount: formatKs(table.entry_fee) })}</p>`
-                 : '';
              const orderCountLabel = table.visit_only
                  ? `<p class="text-xs text-violet-600 font-semibold">${t('floor.visit_only')}</p>`
                  : (table.active_orders_count === 1
@@ -1823,7 +2220,6 @@
                          <p class="text-[10px] font-bold uppercase tracking-wide ${table.is_vip_room ? 'text-violet-700' : 'text-emerald-700'}">${t('floor.live_session')}</p>
                          ${sessionTimer}
                          ${sessionFeeLine}
-                         ${entryFeeLine}
                          <p class="text-xs text-slate-600">${orderCountLabel}</p>
                          ${totalLine}
                      </div>
@@ -1960,8 +2356,14 @@
 
                  const bill = await response.json();
                  liveBillTableId = tableId;
+                 liveBillReceipt = bill;
+                 liveBillDiscountPercent = 0;
+                 const discountInput = document.getElementById('settle-discount-input');
+                 if (discountInput) discountInput.value = '';
+                 document.getElementById('settle-discount-panel')?.classList.add('hidden');
                  setCurrentReceiptForPrinters(bill);
                  document.getElementById('receipt-payload').innerHTML = renderLiveBillHtml(bill);
+                 document.getElementById('receipt-summary').innerHTML = renderLiveBillSummaryHtml(bill);
                  configureReceiptModalActions('live', bill.table_id);
                  toggleReceiptModal(true);
              } catch (err) {
@@ -1970,12 +2372,22 @@
          }
          
          async function settleTableBill(tableId) {
-             if (!confirm(t('confirm.settle'))) return;
+             const discounted = liveBillReceipt
+                 ? applyDiscountedBill(liveBillReceipt, liveBillDiscountPercent)
+                 : null;
+             const confirmMsg = liveBillDiscountPercent > 0 && discounted
+                 ? t('confirm.settle_discount', {
+                     percent: liveBillDiscountPercent,
+                     total: formatKs(discounted.grand_total),
+                 })
+                 : t('confirm.settle');
+             if (!confirm(confirmMsg)) return;
 
              try {
                  const response = await fetch(`${API_BASE}/manager/tables/${tableId}/settle`, {
                      method: 'POST',
-                     headers: getAuthHeaders()
+                     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ discount_percent: liveBillDiscountPercent }),
                  });
          
                  if (response.status === 401) { handleLogout(); return; }
@@ -2012,7 +2424,7 @@
                  tbody.innerHTML = "";
          
                  if (history.length === 0) {
-                     tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 italic text-sm">${t('settled.empty')}</td></tr>`;
+                     tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 italic text-sm">${t('settled.empty')}</td></tr>`;
                      return;
                  }
          
@@ -2024,15 +2436,19 @@
                          : row.is_visit_only
                              ? `${t('common.table')} ${row.table_number} · ${t('vip.visit_only')}`
                              : `${t('common.table')} ${row.table_number}`;
-                     const receiptAction = row.is_visit_only && row.settled_at
-                         ? `loadHistoricalTableBill(${row.table_id}, '${row.settled_at}')`
-                         : row.is_counter_sale && row.order_id
+                     const discountLabel = (row.discount_amount || 0) > 0
+                         ? `${row.discount_percent || 0}% · -${formatKs(row.discount_amount)}`
+                         : '—';
+                     const receiptAction = row.is_counter_sale && row.order_id
                          ? `loadReceipt(${row.order_id})`
+                         : row.settled_at
+                         ? `loadHistoricalTableBill(${row.table_id}, '${row.settled_at}')`
                          : `loadDailyTableBill(${row.table_id}, '${row.date}')`;
                      tr.innerHTML = `
                          <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(label)}</td>
                          <td class="py-3 px-2 text-center text-slate-600">${row.order_count}</td>
                          <td class="py-3 px-4 text-right font-bold text-amber-600">${formatKs(row.total_amount)}</td>
+                         <td class="py-3 px-2 text-right text-xs font-semibold text-amber-700">${discountLabel}</td>
                          <td class="py-3 px-4 text-right">
                              <button onclick="${receiptAction}" class="fin-receipt-btn transition">${t('common.receipt')}</button>
                          </td>`;
@@ -2056,6 +2472,7 @@
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
                      title: 'DAILY TABLE RECEIPT'
                  });
+                 document.getElementById('receipt-summary').innerHTML = '';
                  configureReceiptModalActions('historical');
                  toggleReceiptModal(true);
              } catch (err) {
@@ -2076,6 +2493,7 @@
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(bill, {
                      title: 'HISTORICAL TABLE SESSION RECEIPT'
                  });
+                 document.getElementById('receipt-summary').innerHTML = '';
                  configureReceiptModalActions('historical');
                  toggleReceiptModal(true);
              } catch (err) {
@@ -2149,9 +2567,9 @@
 
          function kitchenStationBadgeHtml(station) {
              if (station === 'coffee') {
-                 return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">☕ Cafe</span>';
+                 return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">${t('menu.kitchen_cafe')}</span>`;
              }
-             return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">🍳 Food</span>';
+             return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">${t('menu.kitchen_food_btn')}</span>`;
          }
 
          async function loadCategories() {
@@ -2203,22 +2621,24 @@
             const categoryFilter = document.getElementById('menu-category-filter')?.value || '';
             const kitchenFilter = document.getElementById('menu-kitchen-filter')?.value || '';
             if (!query && !categoryFilter && !kitchenFilter) {
-                countEl.innerText = `Showing all ${totalCount} item${totalCount === 1 ? '' : 's'}`;
+                countEl.innerText = totalCount === 1
+                    ? t('menu.showing_all', { count: totalCount })
+                    : t('menu.showing_all_plural', { count: totalCount });
                 return;
             }
-            countEl.innerText = `Showing ${visibleCount} of ${totalCount} item${totalCount === 1 ? '' : 's'}`;
+            countEl.innerText = t('menu.showing_filtered', { visible: visibleCount, total: totalCount });
         }
 
         function renderMenuTable(items) {
             const tbody = document.getElementById('menu-management-table');
             tbody.innerHTML = '';
             if (menuItemsList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">No menu items found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">${t('menu.no_items')}</td></tr>`;
                 updateMenuFilterCount(0, 0);
                 return;
             }
             if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">No items match your search</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-400 italic">${t('menu.no_match')}</td></tr>`;
                 updateMenuFilterCount(0, menuItemsList.length);
                 return;
             }
@@ -2235,8 +2655,8 @@
                 categoryItems.forEach((item) => {
                     const lowStock = item.stock !== null && item.stock <= 5;
                     const stockLabel = item.stock !== null
-                        ? `<span class="${lowStock ? 'text-rose-600 font-bold' : ''}">${item.stock} units${lowStock ? ' ⚠' : ''}</span>`
-                        : 'Infinite';
+                        ? `<span class="${lowStock ? 'text-rose-600 font-bold' : ''}">${t('menu.units', { count: item.stock })}${lowStock ? ' ⚠' : ''}</span>`
+                        : t('menu.infinite');
                     const modifiersLabel = (item.modifiers && item.modifiers.length)
                         ? item.modifiers.map(m => `${escapeHtml(m.name)} (${formatKs(m.price)})`).join('<br>')
                         : '<span class="text-slate-300">—</span>';
@@ -2246,19 +2666,19 @@
                     tr.innerHTML = `
                         <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(item.name)}</td>
                         <td class="py-3 text-slate-400 font-bold text-xs uppercase">${escapeHtml(item.category)}</td>
-                        <td class="py-3">${kitchenStationBadgeHtml(kitchenStation)}</td>
+                        <td class="py-3 mgr-menu-col-kitchen">${kitchenStationBadgeHtml(kitchenStation)}</td>
                         <td class="py-3 font-black text-amber-600">${formatKs(item.price)}</td>
-                        <td class="py-3 text-xs text-slate-600 leading-relaxed">${modifiersLabel}</td>
-                        <td class="py-3 font-mono text-xs text-slate-500">${stockLabel}</td>
+                        <td class="py-3 mgr-menu-col-modifiers text-xs text-slate-600 leading-relaxed">${modifiersLabel}</td>
+                        <td class="py-3 mgr-menu-col-stock font-mono text-xs text-slate-500">${stockLabel}</td>
                         <td class="py-3">
                             <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider ${item.is_available ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'}">
-                                ${item.is_available ? 'Active' : 'Sold Out'}
+                                ${item.is_available ? t('menu.active') : t('menu.sold_out')}
                             </span>
                         </td>
                         <td class="py-3 text-right pr-4">
                             <div class="flex justify-end gap-2">
-                                <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Edit</button>
-                                <button onclick="removeMenuItem(${item.id})" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">Remove</button>
+                                <button onclick="openEditModal(${item.id})" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">${t('common.edit')}</button>
+                                <button onclick="removeMenuItem(${item.id})" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-1 px-3 rounded-lg transition active:scale-95">${t('common.remove')}</button>
                             </div>
                         </td>`;
                     tbody.appendChild(tr);
@@ -2354,11 +2774,11 @@
              const container = document.getElementById(containerId);
              if (!container) return;
              const row = document.createElement('div');
-             row.className = 'flex gap-2 items-center';
+             row.className = 'flex flex-wrap gap-2 items-center';
              row.dataset.modifierRow = '1';
              row.innerHTML = `
-                 <input type="text" data-mod-name placeholder="Name (e.g. Extra shot)" value="${escapeHtml(mod.name || '')}" class="flex-1 bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
-                 <input type="number" data-mod-price step="0.01" min="0" placeholder="Price" value="${mod.price !== undefined && mod.price !== null && mod.price !== '' ? mod.price : ''}" class="w-24 bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                 <input type="text" data-mod-name placeholder="Name (e.g. Extra shot)" value="${escapeHtml(mod.name || '')}" class="min-w-0 flex-1 basis-[10rem] bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                 <input type="number" data-mod-price step="0.01" min="0" placeholder="Price" value="${mod.price !== undefined && mod.price !== null && mod.price !== '' ? mod.price : ''}" class="w-full sm:w-24 shrink-0 bg-slate-100 border-none rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                  <button type="button" onclick="removeModifierRow(this)" class="text-slate-400 hover:text-rose-600 font-bold px-2" title="Remove">&times;</button>`;
              container.appendChild(row);
          }
@@ -2637,14 +3057,14 @@
          
                  orders.forEach(order => {
                      const card = document.createElement("div");
-                     card.className = "mgr-card flex justify-between items-center";
+                     card.className = "mgr-card flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3";
                      const created = order.created_at ? new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                      card.innerHTML = `
-                         <div>
+                         <div class="min-w-0">
                              <p class="font-bold text-slate-800">${t('orders.order_line', { id: order.id, table: order.table.label })}</p>
                              <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}${t('orders.total_status', { total: formatKs(order.total_price), status: ManagerI18n.statusLabel(order.status) })}</p>
                          </div>
-                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition">${t('common.receipt')}</button>
+                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition shrink-0 self-start sm:self-auto">${t('common.receipt')}</button>
                      `;
                      container.appendChild(card);
                  });
@@ -2666,6 +3086,7 @@
                  document.getElementById('receipt-payload').innerHTML = renderBillReceiptHtml(receipt, {
                      title: receipt.voucher_id || 'ORDER RECEIPT'
                  });
+                 document.getElementById('receipt-summary').innerHTML = '';
                  configureReceiptModalActions('historical');
                  toggleReceiptModal(true);
              } catch (err) {
@@ -2675,23 +3096,107 @@
          
          function toggleReceiptModal(show) {
              const modal = document.getElementById('receipt-modal');
-             if (show) modal.classList.remove('hidden');
-             else {
+             if (show) {
+                 collapseReceiptMoreOptions();
+                 if (typeof ManagerI18n !== 'undefined') ManagerI18n.apply();
+                 modal.classList.remove('hidden');
+                 // Refresh printer status when opening print UI
+                 reconnectUsbPrinter();
+             } else {
                  modal.classList.add('hidden');
                  liveBillTableId = null;
+                 document.getElementById('receipt-summary').innerHTML = '';
                  configureReceiptModalActions('historical');
+                 collapseReceiptMoreOptions();
              }
          }
 
-         function getBluetoothStatusEl() {
+         function getPrinterStatusEl() {
              return document.getElementById('bluetooth-printer-status');
+         }
+
+         function getBluetoothStatusEl() {
+             return getPrinterStatusEl();
+         }
+
+         function toggleReceiptMoreOptions() {
+             const panel = document.getElementById('receipt-more-options');
+             const toggle = document.getElementById('receipt-more-toggle');
+             if (!panel || !toggle) return;
+             const open = panel.classList.toggle('hidden') === false;
+             toggle.textContent = open ? t('receipt.more_hide') : t('receipt.more_options');
+         }
+
+         function collapseReceiptMoreOptions() {
+             const panel = document.getElementById('receipt-more-options');
+             const toggle = document.getElementById('receipt-more-toggle');
+             if (panel) panel.classList.add('hidden');
+             if (toggle) toggle.textContent = t('receipt.more_options');
+         }
+
+         async function smartPrintReceipt() {
+             const statusEl = getPrinterStatusEl();
+             const btn = document.getElementById('receipt-smart-print-btn');
+             if (btn) btn.disabled = true;
+             try {
+                 // Prefer USB (shop default), then Bluetooth, then prompt USB connect.
+                 if (window.UsbPrinter) {
+                     let usbReady = UsbPrinter.isPrinterConnected();
+                     if (!usbReady && typeof UsbPrinter.tryReconnectStoredPrinter === 'function') {
+                         usbReady = await UsbPrinter.tryReconnectStoredPrinter(statusEl);
+                     }
+                     if (usbReady) {
+                         await UsbPrinter.printCurrentReceipt(statusEl);
+                         return;
+                     }
+                 }
+
+                 if (window.BluetoothPrinter) {
+                     let btReady = BluetoothPrinter.isPrinterConnected();
+                     if (!btReady && typeof BluetoothPrinter.tryReconnectStoredPrinter === 'function') {
+                         btReady = await BluetoothPrinter.tryReconnectStoredPrinter(statusEl);
+                     }
+                     if (btReady) {
+                         await BluetoothPrinter.printCurrentReceipt(statusEl);
+                         return;
+                     }
+                 }
+
+                 // Nothing connected — open USB picker (most common for this shop).
+                 if (window.UsbPrinter) {
+                     await UsbPrinter.connectPrinterWithStatus(statusEl);
+                     await UsbPrinter.printCurrentReceipt(statusEl);
+                     return;
+                 }
+
+                 if (statusEl) {
+                     statusEl.innerText = t('receipt.no_printer');
+                     statusEl.className = 'text-xs text-amber-600 text-center';
+                 }
+                 showToast(t('receipt.no_printer'), 'warn');
+             } catch (err) {
+                 const cancelled = /No device selected|cancel|AbortError/i.test(String(err?.message || err?.name || ''));
+                 if (statusEl) {
+                     statusEl.innerText = cancelled
+                         ? t('receipt.no_printer')
+                         : (err.message || t('receipt.print_fail'));
+                     statusEl.className = cancelled
+                         ? 'text-xs text-amber-600 text-center'
+                         : 'text-xs text-rose-600 text-center';
+                 }
+                 if (!cancelled) {
+                     showToast(err.message || t('receipt.print_fail'), 'error');
+                 }
+             } finally {
+                 if (btn) btn.disabled = false;
+             }
          }
 
          async function connectBluetoothPrinter() {
              try {
-                 await BluetoothPrinter.connectPrinterWithStatus(getBluetoothStatusEl());
+                 await BluetoothPrinter.connectPrinterWithStatus(getPrinterStatusEl());
              } catch (err) {
-                 const statusEl = getBluetoothStatusEl();
+                 const statusEl = getPrinterStatusEl();
                  statusEl.innerText = err.message || 'Could not connect to printer.';
                  statusEl.className = 'text-xs text-rose-600';
              }
@@ -2699,9 +3204,9 @@
 
          async function printReceiptBluetooth() {
              try {
-                 await BluetoothPrinter.printCurrentReceipt(getBluetoothStatusEl());
+                 await BluetoothPrinter.printCurrentReceipt(getPrinterStatusEl());
              } catch (err) {
-                 const statusEl = getBluetoothStatusEl();
+                 const statusEl = getPrinterStatusEl();
                  statusEl.innerText = err.message || 'Bluetooth print failed.';
                  statusEl.className = 'text-xs text-rose-600';
              }
@@ -2709,9 +3214,9 @@
 
          async function connectUsbPrinter() {
              try {
-                 await UsbPrinter.connectPrinterWithStatus(getBluetoothStatusEl());
+                 await UsbPrinter.connectPrinterWithStatus(getPrinterStatusEl());
              } catch (err) {
-                 const statusEl = getBluetoothStatusEl();
+                 const statusEl = getPrinterStatusEl();
                  statusEl.innerText = err.message || 'Could not connect to USB printer.';
                  statusEl.className = 'text-xs text-rose-600';
              }
@@ -2719,9 +3224,9 @@
 
          async function printReceiptUsb() {
              try {
-                 await UsbPrinter.printCurrentReceipt(getBluetoothStatusEl());
+                 await UsbPrinter.printCurrentReceipt(getPrinterStatusEl());
              } catch (err) {
-                 const statusEl = getBluetoothStatusEl();
+                 const statusEl = getPrinterStatusEl();
                  statusEl.innerText = err.message || 'USB print failed.';
                  statusEl.className = 'text-xs text-rose-600';
              }
@@ -2734,7 +3239,7 @@
                  const response = await fetch(`${API_BASE}/manager/menu`, { headers: getAuthHeaders() });
                  if (!response.ok) return;
                  const items = await response.json();
-                 counterMenuItems = items.filter((item) => item.is_available);
+                 counterMenuItems = items.filter((item) => item.is_available && !(item.category || '').startsWith('_pos'));
                  renderCounterMenu();
              } catch (err) {
                  console.error('Could not load menu for counter.');
@@ -2927,6 +3432,11 @@
              if (!document.getElementById('dashboard-view')?.classList.contains('hidden')) {
                  showManagerPanel(panel);
              }
+             if (typeof menuItemsList !== 'undefined' && Array.isArray(menuItemsList) && menuItemsList.length) {
+                 applyMenuFilters();
+             }
+             loadManagedTables();
+             fetchAnalytics();
          };
 
          ManagerI18n.apply();

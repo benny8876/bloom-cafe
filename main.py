@@ -134,10 +134,18 @@ def migrate_orders_payment_method():
     if "orders" not in inspector.get_table_names():
         return
 
-    columns = [col["name"] for col in inspector.get_columns("orders")]
+    columns = {col["name"] for col in inspector.get_columns("orders")}
+    alters = []
     if "payment_method" not in columns:
+        alters.append("ALTER TABLE orders ADD COLUMN payment_method VARCHAR")
+    if "discount_percent" not in columns:
+        alters.append("ALTER TABLE orders ADD COLUMN discount_percent FLOAT")
+    if "discount_amount" not in columns:
+        alters.append("ALTER TABLE orders ADD COLUMN discount_amount FLOAT")
+    if alters:
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_method VARCHAR"))
+            for stmt in alters:
+                conn.execute(text(stmt))
 
 
 def migrate_menu_kitchen_station():
@@ -212,6 +220,14 @@ def migrate_vip_table_settings():
         if "entry_fee_charged" not in session_cols:
             session_alters.append(
                 "ALTER TABLE table_sessions ADD COLUMN entry_fee_charged FLOAT"
+            )
+        if "discount_percent" not in session_cols:
+            session_alters.append(
+                "ALTER TABLE table_sessions ADD COLUMN discount_percent FLOAT"
+            )
+        if "discount_amount" not in session_cols:
+            session_alters.append(
+                "ALTER TABLE table_sessions ADD COLUMN discount_amount FLOAT"
             )
         if session_alters:
             with engine.begin() as conn:
@@ -297,6 +313,12 @@ def ensure_counter_table(db):
     elif counter.label != COUNTER_TABLE_LABEL:
         counter.label = COUNTER_TABLE_LABEL
         db.commit()
+
+
+def migrate_shop_settings():
+    inspector = inspect(engine)
+    if "shop_settings" not in inspector.get_table_names():
+        models.ShopSettings.__table__.create(bind=engine)
 
 
 def migrate_auth_tables():
@@ -402,6 +424,7 @@ def seed_initial_data():
     migrate_order_status_values()
     migrate_auth_tables()
     migrate_menu_categories()
+    migrate_shop_settings()
     db = SessionLocal()
 
     ensure_default_accounts(db)
@@ -416,6 +439,12 @@ def seed_initial_data():
         db.commit()
 
     ensure_counter_table(db)
+
+    from services.entry_checkout import ensure_entry_menu_item, get_shop_settings
+
+    get_shop_settings(db)
+    ensure_entry_menu_item(db)
+    db.commit()
 
 
     if not db.query(models.MenuItem).first():

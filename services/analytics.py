@@ -95,7 +95,11 @@ def completed_orders_for_range(
 
 
 def top_selling_items_for_range(
-    db: Session, start: datetime, end: datetime, limit: Optional[int] = 5
+    db: Session,
+    start: datetime,
+    end: datetime,
+    limit: Optional[int] = 5,
+    exclude_categories: Optional[List[str]] = None,
 ):
     query = (
         db.query(
@@ -112,6 +116,8 @@ def top_selling_items_for_range(
         .group_by(models.MenuItem.name)
         .order_by(func.sum(models.OrderItem.quantity).desc())
     )
+    if exclude_categories:
+        query = query.filter(~models.MenuItem.category.in_(exclude_categories))
     if limit is not None:
         query = query.limit(limit)
     return query.all()
@@ -199,9 +205,63 @@ def add_settled_session_fees(
     return total_fees
 
 
-def bill_amounts(subtotal: float) -> dict:
-    """Prices are tax-inclusive; grand total matches menu prices."""
+def bill_amounts(subtotal: float, discount_percent: float = 0) -> dict:
+    """Prices are tax-inclusive; optional settlement discount reduces grand total."""
+    subtotal = round(float(subtotal), 2)
+    pct = max(0.0, min(100.0, float(discount_percent or 0)))
+    discount_amount = round(subtotal * pct / 100, 2) if pct > 0 else 0.0
+    grand_total = round(subtotal - discount_amount, 2)
     return {
-        "subtotal": round(subtotal, 2),
-        "grand_total": round(subtotal, 2),
+        "subtotal": subtotal,
+        "discount_percent": pct,
+        "discount_amount": discount_amount,
+        "grand_total": grand_total,
     }
+
+
+def settlement_discount_amount(
+    db: Session, table_id: int, settled_at: datetime
+) -> float:
+    """Discount applied once per table settlement batch."""
+    from services.table_sessions import get_settled_session_at
+
+    session = get_settled_session_at(db, table_id, settled_at)
+    if session and (session.discount_amount or 0) > 0:
+        return float(session.discount_amount)
+
+    order = (
+        db.query(models.Order)
+        .filter(
+            models.Order.table_id == table_id,
+            models.Order.settled_at == settled_at,
+            models.Order.discount_amount.isnot(None),
+            models.Order.discount_amount > 0,
+        )
+        .first()
+    )
+    return float(order.discount_amount) if order else 0.0
+
+
+def subtract_settlement_discounts(db: Session, orders: List[models.Order]) -> float:
+    """Return total discounts to subtract from gross order revenue."""
+    discount_keys: set = set()
+    total_discount = 0.0
+    for order in orders:
+        if not order.settled_at:
+            continue
+        key = (order.table_id, order.settled_at.isoformat())
+        if key in discount_keys:
+            continue
+        discount_keys.add(key)
+        total_discount += settlement_discount_amount(db, order.table_id, order.settled_at)
+    return total_discount
+
+
+def settlement_discounts_for_range(
+    db: Session, range_start: datetime, range_end: datetime
+) -> float:
+    orders = completed_orders_for_range(db, range_start, range_end)
+    total = subtract_settlement_discounts(db, orders)
+    for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
+        total += float(session.discount_amount or 0)
+    return total

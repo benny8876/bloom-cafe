@@ -146,6 +146,9 @@ def end_table_session(
     table_id: int,
     status: models.TableSessionStatus,
     as_of: Optional[datetime] = None,
+    *,
+    discount_percent: float = 0,
+    discount_amount: float = 0,
 ) -> Optional[models.TableSession]:
     session = get_active_session(db, table_id)
     if not session:
@@ -165,14 +168,15 @@ def end_table_session(
         )
         session.session_fee_charged = fee
         session.billable_minutes = billable
-        session.entry_fee_charged = entry_fee_amount(
-            session.guest_count,
-            session.entry_fee_per_guest_snapshot,
-        )
+        session.entry_fee_charged = 0.0
+        session.discount_percent = float(discount_percent or 0)
+        session.discount_amount = float(discount_amount or 0)
     else:
         session.session_fee_charged = 0.0
         session.billable_minutes = 0
         session.entry_fee_charged = 0.0
+        session.discount_percent = 0.0
+        session.discount_amount = 0.0
 
     db.flush()
     return session
@@ -210,27 +214,8 @@ def session_fee_line_item(session: models.TableSession) -> dict:
 
 
 def entry_fee_line_item(session: models.TableSession, *, use_charged: bool = False) -> Optional[dict]:
-    guests = int(session.guest_count or 0)
-    rate = float(session.entry_fee_per_guest_snapshot or 0)
-    fee = (
-        float(session.entry_fee_charged or 0)
-        if use_charged
-        else entry_fee_amount(guests, rate)
-    )
-    if fee <= 0 and guests <= 0:
-        return None
-    if fee <= 0:
-        return None
-    display_guests = guests if guests > 0 else 1
-    unit = rate if guests > 0 and rate > 0 else fee
-    return {
-        "name": f"VIP Entry × {display_guests}",
-        "quantity": display_guests,
-        "unit_price": unit,
-        "subtotal": fee,
-        "modifiers": [],
-        "is_entry_fee": True,
-    }
+    """Table entry fees are collected at counter checkout — not on table bills."""
+    return None
 
 
 def session_summary(session: models.TableSession, as_of: Optional[datetime] = None) -> dict:
@@ -242,8 +227,6 @@ def session_summary(session: models.TableSession, as_of: Optional[datetime] = No
         as_of=as_of,
     )
     guests = int(session.guest_count or 0)
-    entry_rate = float(session.entry_fee_per_guest_snapshot or 0)
-    entry_fee = entry_fee_amount(guests, entry_rate)
     return {
         "session_id": session.id,
         "started_at": session.started_at.isoformat(),
@@ -262,6 +245,6 @@ def session_summary(session: models.TableSession, as_of: Optional[datetime] = No
         "minimum_minutes": session.minimum_minutes_snapshot,
         "free_minutes": session.free_minutes_snapshot,
         "guest_count": guests,
-        "entry_fee_per_guest": entry_rate,
-        "entry_fee": entry_fee,
+        "entry_fee_per_guest": 0.0,
+        "entry_fee": 0.0,
     }

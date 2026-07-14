@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Header, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Header, WebSocket, WebSocketDisconnect, Body
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -25,6 +25,9 @@ from services.analytics import (
     add_settled_session_fees,
     add_fee_only_settled_sessions,
     fee_only_settled_sessions_for_range,
+    settlement_discount_amount,
+    subtract_settlement_discounts,
+    settlement_discounts_for_range,
     MYANMAR_TZ,
 )
 from services.orders import (
@@ -46,6 +49,12 @@ from services.table_sessions import (
 )
 from services.dining_sessions import close_dining_sessions_for_table
 from services.menu_categories import list_menu_categories, move_menu_category, sync_menu_categories
+from services.entry_checkout import (
+    create_entry_checkout,
+    get_shop_settings,
+    sync_entry_menu_price,
+    entry_checkout_stats_for_range,
+)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -281,6 +290,48 @@ def _append_vip_fee_lines(items_list: list, grand_total: float, session, *, use_
     return items_list, grand_total, session_fee, entry_fee, vip_session
 
 
+def _compute_active_table_grand_total(active_orders: list, active_session) -> float:
+    grand_total = 0.0
+    for order in active_orders:
+        for item in order.items:
+            grand_total += order_item_unit_price(item) * item.quantity
+    _, grand_total, _, _, _ = _append_vip_fee_lines(
+        [], grand_total, active_session, use_charged=False
+    )
+    return grand_total
+
+
+def _historical_discount_percent(table_session, orders: list) -> float:
+    if table_session and (table_session.discount_amount or 0) > 0:
+        return float(table_session.discount_percent or 0)
+    for order in orders:
+        if (order.discount_amount or 0) > 0:
+            return float(order.discount_percent or 0)
+    return 0.0
+
+
+def _settlement_discount_fields(
+    db: Session, table_id: int, settled_at: datetime
+) -> tuple[float, float]:
+    session = get_settled_session_at(db, table_id, settled_at)
+    if session and (session.discount_amount or 0) > 0:
+        return float(session.discount_percent or 0), float(session.discount_amount or 0)
+
+    order = (
+        db.query(models.Order)
+        .filter(
+            models.Order.table_id == table_id,
+            models.Order.settled_at == settled_at,
+            models.Order.discount_amount.isnot(None),
+            models.Order.discount_amount > 0,
+        )
+        .first()
+    )
+    if order:
+        return float(order.discount_percent or 0), float(order.discount_amount or 0)
+    return 0.0, 0.0
+
+
 @router.get("/tables", response_model=List[schemas.TableManagementResponse])
 def list_managed_tables(
     db: Session = Depends(get_db),
@@ -503,6 +554,7 @@ def list_menu_items(
     return (
         db.query(models.MenuItem)
         .options(joinedload(models.MenuItem.modifiers))
+        .filter(~models.MenuItem.category.startswith("_pos"))
         .order_by(models.MenuItem.order_index.asc())
         .all()
     )
@@ -901,6 +953,46 @@ async def create_counter_sale(
     return order
 
 
+@router.get("/settings/entry-fee", response_model=schemas.EntryFeeSettingsResponse)
+def get_entry_fee_settings(
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    settings = get_shop_settings(db)
+    return schemas.EntryFeeSettingsResponse(
+        entry_fee_per_guest=float(settings.entry_fee_per_guest or 0)
+    )
+
+
+@router.put("/settings/entry-fee", response_model=schemas.EntryFeeSettingsResponse)
+def update_entry_fee_settings(
+    data: schemas.EntryFeeSettingsUpdate,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    sync_entry_menu_price(db, data.entry_fee_per_guest)
+    db.commit()
+    settings = get_shop_settings(db)
+    return schemas.EntryFeeSettingsResponse(
+        entry_fee_per_guest=float(settings.entry_fee_per_guest or 0)
+    )
+
+
+@router.post("/entry-checkout", response_model=schemas.EntryCheckoutResponse)
+async def entry_checkout(
+    data: schemas.EntryCheckoutRequest,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_manager_token),
+):
+    order, receipt = create_entry_checkout(db, data.guest_count)
+    return schemas.EntryCheckoutResponse(
+        order_id=order.id,
+        guest_count=data.guest_count,
+        total=float(order.total_price),
+        receipt=receipt,
+    )
+
+
 def _load_active_table_orders(db: Session, table_id: int) -> List[models.Order]:
     return (
         db.query(models.Order)
@@ -1129,11 +1221,18 @@ def get_consolidated_table_bill(
 @router.post("/tables/{table_id}/settle")
 async def settle_table_bill(
     table_id: int,
+    payload: schemas.SettleTableBillRequest = Body(default=schemas.SettleTableBillRequest()),
     db: Session = Depends(get_db),
     authenticated: bool = Depends(verify_manager_token),
 ):
     active_orders = (
         db.query(models.Order)
+        .options(
+            joinedload(models.Order.items).joinedload(models.OrderItem.menu_item),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.selected_modifiers)
+            .joinedload(models.OrderItemModifier.modifier),
+        )
         .filter(
             models.Order.table_id == table_id,
             models.Order.status.in_(OPEN_TABLE_SESSION_STATUSES),
@@ -1150,6 +1249,11 @@ async def settle_table_bill(
 
     table = active_orders[0].table if active_orders else _get_dining_table(db, table_id)
 
+    if table.is_vip_room and active_orders:
+        ensure_vip_session_started(db, table)
+        db.flush()
+        active_session = get_active_session(db, table_id)
+
     if not active_orders and active_session:
         entry_rate = float(active_session.entry_fee_per_guest_snapshot or 0)
         guests = int(active_session.guest_count or 0)
@@ -1159,13 +1263,27 @@ async def settle_table_bill(
                 detail="Set guest count before settling this visit.",
             )
 
+    grand_total = _compute_active_table_grand_total(active_orders, active_session)
+    amounts = bill_amounts(grand_total, payload.discount_percent)
+
     now_settled_time = datetime.now(MYANMAR_TZ).replace(tzinfo=None)
 
     for order in active_orders:
         order.status = models.OrderStatus.COMPLETED
         order.settled_at = now_settled_time
 
-    end_table_session(db, table_id, models.TableSessionStatus.SETTLED, as_of=now_settled_time)
+    settled_session = end_table_session(
+        db,
+        table_id,
+        models.TableSessionStatus.SETTLED,
+        as_of=now_settled_time,
+        discount_percent=amounts["discount_percent"],
+        discount_amount=amounts["discount_amount"],
+    )
+    if not settled_session and active_orders and amounts["discount_amount"] > 0:
+        active_orders[0].discount_percent = amounts["discount_percent"]
+        active_orders[0].discount_amount = amounts["discount_amount"]
+
     close_dining_sessions_for_table(db, table_id, as_of=now_settled_time)
 
     db.commit()
@@ -1258,12 +1376,14 @@ def get_settled_tables_history(
                     "table_id": order.table_id,
                     "table_number": f"{get_table_label(order.table)} #{order.id}",
                     "order_count": 1,
-                    "total_amount": order.total_price,
+                    "total_amount": order.total_price - float(order.discount_amount or 0),
                     "order_ids": [order.id],
                     "order_id": order.id,
                     "is_counter_sale": True,
                     "date": target_date_str,
                     "settled_at": order.settled_at.isoformat(),
+                    "discount_percent": float(order.discount_percent or 0),
+                    "discount_amount": float(order.discount_amount or 0),
                 }
             )
             continue
@@ -1282,6 +1402,9 @@ def get_settled_tables_history(
                 "order_id": None,
                 "is_counter_sale": False,
                 "date": target_date_str,
+                "settled_at": None,
+                "discount_percent": 0.0,
+                "discount_amount": 0.0,
             }
         row = table_map[t_id]
         row["order_count"] += 1
@@ -1295,6 +1418,18 @@ def get_settled_tables_history(
             if table_session:
                 row["total_amount"] += float(table_session.session_fee_charged or 0)
                 row["total_amount"] += float(table_session.entry_fee_charged or 0)
+                row["total_amount"] -= float(table_session.discount_amount or 0)
+                disc_pct = float(table_session.discount_percent or 0)
+                disc_amt = float(table_session.discount_amount or 0)
+            else:
+                disc_amt = settlement_discount_amount(db, t_id, order.settled_at)
+                row["total_amount"] -= disc_amt
+                disc_pct, _ = _settlement_discount_fields(db, t_id, order.settled_at)
+            row["discount_amount"] = float(row.get("discount_amount") or 0) + disc_amt
+            if disc_pct > 0:
+                row["discount_percent"] = disc_pct
+            if not row.get("settled_at"):
+                row["settled_at"] = order.settled_at.isoformat()
 
     dining_rows = sorted(
         table_map.values(),
@@ -1311,7 +1446,7 @@ def get_settled_tables_history(
             continue
         total_amount = float(session.session_fee_charged or 0) + float(
             session.entry_fee_charged or 0
-        )
+        ) - float(session.discount_amount or 0)
         dining_rows.append(
             {
                 "table_id": session.table_id,
@@ -1324,6 +1459,8 @@ def get_settled_tables_history(
                 "is_visit_only": True,
                 "date": target_date_str,
                 "settled_at": session.ended_at.isoformat(),
+                "discount_percent": float(session.discount_percent or 0),
+                "discount_amount": float(session.discount_amount or 0),
             }
         )
 
@@ -1406,6 +1543,8 @@ def get_historical_table_bill(
         items_list, grand_total, table_session, use_charged=True
     )
 
+    discount_percent = _historical_discount_percent(table_session, orders)
+
     return {
         "restaurant_name": RESTAURANT_NAME,
         "table_id": table_id,
@@ -1415,7 +1554,7 @@ def get_historical_table_bill(
         "items": items_list,
         "session_fee": session_fee,
         "entry_fee": entry_fee,
-        **bill_amounts(grand_total),
+        **bill_amounts(grand_total, discount_percent),
     }
 
 
@@ -1456,6 +1595,8 @@ def get_daily_table_bill(
     session_fee_keys: set = set()
     session_fee_total = 0.0
     items_list = []
+    discount_percent = 0.0
+    discount_amount = 0.0
 
     for order in orders:
         order_ids.append(order.id)
@@ -1495,19 +1636,42 @@ def get_daily_table_bill(
                     fee = float(entry_line.get("subtotal") or 0)
                     items_list.append(entry_line)
                     grand_total += fee
+                disc_pct = float(table_session.discount_percent or 0)
+                disc_amt = float(table_session.discount_amount or 0)
+            else:
+                disc_pct, disc_amt = _settlement_discount_fields(
+                    db, table_id, order.settled_at
+                )
+            discount_amount += disc_amt
+            if disc_pct > 0:
+                discount_percent = disc_pct
 
     table_num = get_table_label(orders[0].table)
     items_list.extend(consolidated_items.values())
+
+    effective_pct = discount_percent
+    if discount_amount > 0 and grand_total > 0 and not effective_pct:
+        effective_pct = round(discount_amount / grand_total * 100, 4)
+
+    latest_settled = max(
+        (order.settled_at for order in orders if order.settled_at),
+        default=None,
+    )
+    bill_timestamp = (
+        latest_settled.strftime("%Y-%m-%d %H:%M:%S")
+        if latest_settled
+        else target_date.strftime("%Y-%m-%d %H:%M:%S")
+    )
 
     return {
         "restaurant_name": RESTAURANT_NAME,
         "table_id": table_id,
         "table_number": table_num,
         "order_ids": order_ids,
-        "timestamp": target_date.strftime("%Y-%m-%d"),
+        "timestamp": bill_timestamp,
         "items": items_list,
         "session_fee": session_fee_total,
-        **bill_amounts(grand_total),
+        **bill_amounts(grand_total, effective_pct),
     }
 
 
@@ -1537,17 +1701,34 @@ def get_daily_analytics(
     session_fees_month = add_settled_session_fees(db, monthly_orders)
     session_fees_day += add_fee_only_settled_sessions(db, day_start, day_end)
     session_fees_month += add_fee_only_settled_sessions(db, month_start, month_end)
-    total_revenue = revenue_orders + session_fees_day
-    total_monthly_revenue = revenue_monthly_orders + session_fees_month
+    day_discounts = settlement_discounts_for_range(db, day_start, day_end)
+    month_discounts = settlement_discounts_for_range(db, month_start, month_end)
+    total_revenue = revenue_orders + session_fees_day - day_discounts
+    total_monthly_revenue = revenue_monthly_orders + session_fees_month - month_discounts
 
-    popular_items = top_selling_items_for_range(db, day_start, day_end, limit=5)
+    popular_items = top_selling_items_for_range(
+        db,
+        day_start,
+        day_end,
+        limit=5,
+        exclude_categories=["_pos_entry"],
+    )
     top_selling = [{"name": item[0], "sold_qty": item[1]} for item in popular_items]
+
+    entry_checkouts_today, entry_guests_today = entry_checkout_stats_for_range(
+        db, day_start, day_end
+    )
+    non_entry_completed = [
+        o for o in completed_orders if o.payment_method != "entry_checkout"
+    ]
 
     return schemas.DailyAnalytics(
         date=target_date.strftime("%Y-%m-%d"),
         total_revenue=round(total_revenue, 2),
         total_monthly_revenue=round(total_monthly_revenue, 2),
-        total_orders_completed=len(completed_orders),
+        total_orders_completed=len(non_entry_completed),
+        entry_guests_today=entry_guests_today,
+        entry_checkouts_today=entry_checkouts_today,
         top_selling_items=top_selling,
     )
 

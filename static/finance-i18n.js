@@ -1,7 +1,4 @@
-/**
- * Finance panel English / Myanmar translations.
- * Shares language preference with Manager (manager_lang).
- */
+
 (function (global) {
     const LANG_KEY = 'manager_lang';
 

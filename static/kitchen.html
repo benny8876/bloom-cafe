@@ -6,10 +6,40 @@
     <title>BLOOM CAFÉ — Kitchen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/kitchen-i18n.js"></script>
     <style>
-        body { font-family: 'Montserrat', system-ui, sans-serif; }
+        body {
+            font-family: 'Montserrat', 'Noto Sans Myanmar', 'Noto Sans SC', 'Myanmar Text', Padauk, 'Pyidaungsu', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+        }
+        .kitchen-myanmar,
+        .kitchen-item-name,
+        .kitchen-modifier,
+        .kitchen-note,
+        .kitchen-table-label {
+            font-family: 'Noto Sans Myanmar', 'Noto Sans SC', 'Myanmar Text', Padauk, 'Pyidaungsu', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+            font-feature-settings: 'liga' 1;
+            -webkit-font-smoothing: antialiased;
+        }
+        .lang-switch {
+            display: inline-flex;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .lang-switch button {
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.35rem 0.65rem;
+        }
+        .lang-switch button:hover { background: #334155; color: #e2e8f0; }
+        .lang-switch-btn--active {
+            background: #64748b !important;
+            color: #f8fafc !important;
+        }
         .bloom-brand {
             font-family: 'Montserrat', sans-serif;
             font-weight: 600;
@@ -25,7 +55,7 @@
             filter: brightness(0) invert(1);
         }
 
-        /* Kitchen display — large type for fast reading at a distance */
+ 
         .kitchen-col-title { font-size: 1.35rem; font-weight: 800; letter-spacing: 0.02em; }
         .kitchen-col-count { font-size: 0.95rem; font-weight: 800; padding: 0.2rem 0.65rem; border-radius: 9999px; }
         .kitchen-order-card {
@@ -116,50 +146,62 @@
             padding: 0.65rem;
         }
         .kitchen-orders-list { display: flex; flex-direction: column; gap: 1rem; max-height: 78vh; overflow-y: auto; padding-right: 0.25rem; }
+        @media (max-width: 1023px) {
+            .kitchen-orders-list { max-height: none; overflow-y: visible; }
+        }
+        .kitchen-header-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; justify-content: flex-end; }
+        .kitchen-audio-banner { font-size: 0.6875rem; }
+        @media (min-width: 640px) { .kitchen-audio-banner { font-size: 0.75rem; } }
+        .kitchen-alert-banner { flex-wrap: wrap; gap: 0.75rem; }
+        .kitchen-alert-banner__text { min-width: 0; flex: 1 1 auto; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen">
     <!-- Staff Login Gate -->
-    <div id="login-gate" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-6">
+    <div id="login-gate" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 sm:p-6">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
             <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img" aria-hidden="true" />
             <h1 class="text-2xl bloom-brand mb-1 text-center" id="login-title">BLOOM CAFÉ</h1>
-            <p class="text-xs text-slate-400 mb-6 text-center" id="login-subtitle">Kitchen — enter staff PIN to view and manage orders.</p>
-            <input type="password" id="kitchen-pin-input" placeholder="Kitchen PIN"
+            <p class="text-xs text-slate-400 mb-6 text-center" id="login-subtitle" data-i18n="login.subtitle">Kitchen — enter staff PIN to view and manage orders.</p>
+            <input type="password" id="kitchen-pin-input" data-i18n-placeholder="login.pin_placeholder" placeholder="Kitchen PIN"
                 class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-sm mb-4 outline-none focus:border-emerald-500">
-            <button onclick="loginKitchen()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-lg font-bold text-sm transition">
+            <button onclick="loginKitchen()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-lg font-bold text-sm transition" data-i18n="login.unlock">
                 Unlock Kitchen Panel
             </button>
             <p id="login-error" class="text-rose-400 text-xs mt-3 hidden"></p>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-lg">
-        <div>
-            <h1 id="station-title" class="text-2xl bloom-brand">BLOOM CAFÉ Kitchen</h1>
-            <p id="station-subtitle" class="text-xs text-slate-400">Paid and validated orders monitor</p>
+  
+    <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-lg">
+        <div class="min-w-0">
+            <h1 id="station-title" class="text-xl sm:text-2xl bloom-brand truncate" data-i18n="default.title">BLOOM CAFÉ Kitchen</h1>
+            <p id="station-subtitle" class="text-xs text-slate-400" data-i18n="default.subtitle">Paid and validated orders monitor</p>
         </div>
-        <div class="flex items-center gap-4">
-            <button onclick="logoutKitchen()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-slate-300">Logout</button>
-            <span id="audio-status-banner" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-lg">
-                🔔 Click anywhere to enable alert sounds
+        <div class="kitchen-header-controls w-full sm:w-auto">
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="en" onclick="KitchenI18n.setLang('en')">EN</button>
+                <button type="button" data-lang-btn="mm" onclick="KitchenI18n.setLang('mm')">MM</button>
+            </div>
+            <button onclick="logoutKitchen()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-slate-300 shrink-0" data-i18n="header.logout">Logout</button>
+            <span id="audio-status-banner" class="kitchen-audio-banner text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                🔔 <span class="hidden sm:inline" data-i18n="header.audio_hint">Click anywhere to enable alert sounds</span><span class="sm:hidden" data-i18n="header.audio_hint_short">Tap to enable sounds</span>
             </span>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
                 <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" id="ws-indicator"></span>
-                <span class="text-xs text-slate-400 font-medium" id="ws-status">Connecting...</span>
+                <span class="text-xs text-slate-400 font-medium" id="ws-status" data-i18n="header.connecting">Connecting...</span>
             </div>
         </div>
     </header>
 
-    <section id="alerts-container" class="max-w-7xl mx-auto px-6 mt-4 space-y-2"></section>
+    <section id="alerts-container" class="max-w-7xl mx-auto px-4 sm:px-6 mt-4 space-y-2"></section>
     <div id="new-order-flash" class="fixed inset-0 pointer-events-none z-40 hidden bg-amber-400/30"></div>
 
     <main class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="kitchen-col-title text-amber-400 flex items-center gap-2">
-                    Pending <span class="kitchen-col-count bg-amber-400/20 text-amber-300" id="count-pending">0</span>
+                    <span data-i18n="col.pending">Pending</span> <span class="kitchen-col-count bg-amber-400/20 text-amber-300" id="count-pending">0</span>
                 </h2>
             </div>
             <div id="pending-orders" class="kitchen-orders-list"></div>
@@ -168,7 +210,7 @@
         <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="kitchen-col-title text-blue-400 flex items-center gap-2">
-                    Preparing <span class="kitchen-col-count bg-blue-400/20 text-blue-300" id="count-preparing">0</span>
+                    <span data-i18n="col.preparing">Preparing</span> <span class="kitchen-col-count bg-blue-400/20 text-blue-300" id="count-preparing">0</span>
                 </h2>
             </div>
             <div id="preparing-orders" class="kitchen-orders-list"></div>
@@ -177,7 +219,7 @@
         <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="kitchen-col-title text-emerald-400 flex items-center gap-2">
-                    Served / Ready <span class="kitchen-col-count bg-emerald-400/20 text-emerald-300" id="count-served">0</span>
+                    <span data-i18n="col.served">Served / Ready</span> <span class="kitchen-col-count bg-emerald-400/20 text-emerald-300" id="count-served">0</span>
                 </h2>
             </div>
             <div id="served-orders" class="kitchen-orders-list"></div>
@@ -188,24 +230,24 @@
         const API_BASE = `${window.location.origin}/api/v1`;
         const pathMatch = window.location.pathname.match(/\/kitchen\/(coffee|food)\/?$/);
         const KITCHEN_STATION = pathMatch ? pathMatch[1] : null;
-        const STATION_CONFIG = {
-            coffee: {
-                title: 'Coffee Bar Display',
-                subtitle: 'Drinks and coffee orders',
-                accent: 'amber',
-                emoji: '☕',
-                readyLabel: '✓ Drinks Ready for Pickup',
-                startLabel: 'Start Preparing',
-            },
-            food: {
-                title: 'Food Kitchen Display',
-                subtitle: 'Food orders monitor',
-                accent: 'emerald',
-                emoji: '🍳',
-                readyLabel: '✓ Food Delivered to Table',
-                startLabel: 'Start Cooking',
-            },
-        };
+        const t = (key, vars) => (typeof KitchenI18n !== 'undefined' ? KitchenI18n.t(key, vars) : key);
+
+        function getStationConfig() {
+            const station = (KITCHEN_STATION && (KITCHEN_STATION === 'coffee' || KITCHEN_STATION === 'food'))
+                ? KITCHEN_STATION
+                : 'food';
+            const emoji = station === 'coffee' ? '☕' : '🍳';
+            const accent = station === 'coffee' ? 'amber' : 'emerald';
+            return {
+                station,
+                emoji,
+                accent,
+                title: t(`station.${station}.title`),
+                subtitle: t(`station.${station}.subtitle`),
+                readyLabel: t(`station.${station}.ready`),
+                startLabel: t(`station.${station}.start`),
+            };
+        }
         let coffeeCategories = new Set();
         let kitchenToken = sessionStorage.getItem('kitchen_token');
         let audioCtx = null;
@@ -222,23 +264,20 @@
             return masterGain;
         }
 
-        function getStationConfig() {
-            if (KITCHEN_STATION && STATION_CONFIG[KITCHEN_STATION]) {
-                return STATION_CONFIG[KITCHEN_STATION];
-            }
-            return STATION_CONFIG.food;
-        }
-
         function applyStationBranding() {
             const config = getStationConfig();
             const titleEl = document.getElementById('station-title');
             const subtitleEl = document.getElementById('station-subtitle');
             if (titleEl) {
-                titleEl.textContent = `${config.emoji} ${config.title}`;
-                titleEl.className = `text-2xl font-black text-${config.accent}-400`;
+                titleEl.textContent = KITCHEN_STATION
+                    ? `${config.emoji} ${config.title}`
+                    : t('default.title');
+                titleEl.className = KITCHEN_STATION
+                    ? `text-2xl font-black text-${config.accent}-400`
+                    : 'text-xl sm:text-2xl bloom-brand truncate';
             }
             if (subtitleEl) {
-                subtitleEl.textContent = config.subtitle;
+                subtitleEl.textContent = KITCHEN_STATION ? config.subtitle : t('default.subtitle');
             }
             const loginTitle = document.getElementById('login-title');
             const loginSubtitle = document.getElementById('login-subtitle');
@@ -246,10 +285,12 @@
                 loginTitle.textContent = `${config.emoji} ${config.title}`;
                 loginTitle.className = `text-2xl font-black text-${config.accent}-400 mb-2`;
             }
-            if (loginSubtitle && KITCHEN_STATION) {
-                loginSubtitle.textContent = `Enter staff PIN to open the ${config.title.toLowerCase()}.`;
+            if (loginSubtitle) {
+                loginSubtitle.textContent = KITCHEN_STATION
+                    ? t('station.login_pin', { title: config.title.toLowerCase() })
+                    : t('login.subtitle');
             }
-            document.title = config.title;
+            document.title = KITCHEN_STATION ? config.title : t('default.title');
         }
 
         function itemStation(menuItem) {
@@ -309,7 +350,7 @@
                 return;
             }
 
-            // Warm café chime — G major arpeggio ×2, ~3.5s, loud but gentle
+            
             const phrase = [
                 { freq: 392, at: 0, dur: 0.55, peak: 1.0 },
                 { freq: 494, at: 0.32, dur: 0.55, peak: 0.95 },
@@ -398,7 +439,7 @@
                     body: JSON.stringify({ pin })
                 });
                 if (!response.ok) {
-                    errorEl.innerText = 'Invalid PIN. Please try again.';
+                    errorEl.innerText = t('login.invalid_pin');
                     errorEl.classList.remove('hidden');
                     return;
                 }
@@ -410,7 +451,7 @@
                 fetchOrders();
                 connectWS();
             } catch (err) {
-                errorEl.innerText = 'Connection failed. Please retry.';
+                errorEl.innerText = t('login.connection_failed');
                 errorEl.classList.remove('hidden');
             }
         }
@@ -484,10 +525,10 @@
         function showNewOrderBanner(tableNumber) {
             const container = document.getElementById('alerts-container');
             const alertBox = document.createElement('div');
-            alertBox.className = "bg-amber-500 text-slate-900 font-black p-4 rounded-xl flex justify-between items-center shadow-lg animate-bounce border-2 border-amber-300";
+            alertBox.className = "kitchen-alert-banner bg-amber-500 text-slate-900 font-black p-4 rounded-xl flex justify-between items-center shadow-lg animate-bounce border-2 border-amber-300";
             alertBox.innerHTML = `
-                <span>${getStationConfig().emoji} NEW ORDER${tableNumber ? ` - Table ${tableNumber}` : ''}!</span>
-                <button onclick="this.parentElement.remove()" class="bg-slate-900/20 hover:bg-slate-900/30 text-slate-900 font-black px-3 py-1 rounded-lg text-xs">Dismiss</button>
+                <span class="kitchen-alert-banner__text">${getStationConfig().emoji} ${tableNumber ? t('alert.new_order_table', { table: tableNumber }) : t('alert.new_order')}</span>
+                <button onclick="this.parentElement.remove()" class="shrink-0 bg-slate-900/20 hover:bg-slate-900/30 text-slate-900 font-black px-3 py-1 rounded-lg text-xs">${t('btn.dismiss')}</button>
             `;
             container.prepend(alertBox);
             setTimeout(() => alertBox.remove(), 12000);
@@ -500,8 +541,8 @@
             flashNewOrderScreen();
             showNewOrderBanner(tableNumber);
             showBackgroundNotification(
-                'New Kitchen Order',
-                tableNumber ? `Table ${tableNumber} placed a new order.` : 'A new order just arrived.'
+                t('notify.new_title'),
+                tableNumber ? t('notify.new_body_table', { table: tableNumber }) : t('notify.new_body')
             );
         }
 
@@ -523,7 +564,7 @@
         }
 
         function cancelButton(orderId) {
-            return `<button onclick="cancelOrder(${orderId})" class="kitchen-btn kitchen-btn-cancel">Cancel</button>`;
+            return `<button onclick="cancelOrder(${orderId})" class="kitchen-btn kitchen-btn-cancel">${t('btn.cancel')}</button>`;
         }
 
         function escapeHtml(text) {
@@ -585,7 +626,7 @@
                 } else if (status === "preparing") {
                     actionsHtml = `
                         <div class="kitchen-actions">
-                            <button onclick="updateStatus(${order.id}, 'served')" class="kitchen-btn kitchen-btn-ready">Mark Ready</button>
+                            <button onclick="updateStatus(${order.id}, 'served')" class="kitchen-btn kitchen-btn-ready">${t('btn.mark_ready')}</button>
                             ${cancelButton(order.id)}
                         </div>
                     `;
@@ -608,8 +649,8 @@
         function createCardTemplate(order, itemsHtml, actionsHtml) {
             const timeStr = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const tableLabel = order.table && order.table.label === 'Counter'
-                ? 'Counter'
-                : `Table ${escapeHtml(order.table.label)}`;
+                ? t('table.counter')
+                : t('table.label', { label: escapeHtml(order.table.label) });
             return `
                 <div class="flex justify-between items-center mb-2">
                     <span class="kitchen-order-meta">#${order.id}</span>
@@ -638,7 +679,7 @@
         }
 
         async function cancelOrder(orderId) {
-            if (!confirm('Cancel this order? Stock will be restored.')) return;
+            if (!confirm(t('confirm.cancel_order'))) return;
             try {
                 const response = await fetch(`${API_BASE}/kitchen/orders/${orderId}/cancel`, {
                     method: 'POST',
@@ -648,7 +689,7 @@
                     fetchOrders();
                 } else {
                     const err = await response.json();
-                    alert(err.detail || 'Could not cancel order.');
+                    alert(err.detail || t('error.cancel_fail'));
                 }
             } catch (err) {
                 console.error("Failed to cancel order.");
@@ -660,15 +701,15 @@
 
             const container = document.getElementById('alerts-container');
             const alertBox = document.createElement('div');
-            alertBox.className = "bg-rose-500 text-white font-bold p-4 rounded-xl flex justify-between items-center shadow-lg animate-bounce";
+            alertBox.className = "kitchen-alert-banner bg-rose-500 text-white font-bold p-4 rounded-xl flex justify-between items-center shadow-lg animate-bounce";
             alertBox.innerHTML = `
-                <span>🛎️ Alert: Table ${tableNum} requested [${serviceRequest}]!</span>
-                <button onclick="this.parentElement.remove()" class="bg-white/20 hover:bg-white/30 text-white font-black px-3 py-1 rounded-lg text-xs">Dismiss</button>
+                <span class="kitchen-alert-banner__text">🛎️ ${t('table.label', { label: tableNum })} — [${serviceRequest}]</span>
+                <button onclick="this.parentElement.remove()" class="shrink-0 bg-white/20 hover:bg-white/30 text-white font-black px-3 py-1 rounded-lg text-xs">${t('btn.dismiss')}</button>
             `;
             container.appendChild(alertBox);
             showBackgroundNotification(
-                'Service Request',
-                `Table ${tableNum} requested ${serviceRequest}.`
+                t('notify.service_title'),
+                `${t('table.label', { label: tableNum })} — ${serviceRequest}`
             );
         }
 
@@ -681,7 +722,7 @@
 
             ws.onopen = () => {
                 statusIndicator.className = "h-2 w-2 rounded-full bg-emerald-500 animate-pulse";
-                statusLabel.innerText = "Connected";
+                statusLabel.innerText = t('header.live');
             };
 
             ws.onmessage = (event) => {
@@ -707,12 +748,13 @@
 
             ws.onclose = () => {
                 statusIndicator.className = "h-2 w-2 rounded-full bg-red-500";
-                statusLabel.innerText = "Offline (Reconnecting)";
+                statusLabel.innerText = t('header.offline');
                 setTimeout(connectWS, 5000);
             };
         }
 
         async function bootKitchenPanel() {
+            if (typeof KitchenI18n !== 'undefined') KitchenI18n.apply();
             applyStationBranding();
             const configPromise = loadStationConfig();
 
@@ -730,6 +772,11 @@
                 showLoginGate(true);
             }
         }
+
+        window.onKitchenLanguageChange = function () {
+            applyStationBranding();
+            fetchOrders();
+        };
 
         bootKitchenPanel();
     </script>

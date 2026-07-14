@@ -80,6 +80,7 @@ def get_available_menu(
     return (
         db.query(models.MenuItem)
         .filter(models.MenuItem.is_available == True)
+        .filter(~models.MenuItem.category.startswith("_pos"))
         .order_by(models.MenuItem.order_index.asc())
         .all()
     )

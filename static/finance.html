@@ -89,6 +89,24 @@
             line-height: 1.4;
             color: #64748b !important;
          }
+         #receipt-modal .receipt-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 24rem;
+            height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            max-height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            min-height: 0;
+            overflow: hidden;
+         }
+         #receipt-modal #receipt-payload {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-right: 0.25rem;
+         }
 .fin-chart-card {
             background: #fff;
             border: 1px solid #f1f5f9;
@@ -124,10 +142,42 @@
             min-height: 220px;
             justify-content: center;
          }
+         #expense-modal .expense-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 28rem;
+            max-height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+            min-height: 0;
+            overflow: hidden;
+         }
+         #expense-modal #expense-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+         }
+         #expense-modal .expense-modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-right: 0.25rem;
+         }
+         #expense-modal .expense-modal-footer {
+            flex-shrink: 0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+         }
+         html.dark #expense-modal .expense-modal-footer {
+            border-top-color: #334155;
+         }
          .fin-donut-wrap {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: clamp(160px, 50vw, 200px);
+            height: clamp(160px, 50vw, 200px);
          }
          .fin-donut-svg {
             width: 100%;
@@ -458,12 +508,12 @@
                </section>
 
                <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                     <div class="flex items-center justify-between mb-4">
+                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
                            <h2 class="text-base font-bold text-slate-800" data-i18n="expenses.title">Outcome — Expenses</h2>
                            <p class="text-xs text-slate-400" data-i18n="expenses.subtitle">Track rent, supplies, staff &amp; other costs</p>
                         </div>
-                        <button onclick="toggleExpenseModal(true)" class="fin-add-expense-soft transition" data-i18n="btn.add_expense_soft">+ Add Expense</button>
+                        <button onclick="toggleExpenseModal(true)" class="fin-add-expense-soft transition shrink-0 self-start sm:self-auto" data-i18n="btn.add_expense_soft">+ Add Expense</button>
                      </div>
                      <div class="fin-table-wrap">
                         <table class="fin-table w-full text-left text-sm">
@@ -507,7 +557,7 @@
 
       
       </div>
-<div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+<div id="password-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
          <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl relative space-y-4">
             <button onclick="togglePasswordModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
             <h3 class="text-lg font-bold text-slate-800" data-i18n="password.title">Change Admin Password</h3>
@@ -531,11 +581,12 @@
          </div>
       </div>
       
-      <div id="expense-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
-         <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl relative space-y-4 border border-slate-100">
-            <button onclick="toggleExpenseModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            <h3 id="expense-modal-title" class="text-lg font-bold text-slate-800" data-i18n="expense.modal_add">Add Expense</h3>
-            <form id="expense-form" onsubmit="submitExpense(event)" class="space-y-4">
+      <div id="expense-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4 overflow-hidden">
+         <div class="expense-modal-panel bg-white p-6 rounded-2xl w-full shadow-2xl relative border border-slate-100">
+            <button onclick="toggleExpenseModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl z-10">&times;</button>
+            <h3 id="expense-modal-title" class="text-lg font-bold text-slate-800 mb-4 pr-8" data-i18n="expense.modal_add">Add Expense</h3>
+            <form id="expense-form" onsubmit="submitExpense(event)">
+               <div class="expense-modal-body space-y-4">
                <input type="hidden" id="expense-id" value="">
                <div>
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="expense.category">Category</label>
@@ -564,15 +615,18 @@
                   <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="expense.description">Description</label>
                   <input type="text" id="expense-description" data-i18n-placeholder="expense.desc_placeholder" placeholder="Optional note" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400">
                </div>
+               </div>
+               <div class="expense-modal-footer">
                <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg text-sm transition" data-i18n="expense.save">Save Expense</button>
+               </div>
             </form>
          </div>
       </div>
-            <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4">
-         <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4 overflow-hidden">
+         <div class="receipt-modal-panel bg-white p-6 sm:p-8 rounded-xl w-full font-mono shadow-2xl relative">
+            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl z-10">&times;</button>
             <div id="receipt-payload" class="space-y-4"></div>
-            <button onclick="window.print()" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm print:hidden" data-i18n="receipt.print">Print Receipt</button>
+            <button onclick="window.print()" class="w-full mt-4 shrink-0 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm print:hidden" data-i18n="receipt.print">Print Receipt</button>
          </div>
       </div>
       <script src="/static/finance-i18n.js"></script>

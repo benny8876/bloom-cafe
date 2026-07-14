@@ -19,7 +19,7 @@ FONT_LATIN = "Helvetica"
 MYANMAR_RE = re.compile(r"[\u1000-\u109F]")
 LATIN_RE = re.compile(r"[A-Za-z]")
 
-# Custom Myanmar categories → English (extend as needed)
+
 CUSTOM_CATEGORY_ENGLISH = {
     "ကြက်ဥ": "Eggs",
     "ဆီ": "Oil",

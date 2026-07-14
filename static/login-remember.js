@@ -1,8 +1,4 @@
-/**
- * Shared login session + "Remember me" helpers for Manager / Finance.
- * Remember me: keep session in localStorage + save username/password for autofill.
- * Without remember me: session lives in sessionStorage (clears when browser closes).
- */
+
 (function (global) {
     const TOKEN_KEY = 'manager_token';
     const ROLE_KEY = 'manager_role';

@@ -230,7 +230,7 @@
     }
 
     function isPrinterConnected() {
-        return Boolean(writeCharacteristic);
+        return Boolean(writeCharacteristic && bluetoothDevice?.gatt?.connected);
     }
 
     function getPrinterName() {

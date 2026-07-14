@@ -1,7 +1,4 @@
-/**
- * USB thermal printer support via Web USB API.
- * Formats receipt JSON as ESC/POS and sends to USB-connected printers.
- */
+
 (function (global) {
     const PRINTER_STORAGE_KEY = 'usb_printer_device';
 
@@ -25,6 +22,8 @@
     let usbInterfaceNumber = null;
     let currentReceipt = null;
     let lastStatusEl = null;
+    let connectInFlight = false;
+    let autoConnectStarted = false;
 
     function updatePrinterStatus(statusEl, text, className) {
         if (!statusEl) return;
@@ -281,23 +280,108 @@
         );
     }
 
-    if (navigator.usb) {
-        navigator.usb.addEventListener('disconnect', (event) => {
-            if (!usbDevice || event.device !== usbDevice) {
-                return;
-            }
+    function matchesSavedDevice(device) {
+        const saved = getSavedDeviceIdentity();
+        if (!saved) return false;
+        return device.vendorId === saved.vendorId && device.productId === saved.productId;
+    }
 
+    async function autoOpenDevice(device, statusEl) {
+        if (!device || connectInFlight) {
+            return false;
+        }
+
+        if (usbDevice?.opened && usbEndpoint != null
+            && usbDevice.vendorId === device.vendorId
+            && usbDevice.productId === device.productId) {
+            return true;
+        }
+
+        connectInFlight = true;
+        try {
+            updatePrinterStatus(statusEl || lastStatusEl, 'USB printer detected — connecting...', 'text-xs text-blue-600');
+            const printerName = await openUsbDevice(device);
+            updatePrinterStatus(
+                statusEl || lastStatusEl,
+                `USB connected: ${printerName}`,
+                'text-xs text-emerald-600 font-semibold'
+            );
+            return true;
+        } catch (err) {
             usbEndpoint = null;
             usbInterfaceNumber = null;
-            usbDevice = null;
-
-            if (lastStatusEl) {
+            if (lastStatusEl || statusEl) {
                 updatePrinterStatus(
-                    lastStatusEl,
-                    'USB printer disconnected. Reconnect to print.',
+                    statusEl || lastStatusEl,
+                    'USB printer plugged in but could not open. Tap Connect USB Printer.',
                     'text-xs text-amber-600'
                 );
             }
+            return false;
+        } finally {
+            connectInFlight = false;
+        }
+    }
+
+    async function onUsbConnect(event) {
+        const device = event.device;
+        if (!device) return;
+
+        // Prefer previously saved printer; otherwise accept any previously authorized device.
+        const saved = getSavedDeviceIdentity();
+        if (saved && !matchesSavedDevice(device)) {
+            return;
+        }
+
+        await autoOpenDevice(device, lastStatusEl);
+    }
+
+    function onUsbDisconnect(event) {
+        if (!usbDevice || event.device !== usbDevice) {
+            return;
+        }
+
+        usbEndpoint = null;
+        usbInterfaceNumber = null;
+        usbDevice = null;
+
+        if (lastStatusEl) {
+            updatePrinterStatus(
+                lastStatusEl,
+                'USB printer unplugged. Will auto-connect when plugged back in.',
+                'text-xs text-amber-600'
+            );
+        }
+    }
+
+    /**
+     * Start listening for plug-in / unplug. After the first manual "Connect USB Printer",
+     * plugging the same printer back in auto-opens it (WebUSB permission already granted).
+     */
+    function startAutoConnect(statusEl) {
+        if (statusEl) {
+            lastStatusEl = statusEl;
+        }
+
+        if (!navigator.usb) {
+            return;
+        }
+
+        if (!autoConnectStarted) {
+            navigator.usb.addEventListener('connect', onUsbConnect);
+            navigator.usb.addEventListener('disconnect', onUsbDisconnect);
+            autoConnectStarted = true;
+        }
+
+        // Also reconnect any already-plugged authorized printer on page load.
+        tryReconnectStoredPrinter(statusEl || lastStatusEl).then((ok) => {
+            if (ok || !navigator.usb.getDevices) return;
+            // No saved identity yet — still try the first previously authorized device.
+            if (getSavedDeviceIdentity()) return;
+            navigator.usb.getDevices().then(async (devices) => {
+                if (!devices.length || usbDevice?.opened) return;
+                await autoOpenDevice(devices[0], statusEl || lastStatusEl);
+            }).catch(() => {});
         });
     }
 
@@ -305,6 +389,11 @@
         return global.PrinterSupport
             ? global.PrinterSupport.isUsbAvailable()
             : Boolean(global.isSecureContext && navigator.usb);
+    }
+
+    // Begin watching as soon as the script loads (HTTPS + WebUSB required).
+    if (navigator.usb && global.isSecureContext) {
+        startAutoConnect(null);
     }
 
     global.UsbPrinter = {
@@ -317,5 +406,6 @@
         isPrinterConnected,
         getPrinterName,
         isApiAvailable,
+        startAutoConnect,
     };
 }(window));

@@ -215,6 +215,9 @@
       color: rgba(255, 255, 255, 0.96);
       white-space: nowrap;
     }
+    @media (max-width: 640px) {
+      .help-pill-text { white-space: normal; }
+    }
 
     .help-pill-chips {
       display: flex;
@@ -715,10 +718,14 @@
       width: 100%;
       max-width: 28rem;
       max-height: 90vh;
+      min-height: 0;
       padding: 1.25rem 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       box-shadow: 0 -8px 40px rgba(74, 21, 69, 0.3);
     }
 
@@ -772,8 +779,12 @@
 
     #cart-items {
       overflow-y: auto;
-      flex: 1;
+      flex: 1 1 auto;
+      min-height: 0;
       -webkit-overflow-scrolling: touch;
+    }
+    #cart-modal .modal-sheet {
+      overflow: hidden;
     }
 
     .cart-row {
