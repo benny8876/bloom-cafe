@@ -81,12 +81,14 @@ def resolve_range_bounds(
 def completed_orders_for_range(
     db: Session, start: datetime, end: datetime
 ) -> List[models.Order]:
-    """Paid orders in range — table sessions when settled, counter sales when prepaid."""
+    """Paid orders in range — excludes cancelled and refunded."""
     return (
         db.query(models.Order)
         .filter(
-            models.Order.status != models.OrderStatus.CANCELLED,
             models.Order.settled_at.isnot(None),
+            models.Order.status.notin_(
+                [models.OrderStatus.CANCELLED, models.OrderStatus.REFUNDED]
+            ),
             INCOME_DATE.between(start, end),
         )
         .order_by(INCOME_DATE.desc())
@@ -109,8 +111,10 @@ def top_selling_items_for_range(
         .join(models.OrderItem, models.MenuItem.id == models.OrderItem.menu_item_id)
         .join(models.Order, models.Order.id == models.OrderItem.order_id)
         .filter(
-            models.Order.status != models.OrderStatus.CANCELLED,
             models.Order.settled_at.isnot(None),
+            models.Order.status.notin_(
+                [models.OrderStatus.CANCELLED, models.OrderStatus.REFUNDED]
+            ),
             INCOME_DATE.between(start, end),
         )
         .group_by(models.MenuItem.name)
@@ -121,6 +125,81 @@ def top_selling_items_for_range(
     if limit is not None:
         query = query.limit(limit)
     return query.all()
+
+
+def item_sales_by_station_for_range(
+    db: Session,
+    start: datetime,
+    end: datetime,
+    exclude_categories: Optional[List[str]] = None,
+) -> dict:
+    """Sold qty + revenue grouped by kitchen station (coffee / food)."""
+    from sqlalchemy.orm import joinedload
+    from services.kitchen_stations import station_for_menu_item
+    from services.orders import order_item_line_total
+
+    exclude = set(exclude_categories or ["_pos_entry"])
+    orders = (
+        db.query(models.Order)
+        .options(
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.menu_item),
+            joinedload(models.Order.items)
+            .joinedload(models.OrderItem.selected_modifiers)
+            .joinedload(models.OrderItemModifier.modifier),
+        )
+        .filter(
+            models.Order.settled_at.isnot(None),
+            models.Order.status.notin_(
+                [models.OrderStatus.CANCELLED, models.OrderStatus.REFUNDED]
+            ),
+            INCOME_DATE.between(start, end),
+        )
+        .all()
+    )
+
+    buckets: dict = {
+        "coffee": {},
+        "food": {},
+    }
+    for order in orders:
+        for item in order.items or []:
+            menu = item.menu_item
+            if not menu:
+                continue
+            if (menu.category or "") in exclude:
+                continue
+            station = station_for_menu_item(menu)
+            if station not in buckets:
+                station = "food"
+            key = menu.name
+            row = buckets[station].setdefault(
+                key, {"name": key, "qty": 0, "revenue": 0.0}
+            )
+            row["qty"] += int(item.quantity or 0)
+            row["revenue"] += float(order_item_line_total(item))
+
+    def _station_payload(items_map: dict) -> dict:
+        items = sorted(
+            items_map.values(),
+            key=lambda r: (-r["qty"], -r["revenue"], r["name"]),
+        )
+        for row in items:
+            row["revenue"] = round(row["revenue"], 2)
+        return {
+            "items": items,
+            "total_qty": sum(r["qty"] for r in items),
+            "total_revenue": round(sum(r["revenue"] for r in items), 2),
+        }
+
+    coffee = _station_payload(buckets["coffee"])
+    food = _station_payload(buckets["food"])
+    return {
+        "coffee": coffee,
+        "food": food,
+        "total_qty": coffee["total_qty"] + food["total_qty"],
+        "total_revenue": round(coffee["total_revenue"] + food["total_revenue"], 2),
+    }
 
 
 def income_timestamp(order: models.Order) -> datetime:
@@ -139,6 +218,7 @@ def fee_only_settled_sessions_for_range(
             models.TableSession.status == models.TableSessionStatus.SETTLED,
             models.TableSession.ended_at.isnot(None),
             models.TableSession.ended_at.between(range_start, range_end),
+            models.TableSession.refunded_at.is_(None),
         )
         .all()
     )
@@ -194,6 +274,8 @@ def add_settled_session_fees(
             continue
         session_fee_keys.add(fee_key)
         table_session = get_settled_session_at(db, order.table_id, order.settled_at)
+        if table_session and table_session.refunded_at:
+            continue
         if table_session:
             session_fee = float(table_session.session_fee_charged or 0)
             entry_fee = float(table_session.entry_fee_charged or 0)

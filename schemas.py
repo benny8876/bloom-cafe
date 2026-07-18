@@ -121,9 +121,12 @@ class OrderCreate(BaseModel):
     token: str
     session_token: str
     items: List[OrderItemCreate]
+    client_request_id: Optional[str] = Field(None, min_length=8, max_length=64)
 
 class CounterSaleCreate(BaseModel):
     items: List[OrderItemCreate]
+    discount_percent: float = Field(0, ge=0, le=100)
+    description: Optional[str] = Field(None, max_length=200)
 
 
 class EntryFeeSettingsResponse(BaseModel):
@@ -143,6 +146,33 @@ class EntryCheckoutResponse(BaseModel):
     guest_count: int
     total: float
     receipt: dict
+
+
+class RefundRequest(BaseModel):
+    reason: Optional[str] = None
+    restore_stock: bool = False
+
+
+class RefundTableRequest(BaseModel):
+    settled_at: str
+    reason: Optional[str] = None
+    restore_stock: bool = False
+
+
+class RefundResponse(BaseModel):
+    id: int
+    refund_type: str
+    order_id: Optional[int] = None
+    table_id: Optional[int] = None
+    settled_at_ref: Optional[datetime] = None
+    amount: float
+    reason: Optional[str] = None
+    refunded_by: Optional[str] = None
+    restore_stock: bool = False
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class OrderItemQuantityAdjust(BaseModel):
@@ -295,6 +325,24 @@ class FinanceTableIncomeEntry(BaseModel):
     last_settled_at: Optional[datetime] = None
 
 
+class FinanceRefundEntry(BaseModel):
+    id: int
+    refund_type: str
+    kind: str
+    reference: str
+    amount: float
+    reason: Optional[str] = None
+    refunded_by: Optional[str] = None
+    restore_stock: bool = False
+    created_at: datetime
+    order_id: Optional[int] = None
+    table_id: Optional[int] = None
+    settled_at_ref: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class FinanceSummary(BaseModel):
     date: str
     date_from: Optional[str] = None
@@ -308,6 +356,32 @@ class FinanceSummary(BaseModel):
     monthly_net: float
     order_count: int
     expense_count: int
+    refunds_total: float = 0.0
+    refund_count: int = 0
     income_entries: List[FinanceTableIncomeEntry]
     expenses: List[ExpenseResponse]
     expenses_by_category: List[dict]
+    refunds: List[FinanceRefundEntry] = []
+
+
+class ItemSaleEntry(BaseModel):
+    name: str
+    qty: int
+    revenue: float
+
+
+class StationSalesSummary(BaseModel):
+    items: List[ItemSaleEntry]
+    total_qty: int
+    total_revenue: float
+
+
+class ItemSalesByStation(BaseModel):
+    date: str
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period_label: Optional[str] = None
+    coffee: StationSalesSummary
+    food: StationSalesSummary
+    total_qty: int
+    total_revenue: float

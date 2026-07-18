@@ -1,0 +1,25 @@
+{
+  "name": "BLOOM CAFÉ Management",
+  "short_name": "Management",
+  "description": "Manager reports — sales, expenses and net profit",
+  "start_url": "/management",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/static/bloom-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/bloom-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

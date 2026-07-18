@@ -20,6 +20,12 @@ class OrderStatus(str, enum.Enum):
     SERVED = "served"                     
     COMPLETED = "completed"               
     CANCELLED = "cancelled"
+    REFUNDED = "refunded"
+
+
+class RefundType(str, enum.Enum):
+    ORDER = "order"
+    TABLE_SETTLE = "table_settle"
 
 class RestaurantTable(Base):
     __tablename__ = "tables"
@@ -65,6 +71,7 @@ class TableSession(Base):
     entry_fee_charged = Column(Float, nullable=True)
     discount_percent = Column(Float, nullable=True)
     discount_amount = Column(Float, nullable=True)
+    refunded_at = Column(DateTime, nullable=True)
 
     table = relationship("RestaurantTable", back_populates="sessions")
 
@@ -146,6 +153,8 @@ class Order(Base):
     payment_method = Column(String, nullable=True)
     discount_percent = Column(Float, nullable=True)
     discount_amount = Column(Float, nullable=True)
+    sale_note = Column(String, nullable=True)
+    client_request_id = Column(String, unique=True, nullable=True, index=True)
 
     table = relationship("RestaurantTable")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
@@ -199,6 +208,29 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     description = Column(String, nullable=True)
     recorded_at = Column(DateTime, default=get_yangon_now, index=True)
+
+
+class Refund(Base):
+    __tablename__ = "refunds"
+    id = Column(Integer, primary_key=True, index=True)
+    refund_type = Column(
+        Enum(
+            RefundType,
+            values_callable=lambda statuses: [status.value for status in statuses],
+        ),
+        nullable=False,
+    )
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
+    table_id = Column(Integer, ForeignKey("tables.id"), nullable=True, index=True)
+    settled_at_ref = Column(DateTime, nullable=True, index=True)
+    amount = Column(Float, nullable=False)
+    reason = Column(String, nullable=True)
+    refunded_by = Column(String, nullable=True)
+    restore_stock = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=get_yangon_now, index=True)
+
+    order = relationship("Order", foreign_keys=[order_id])
+    table = relationship("RestaurantTable", foreign_keys=[table_id])
 
 
 class ShopSettings(Base):

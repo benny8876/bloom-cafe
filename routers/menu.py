@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
@@ -6,7 +7,11 @@ import models, schemas
 from websocket import manager_ws
 import security
 from table_labels import get_table_label, is_counter_table
-from services.orders import create_order_from_items
+from services.orders import (
+    cancel_awaiting_orders_for_table,
+    create_order_from_items,
+    find_recent_matching_menu_order,
+)
 from services.table_sessions import ensure_vip_session_started
 from services.dining_sessions import (
     DINING_SESSION_HOURS,
@@ -16,6 +21,28 @@ from services.dining_sessions import (
 from services.menu_categories import list_menu_categories
 
 router = APIRouter(prefix="/menu", tags=["Menu (Client)"])
+
+
+def _lock_table_order_placement(db: Session, table_id: int) -> None:
+    """Serialize place_order per table so concurrent taps cannot create twins."""
+    bind = db.get_bind()
+    dialect = bind.dialect.name if bind is not None else ""
+    if dialect == "postgresql":
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": 7_000_000 + int(table_id)},
+        )
+    else:
+        # SQLite: lock any awaiting rows; empty table still serializes via write lock on commit
+        (
+            db.query(models.Order)
+            .filter(
+                models.Order.table_id == table_id,
+                models.Order.status == models.OrderStatus.AWAITING_PAYMENT,
+            )
+            .with_for_update()
+            .all()
+        )
 
 
 def _require_table_qr_token(table_id: int, token: str) -> None:
@@ -104,14 +131,64 @@ async def place_order(order_data: schemas.OrderCreate, db: Session = Depends(get
     _require_dining_session(db, order_data.table_id, order_data.session_token)
     table = _get_active_table(db, order_data.table_id)
 
+    request_id = (order_data.client_request_id or "").strip() or None
+    if request_id:
+        existing = (
+            db.query(models.Order)
+            .filter(models.Order.client_request_id == request_id)
+            .first()
+        )
+        if existing:
+            if existing.table_id != order_data.table_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This order request was already used for another table.",
+                )
+            return existing
+
+    _lock_table_order_placement(db, order_data.table_id)
+
+    # Same cart recently placed/paid → reuse (blocks cancel+retry duplicates)
+    duplicate = find_recent_matching_menu_order(
+        db, order_data.table_id, order_data.items
+    )
+    if duplicate:
+        if request_id and not duplicate.client_request_id:
+            duplicate.client_request_id = request_id
+            db.commit()
+            db.refresh(duplicate)
+        return duplicate
+
+    # Different cart: drop unpaid drafts for this table so stock is free
+    cancel_awaiting_orders_for_table(db, order_data.table_id)
+
     db_order = create_order_from_items(
         db,
         table_id=order_data.table_id,
         items=order_data.items,
         initial_status=models.OrderStatus.AWAITING_PAYMENT,
     )
+    if request_id:
+        db_order.client_request_id = request_id
     _, session_started = ensure_vip_session_started(db, table)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        if request_id:
+            existing = (
+                db.query(models.Order)
+                .filter(models.Order.client_request_id == request_id)
+                .first()
+            )
+            if existing and existing.table_id == order_data.table_id:
+                return existing
+        duplicate = find_recent_matching_menu_order(
+            db, order_data.table_id, order_data.items
+        )
+        if duplicate:
+            return duplicate
+        raise
     db.refresh(db_order)
 
     if session_started:
@@ -135,13 +212,29 @@ async def process_mock_payment(
     _require_table_qr_token(payment_data.table_id, payment_data.token)
     _require_dining_session(db, payment_data.table_id, payment_data.session_token)
 
-    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    order = (
+        db.query(models.Order)
+        .filter(models.Order.id == order_id)
+        .with_for_update()
+        .first()
+    )
     if not order:
         raise HTTPException(status_code=404, detail="Target order does not exist.")
     if order.table_id != payment_data.table_id:
         raise HTTPException(status_code=403, detail="Order does not belong to this table.")
+
+    # Already paid / sent to kitchen — idempotent success (no second broadcast)
     if order.status != models.OrderStatus.AWAITING_PAYMENT:
-        raise HTTPException(status_code=400, detail="Order has already been processed/paid.")
+        if order.status in (
+            models.OrderStatus.PENDING,
+            models.OrderStatus.PREPARING,
+            models.OrderStatus.SERVED,
+            models.OrderStatus.COMPLETED,
+        ):
+            return order
+        raise HTTPException(
+            status_code=400, detail="Order has already been processed/paid."
+        )
 
     order.status = models.OrderStatus.PENDING
     db.commit()

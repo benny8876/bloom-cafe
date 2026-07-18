@@ -391,6 +391,10 @@
         });
 
         chunks.push(encodeText(dashedLine()));
+        const note = (receipt.sale_note || receipt.description || '').trim();
+        if (note) {
+            chunks.push(buildLeftTextRaster(`Note: ${note}`, { fontSize: 20, bold: true }));
+        }
         const subtotal = receipt.subtotal != null
             ? receipt.subtotal
             : (receipt.grand_total != null ? receipt.grand_total : 0);

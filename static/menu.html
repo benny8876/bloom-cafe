@@ -837,6 +837,12 @@
     }
 
     .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+      pointer-events: none;
+    }
 
     .preset-chip {
       font-size: 0.72rem;
@@ -1055,7 +1061,7 @@
         <span>Total</span>
         <span id="modal-total">0 Ks</span>
       </div>
-      <button type="button" class="btn-primary" onclick="submitOrder()">Place Order</button>
+      <button type="button" id="place-order-btn" class="btn-primary" onclick="submitOrder()">Place Order</button>
     </div>
   </div>
 
@@ -1101,7 +1107,7 @@
         <div style="border:2px solid var(--bloom-purple);background:white;padding:0.75rem;border-radius:10px;margin:1rem 0;font-weight:700;width:100%;">
           Amount Due: <span id="pay-amount">0 Ks</span>
         </div>
-        <button type="button" class="btn-primary" style="width:100%;" onclick="confirmPayment()">Confirm &amp; Pay</button>
+        <button type="button" id="confirm-pay-btn" class="btn-primary" style="width:100%;" onclick="confirmPayment()">Confirm &amp; Pay</button>
       </div>
     </div>
   </div>
@@ -1115,6 +1121,96 @@
     let menuItems = [];
     let cart = [];
     let pendingOrderId = null;
+    let orderSubmitInFlight = false;
+    let paymentInFlight = false;
+    let activeOrderRequestId = null;
+    let pendingCartFingerprint = null;
+
+    function newClientRequestId() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+      return `ord-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function cartFingerprint(cartItems) {
+      const lines = (cartItems || []).map(cartItem => {
+        const mods = (cartItem.selectedModifiers || []).map(m => m.id).sort((a, b) => a - b);
+        const notes = (cartItem.notes || '').trim();
+        return `${cartItem.item.id}:${cartItem.quantity}:${notes}:(${mods.join(',')})`;
+      });
+      return lines.sort().join('|');
+    }
+
+    function pendingOrderStorageKey() {
+      return `menu_pending_order_${tableId}`;
+    }
+
+    function savePendingOrderState() {
+      if (!pendingOrderId || !activeOrderRequestId) {
+        sessionStorage.removeItem(pendingOrderStorageKey());
+        return;
+      }
+      sessionStorage.setItem(
+        pendingOrderStorageKey(),
+        JSON.stringify({
+          orderId: pendingOrderId,
+          requestId: activeOrderRequestId,
+          fingerprint: pendingCartFingerprint || cartFingerprint(cart),
+        })
+      );
+    }
+
+    function clearPendingOrderState() {
+      pendingOrderId = null;
+      activeOrderRequestId = null;
+      pendingCartFingerprint = null;
+      sessionStorage.removeItem(pendingOrderStorageKey());
+    }
+
+    function restorePendingOrderState() {
+      try {
+        const raw = sessionStorage.getItem(pendingOrderStorageKey());
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.orderId || !parsed?.requestId) return;
+        pendingOrderId = parsed.orderId;
+        activeOrderRequestId = parsed.requestId;
+        pendingCartFingerprint = parsed.fingerprint || null;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function isAlreadySentToKitchen(status) {
+      const s = String(status || '').toLowerCase();
+      return ['pending', 'preparing', 'served', 'completed'].includes(s);
+    }
+
+    function finishOrderSuccess() {
+      document.getElementById('payment-modal')?.classList.add('hidden');
+      document.getElementById('cart-modal')?.classList.add('hidden');
+      cart = [];
+      clearPendingOrderState();
+      setPlaceOrderBusy(false);
+      setConfirmPayBusy(false);
+      updateCartSummary();
+      fetchMenu();
+    }
+
+    function setPlaceOrderBusy(busy) {
+      const btn = document.getElementById('place-order-btn');
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.textContent = busy ? 'Placing…' : 'Place Order';
+    }
+
+    function setConfirmPayBusy(busy) {
+      const btn = document.getElementById('confirm-pay-btn');
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.textContent = busy ? 'Processing…' : 'Confirm & Pay';
+    }
     let pendingCustomizeItemId = null;
     let selectedPresets = new Set();
     let selectedModifierIds = new Set();
@@ -1216,6 +1312,7 @@
       }
       try {
         await ensureDiningSession();
+        restorePendingOrderState();
         document.getElementById('validation-gate').classList.remove('hidden');
         await fetchMenu();
       } catch (err) {
@@ -1586,6 +1683,37 @@
     }
 
     async function submitOrder() {
+      if (orderSubmitInFlight) return;
+      if (!cart.length) return;
+
+      const fingerprint = cartFingerprint(cart);
+
+      // Same unpaid draft still open → just reopen pay (do not create another order)
+      if (
+        pendingOrderId &&
+        pendingCartFingerprint &&
+        pendingCartFingerprint === fingerprint
+      ) {
+        document.getElementById('cart-modal')?.classList.add('hidden');
+        document.getElementById('payment-modal')?.classList.remove('hidden');
+        setConfirmPayBusy(false);
+        return;
+      }
+
+      // Cart changed after draft → new request id; server cancels old awaiting
+      if (pendingCartFingerprint && pendingCartFingerprint !== fingerprint) {
+        pendingOrderId = null;
+        activeOrderRequestId = null;
+        pendingCartFingerprint = null;
+        sessionStorage.removeItem(pendingOrderStorageKey());
+      }
+
+      orderSubmitInFlight = true;
+      setPlaceOrderBusy(true);
+      if (!activeOrderRequestId) {
+        activeOrderRequestId = newClientRequestId();
+      }
+
       const itemsPayload = cart.map(cartItem => ({
         menu_item_id: cartItem.item.id,
         quantity: cartItem.quantity,
@@ -1601,16 +1729,28 @@
             table_id: parseInt(tableId, 10),
             token: secureToken,
             session_token: diningSessionToken,
-            items: itemsPayload
+            items: itemsPayload,
+            client_request_id: activeOrderRequestId,
           })
         });
 
         if (response.ok) {
           const orderData = await response.json();
+
+          // Server reused an already-paid / kitchen order (retry after slow pay)
+          if (isAlreadySentToKitchen(orderData.status)) {
+            finishOrderSuccess();
+            alert('Order already sent to the kitchen.');
+            return;
+          }
+
           pendingOrderId = orderData.id;
+          pendingCartFingerprint = fingerprint;
+          savePendingOrderState();
           document.getElementById('cart-modal').classList.add('hidden');
           document.getElementById('pay-amount').innerText = `${orderData.total_price.toFixed(0)} Ks`;
           document.getElementById('payment-modal').classList.remove('hidden');
+          setConfirmPayBusy(false);
           updateCartSummary();
         } else {
           const errObj = await response.json();
@@ -1620,15 +1760,24 @@
           } else {
             alert(`Order placement failed: ${detail}`);
           }
+          // Keep request id on failure so a retry stays idempotent
+          setPlaceOrderBusy(false);
         }
       } catch (err) {
-        alert('Network connectivity issue.');
+        alert('Network connectivity issue. Tap Place Order again — it will not duplicate.');
+        setPlaceOrderBusy(false);
+      } finally {
+        orderSubmitInFlight = false;
       }
     }
 
     function closePaymentModal() {
+      if (paymentInFlight) return;
       document.getElementById('payment-modal').classList.add('hidden');
-      pendingOrderId = null;
+      // Keep pendingOrderId + request id so closing does not create a second order
+      savePendingOrderState();
+      setPlaceOrderBusy(false);
+      setConfirmPayBusy(false);
       if (cart.length > 0) {
         toggleCartModal(true);
       } else {
@@ -1637,6 +1786,10 @@
     }
 
     async function confirmPayment() {
+      if (paymentInFlight || !pendingOrderId) return;
+      paymentInFlight = true;
+      setConfirmPayBusy(true);
+
       try {
         const response = await fetch(`${API_BASE}/menu/order/${pendingOrderId}/mock-pay`, {
           method: 'POST',
@@ -1648,18 +1801,21 @@
           })
         });
         if (response.ok) {
-          document.getElementById('payment-modal').classList.add('hidden');
-          cart = [];
-          updateCartSummary();
-          fetchMenu();
+          finishOrderSuccess();
         } else if (response.status === 403) {
           const errObj = await response.json();
           showSessionExpired(errObj.detail);
+          setConfirmPayBusy(false);
         } else {
           alert('Authorization failed on payment gateway.');
+          setConfirmPayBusy(false);
         }
       } catch (err) {
-        alert('Network failure processing payment.');
+        // Pay may already have succeeded server-side — keep pending so retry is safe
+        alert('Network slow. Tap Confirm & Pay again — kitchen will not get a duplicate.');
+        setConfirmPayBusy(false);
+      } finally {
+        paymentInFlight = false;
       }
     }
 

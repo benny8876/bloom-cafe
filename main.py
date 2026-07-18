@@ -6,7 +6,7 @@ import models, os
 from sqlalchemy import inspect, text
 from database import engine, SessionLocal
 from table_labels import TABLE_LABELS, label_for_number, COUNTER_TABLE_NUMBER, COUNTER_TABLE_LABEL
-from routers import menu, kitchen, manager, finance
+from routers import menu, kitchen, manager, finance, management
 from services.passwords import hash_password
 
 models.Base.metadata.create_all(bind=engine)
@@ -40,11 +40,19 @@ app.include_router(menu.router, prefix="/api/v1")
 app.include_router(kitchen.router, prefix="/api/v1")
 app.include_router(manager.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")
+app.include_router(management.router, prefix="/api/v1")
 
 
 @app.get("/menu")
 def serve_menu():
-    return FileResponse(os.path.join("static", "menu.html"))
+    return FileResponse(
+        os.path.join("static", "menu.html"),
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @app.get("/kitchen")
@@ -85,6 +93,15 @@ def serve_sw_finance():
     )
 
 
+@app.get("/sw-management.js")
+def serve_sw_management():
+    return FileResponse(
+        os.path.join("static", "sw-management.js"),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
+
 @app.get("/manifest-manager.json")
 def serve_manifest_manager():
     return FileResponse(
@@ -103,9 +120,23 @@ def serve_manifest_finance():
     )
 
 
+@app.get("/manifest-management.json")
+def serve_manifest_management():
+    return FileResponse(
+        os.path.join("static", "manifest-management.json"),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
 @app.get("/finance")
 def serve_finance():
     return FileResponse(os.path.join("static", "finance.html"))
+
+
+@app.get("/management")
+def serve_management():
+    return FileResponse(os.path.join("static", "management.html"))
 
 
 def migrate_table_labels():
@@ -142,10 +173,38 @@ def migrate_orders_payment_method():
         alters.append("ALTER TABLE orders ADD COLUMN discount_percent FLOAT")
     if "discount_amount" not in columns:
         alters.append("ALTER TABLE orders ADD COLUMN discount_amount FLOAT")
+    if "sale_note" not in columns:
+        alters.append("ALTER TABLE orders ADD COLUMN sale_note VARCHAR")
+    if "client_request_id" not in columns:
+        alters.append("ALTER TABLE orders ADD COLUMN client_request_id VARCHAR")
     if alters:
         with engine.begin() as conn:
             for stmt in alters:
                 conn.execute(text(stmt))
+
+    # Unique index for idempotent client order submits (safe if already exists)
+    inspector = inspect(engine)
+    columns = {col["name"] for col in inspector.get_columns("orders")}
+    if "client_request_id" in columns:
+        with engine.begin() as conn:
+            if engine.dialect.name == "postgresql":
+                conn.execute(
+                    text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS ix_orders_client_request_id "
+                        "ON orders (client_request_id)"
+                    )
+                )
+            else:
+                # SQLite: unique index; ignore if already present
+                try:
+                    conn.execute(
+                        text(
+                            "CREATE UNIQUE INDEX IF NOT EXISTS ix_orders_client_request_id "
+                            "ON orders (client_request_id)"
+                        )
+                    )
+                except Exception:
+                    pass
 
 
 def migrate_menu_kitchen_station():
@@ -285,6 +344,7 @@ def migrate_order_status_values():
         "SERVED": "served",
         "COMPLETED": "completed",
         "CANCELLED": "cancelled",
+        "REFUNDED": "refunded",
     }
 
     with engine.begin() as conn:
@@ -319,6 +379,81 @@ def migrate_shop_settings():
     inspector = inspect(engine)
     if "shop_settings" not in inspector.get_table_names():
         models.ShopSettings.__table__.create(bind=engine)
+
+
+def migrate_refunds():
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'refunded'")
+            )
+            conn.execute(
+                text(
+                    """
+                    DO $$ BEGIN
+                        CREATE TYPE refundtype AS ENUM ('order', 'table_settle');
+                    EXCEPTION
+                        WHEN duplicate_object THEN NULL;
+                    END $$;
+                    """
+                )
+            )
+
+    if "refunds" not in table_names:
+        if engine.dialect.name == "postgresql":
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        CREATE TABLE IF NOT EXISTS refunds (
+                            id SERIAL PRIMARY KEY,
+                            refund_type refundtype NOT NULL,
+                            order_id INTEGER REFERENCES orders(id),
+                            table_id INTEGER REFERENCES tables(id),
+                            settled_at_ref TIMESTAMP,
+                            amount DOUBLE PRECISION NOT NULL,
+                            reason VARCHAR,
+                            refunded_by VARCHAR,
+                            restore_stock BOOLEAN DEFAULT FALSE,
+                            created_at TIMESTAMP
+                        )
+                        """
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_refunds_order_id ON refunds (order_id)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_refunds_table_id ON refunds (table_id)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_refunds_settled_at_ref ON refunds (settled_at_ref)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_refunds_created_at ON refunds (created_at)"
+                    )
+                )
+        else:
+            models.Refund.__table__.create(bind=engine)
+
+    if "table_sessions" in table_names:
+        columns = {col["name"] for col in inspector.get_columns("table_sessions")}
+        if "refunded_at" not in columns:
+            col_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f"ALTER TABLE table_sessions ADD COLUMN refunded_at {col_type}")
+                )
 
 
 def migrate_auth_tables():
@@ -425,6 +560,7 @@ def seed_initial_data():
     migrate_auth_tables()
     migrate_menu_categories()
     migrate_shop_settings()
+    migrate_refunds()
     db = SessionLocal()
 
     ensure_default_accounts(db)
@@ -470,7 +606,7 @@ def seed_initial_data():
 @app.get("/")
 def root():
     return {
-        "message": "Dine Inn System backend is active. Load /menu, /kitchen/coffee, /kitchen/food, /manager, or /finance."
+        "message": "Dine Inn System backend is active. Load /menu, /kitchen/coffee, /kitchen/food, /manager, /management, or /finance."
     }
 
 

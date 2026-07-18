@@ -1,5 +1,5 @@
-const CACHE = 'bloom-finance-v2';
-const PRECACHE = ['/finance', '/static/bloom-logo.png'];
+const CACHE = 'bloom-management-v2';
+const PRECACHE = ['/management', '/static/bloom-logo.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

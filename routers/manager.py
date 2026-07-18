@@ -30,6 +30,16 @@ from services.analytics import (
     settlement_discounts_for_range,
     MYANMAR_TZ,
 )
+from services.refunds import (
+    refund_order,
+    refund_table_settlement,
+    refunds_total_for_range,
+    refunds_revenue_adjustment_for_range,
+    is_table_settlement_refunded,
+    refundable_order_kind,
+    order_refund_amount,
+    table_settlement_refund_amount,
+)
 from services.orders import (
     create_order_from_items,
     order_item_unit_price,
@@ -776,7 +786,9 @@ def print_voucher(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    amounts = bill_amounts(order.total_price)
+    from services.orders import order_item_line_total, order_item_unit_price
+
+    amounts = bill_amounts(order.total_price, order.discount_percent or 0)
     voucher_data = {
         "restaurant_name": RESTAURANT_NAME,
         "voucher_id": f"REC-{order.id:06d}",
@@ -786,13 +798,23 @@ def print_voucher(
             {
                 "name": item.menu_item.name,
                 "quantity": item.quantity,
-                "unit_price": item.menu_item.price,
-                "subtotal": item.quantity * item.menu_item.price,
+                "unit_price": order_item_unit_price(item),
+                "subtotal": order_item_line_total(item),
+                "modifiers": [
+                    mod_assoc.modifier.name
+                    for mod_assoc in item.selected_modifiers
+                ],
             }
             for item in order.items
         ],
         **amounts,
+        "sale_note": order.sale_note,
+        "description": order.sale_note,
         "status": order.status.value,
+        "is_refunded": order.status == models.OrderStatus.REFUNDED,
+        "is_refundable": refundable_order_kind(order) is not None,
+        "refund_kind": refundable_order_kind(order),
+        "refund_amount": order_refund_amount(order),
     }
     return voucher_data
 
@@ -930,6 +952,11 @@ async def create_counter_sale(
         items=data.items,
         initial_status=models.OrderStatus.PENDING,
     )
+    amounts = bill_amounts(order.total_price, data.discount_percent)
+    order.discount_percent = amounts["discount_percent"]
+    order.discount_amount = amounts["discount_amount"]
+    note = (data.description or "").strip()
+    order.sale_note = note or None
     now_settled = datetime.now(MYANMAR_TZ).replace(tzinfo=None)
     order.settled_at = now_settled
     db.commit()
@@ -990,6 +1017,80 @@ async def entry_checkout(
         guest_count=data.guest_count,
         total=float(order.total_price),
         receipt=receipt,
+    )
+
+
+@router.post("/orders/{order_id}/refund", response_model=schemas.RefundResponse)
+async def refund_order_endpoint(
+    order_id: int,
+    payload: schemas.RefundRequest = Body(default=schemas.RefundRequest()),
+    db: Session = Depends(get_db),
+    session: models.AuthSession = Depends(security.get_current_session),
+):
+    refund = refund_order(
+        db,
+        order_id,
+        reason=payload.reason,
+        restore_stock=payload.restore_stock,
+        refunded_by=session.username,
+    )
+    db.commit()
+    db.refresh(refund)
+    await manager_ws.broadcast({"event": "refund_processed", "refund_id": refund.id})
+    return schemas.RefundResponse(
+        id=refund.id,
+        refund_type=refund.refund_type.value,
+        order_id=refund.order_id,
+        table_id=refund.table_id,
+        settled_at_ref=refund.settled_at_ref,
+        amount=refund.amount,
+        reason=refund.reason,
+        refunded_by=refund.refunded_by,
+        restore_stock=refund.restore_stock,
+        created_at=refund.created_at,
+    )
+
+
+@router.post("/tables/{table_id}/refund", response_model=schemas.RefundResponse)
+async def refund_table_settlement_endpoint(
+    table_id: int,
+    payload: schemas.RefundTableRequest,
+    db: Session = Depends(get_db),
+    session: models.AuthSession = Depends(security.get_current_session),
+):
+    try:
+        settled_at = datetime.fromisoformat(payload.settled_at)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid settled_at format.")
+
+    refund = refund_table_settlement(
+        db,
+        table_id,
+        settled_at,
+        reason=payload.reason,
+        restore_stock=payload.restore_stock,
+        refunded_by=session.username,
+    )
+    db.commit()
+    db.refresh(refund)
+    await manager_ws.broadcast(
+        {
+            "event": "refund_processed",
+            "refund_id": refund.id,
+            "table_id": table_id,
+        }
+    )
+    return schemas.RefundResponse(
+        id=refund.id,
+        refund_type=refund.refund_type.value,
+        order_id=refund.order_id,
+        table_id=refund.table_id,
+        settled_at_ref=refund.settled_at_ref,
+        amount=refund.amount,
+        reason=refund.reason,
+        refunded_by=refund.refunded_by,
+        restore_stock=refund.restore_stock,
+        created_at=refund.created_at,
     )
 
 
@@ -1358,7 +1459,9 @@ def get_settled_tables_history(
         .filter(
             models.Order.settled_at.isnot(None),
             models.Order.settled_at.between(range_start, range_end),
-            models.Order.status != models.OrderStatus.CANCELLED,
+            models.Order.status.notin_(
+                [models.OrderStatus.CANCELLED, models.OrderStatus.REFUNDED]
+            ),
         )
         .order_by(models.Order.settled_at.desc())
         .all()
@@ -1437,6 +1540,8 @@ def get_settled_tables_history(
     )
 
     for session in fee_only_settled_sessions_for_range(db, range_start, range_end):
+        if session.refunded_at:
+            continue
         table = (
             db.query(models.RestaurantTable)
             .filter(models.RestaurantTable.id == session.table_id)
@@ -1544,6 +1649,8 @@ def get_historical_table_bill(
     )
 
     discount_percent = _historical_discount_percent(table_session, orders)
+    is_refunded = is_table_settlement_refunded(db, table_id, settled_datetime)
+    amounts = bill_amounts(grand_total, discount_percent)
 
     return {
         "restaurant_name": RESTAURANT_NAME,
@@ -1551,10 +1658,14 @@ def get_historical_table_bill(
         "table_number": table_num,
         "order_ids": order_ids,
         "timestamp": settled_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+        "settled_at": settled_datetime.isoformat(),
         "items": items_list,
         "session_fee": session_fee,
         "entry_fee": entry_fee,
-        **bill_amounts(grand_total, discount_percent),
+        **amounts,
+        "is_refunded": is_refunded,
+        "is_refundable": not is_refunded,
+        "refund_amount": amounts["grand_total"],
     }
 
 
@@ -1703,8 +1814,12 @@ def get_daily_analytics(
     session_fees_month += add_fee_only_settled_sessions(db, month_start, month_end)
     day_discounts = settlement_discounts_for_range(db, day_start, day_end)
     month_discounts = settlement_discounts_for_range(db, month_start, month_end)
-    total_revenue = revenue_orders + session_fees_day - day_discounts
-    total_monthly_revenue = revenue_monthly_orders + session_fees_month - month_discounts
+    day_refunds = refunds_revenue_adjustment_for_range(db, day_start, day_end)
+    month_refunds = refunds_revenue_adjustment_for_range(db, month_start, month_end)
+    total_revenue = revenue_orders + session_fees_day - day_discounts - day_refunds
+    total_monthly_revenue = (
+        revenue_monthly_orders + session_fees_month - month_discounts - month_refunds
+    )
 
     popular_items = top_selling_items_for_range(
         db,
@@ -1751,7 +1866,14 @@ def export_daily_report(
     revenue_orders = sum(order.total_price for order in period_orders)
     session_fees = add_settled_session_fees(db, period_orders)
     session_fees += add_fee_only_settled_sessions(db, range_start, range_end)
-    total_revenue = revenue_orders + session_fees
+    period_discounts = settlement_discounts_for_range(db, range_start, range_end)
+    period_refunds = refunds_total_for_range(db, range_start, range_end)
+    period_refund_adjustment = refunds_revenue_adjustment_for_range(
+        db, range_start, range_end
+    )
+    total_revenue = (
+        revenue_orders + session_fees - period_discounts - period_refund_adjustment
+    )
     total_transactions = len(period_orders)
     show_date_column = range_key != "day"
 
@@ -1808,6 +1930,8 @@ def export_daily_report(
         ["Total revenue", f"{total_revenue:,.0f} Ks"],
         ["Bills", str(total_transactions)],
     ]
+    if period_refunds > 0:
+        summary_rows.insert(1, ["Refunds", f"-{period_refunds:,.0f} Ks"])
 
     summary_table = Table(summary_rows, colWidths=[200, 120])
     summary_table.setStyle(

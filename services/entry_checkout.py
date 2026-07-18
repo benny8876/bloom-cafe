@@ -150,7 +150,9 @@ def entry_checkout_stats_for_range(
         .options(joinedload(models.Order.items))
         .filter(
             models.Order.payment_method == "entry_checkout",
-            models.Order.status != models.OrderStatus.CANCELLED,
+            models.Order.status.notin_(
+                [models.OrderStatus.CANCELLED, models.OrderStatus.REFUNDED]
+            ),
             models.Order.settled_at.isnot(None),
             models.Order.settled_at.between(start, end),
         )

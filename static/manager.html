@@ -489,6 +489,7 @@
                         <button type="button" data-lang-btn="mm" onclick="ManagerI18n.setLang('mm')">MM</button>
                      </div>
                      <button type="button" id="pwa-install-header-btn" onclick="showPwaInstallPanel()" class="hidden text-xs font-bold text-violet-700 hover:text-violet-900 px-3 py-2 rounded-lg hover:bg-violet-50 transition border border-violet-200" data-i18n="common.install_app">Install app</button>
+                     <a href="/management" class="text-xs font-bold text-teal-700 hover:text-teal-900 px-3 py-2 rounded-lg hover:bg-teal-50 transition" data-i18n="common.management">Management →</a>
                      <a href="/finance" id="finance-nav-link" class="hidden text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition" data-i18n="common.finance">Finance →</a>
                      <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn" aria-label="Toggle dark mode">
                         <span id="dark-mode-icon" aria-hidden="true">🌙</span>
@@ -632,6 +633,7 @@
                               <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.amount">Amount</th>
                               <th class="py-2.5 px-2 font-bold text-right" data-i18n="settled.col_discount">Discount</th>
                               <th class="py-2.5 px-4 font-bold text-right" data-i18n="common.receipt">Receipt</th>
+                              <th class="py-2.5 px-2 font-bold text-right" data-i18n="refund.col_action">Refund</th>
                            </tr>
                         </thead>
                         <tbody id="settled-tables-history-log"></tbody>
@@ -661,6 +663,22 @@
                            <p class="text-slate-400 italic text-xs" data-i18n="counter.tap_to_add">Tap menu items to add</p>
                         </div>
                         <div class="border-t border-slate-200 pt-3 space-y-3">
+                           <div>
+                              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="counter.description">Description (optional)</label>
+                              <input type="text" id="counter-sale-description" maxlength="200" data-i18n-placeholder="counter.description_ph" placeholder="e.g. Takeaway for Ko Min" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                           </div>
+                           <div>
+                              <label for="counter-discount-input" class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="counter.discount_label">Discount (%)</label>
+                              <input id="counter-discount-input" type="number" min="0" max="100" step="1" inputmode="decimal" placeholder="0" oninput="onCounterDiscountInput()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-400">
+                           </div>
+                           <div id="counter-cart-subtotal-row" class="hidden flex justify-between items-center text-xs text-slate-600">
+                              <span data-i18n="receipt.subtotal">Subtotal</span>
+                              <span id="counter-cart-subtotal" class="font-semibold">0 Ks</span>
+                           </div>
+                           <div id="counter-cart-discount-row" class="hidden flex justify-between items-center text-xs text-amber-700 font-semibold">
+                              <span id="counter-cart-discount-label">Discount</span>
+                              <span id="counter-cart-discount-amount">-0 Ks</span>
+                           </div>
                            <div class="flex justify-between items-center">
                               <span class="text-xs font-bold uppercase text-slate-400" data-i18n="common.total">Total</span>
                               <span id="counter-cart-total" class="text-xl font-black text-violet-600">0 Ks</span>
@@ -731,6 +749,7 @@
                         <option value="awaiting_payment" data-i18n="status.awaiting_payment">Awaiting payment</option>
                         <option value="completed" data-i18n="status.completed">Completed</option>
                         <option value="cancelled" data-i18n="status.cancelled">Cancelled</option>
+                        <option value="refunded" data-i18n="status.refunded">Refunded</option>
                      </select>
                      <select id="orders-filter-table" onchange="fetchOrdersLog()" class="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 sm:min-w-[140px]">
                         <option value="" data-i18n="orders.all_tables">All tables</option>
@@ -982,6 +1001,7 @@
                <div id="receipt-print-actions" class="space-y-2">
                   <p id="bluetooth-printer-status" class="text-xs text-slate-500 text-center"></p>
                   <button type="button" id="receipt-smart-print-btn" onclick="smartPrintReceipt()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-sm" data-i18n="receipt.print">Print Receipt</button>
+                  <button type="button" id="receipt-refund-btn" onclick="openRefundModal()" class="hidden w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-sm" data-i18n="refund.action">Refund</button>
                   <button type="button" id="receipt-more-toggle" onclick="toggleReceiptMoreOptions()" class="w-full text-xs font-bold text-slate-500 hover:text-slate-700 py-1.5" data-i18n="receipt.more_options">More options ▾</button>
                   <div id="receipt-more-options" class="hidden space-y-2 pt-1 border-t border-slate-100">
                      <button type="button" onclick="connectUsbPrinter()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.connect_usb">Connect USB Printer</button>
@@ -1000,6 +1020,21 @@
                   <button id="settle-bill-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm" data-i18n="receipt.settle">Settle &amp; Close Table Bill</button>
                </div>
             </div>
+         </div>
+      </div>
+      <!-- Refund confirmation modal -->
+      <div id="refund-modal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-4">
+         <div class="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl relative">
+            <button type="button" onclick="closeRefundModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800 mb-2 pr-8" data-i18n="refund.title">Process Refund</h3>
+            <p id="refund-modal-summary" class="text-sm text-slate-600 mb-4">—</p>
+            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1" data-i18n="refund.reason">Reason (optional)</label>
+            <input type="text" id="refund-reason-input" maxlength="200" class="w-full bg-slate-100 border-none rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-rose-400" data-i18n-placeholder="refund.reason_ph" placeholder="e.g. Wrong guest count">
+            <label class="flex items-center gap-2 text-sm text-slate-600 mb-4">
+               <input type="checkbox" id="refund-restore-stock" class="rounded text-rose-600 focus:ring-rose-500 h-4 w-4">
+               <span data-i18n="refund.restore_stock">Restore stock to menu</span>
+            </label>
+            <button type="button" id="refund-submit-btn" onclick="submitRefund()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg text-sm" data-i18n="refund.confirm">Confirm Refund</button>
          </div>
       </div>
       <!-- JavaScript logic -->
@@ -1191,6 +1226,9 @@
              const orderLine = bill.order_ids
                  ? `<p class="text-[10px] text-slate-400">${t('receipt.consolidated', { ids: bill.order_ids.map(id => `#${id}`).join(', ') })}</p>`
                  : (bill.voucher_id ? `<p class="text-[10px] text-slate-400">Transaction ID: ${bill.voucher_id}</p>` : '');
+             const noteLine = (bill.sale_note || bill.description)
+                 ? `<p class="text-xs text-slate-600 mt-2 border-t border-dashed pt-2"><b>${t('counter.description')}:</b> ${escapeHtml(bill.sale_note || bill.description)}</p>`
+                 : '';
              return `
                  <div class="text-center border-b pb-3 border-dashed">
                      <h2 class="text-lg font-bold bloom-brand">${bill.restaurant_name || 'BLOOM CAFÉ'}</h2>
@@ -1200,6 +1238,7 @@
                  <div class="text-xs">
                      <p><b>${t('common.table')}:</b> ${bill.table_number}</p>
                      ${orderLine}
+                     ${noteLine}
                  </div>
                  <div class="space-y-2 my-4">${itemsStr}</div>
                  ${subtotalRow}
@@ -1393,14 +1432,17 @@
              document.getElementById('live-bill-discount-row')?.classList.add('hidden');
          }
 
-         function configureReceiptModalActions(mode, tableId) {
+         function configureReceiptModalActions(mode, tableId, refundContext = null) {
              const printActions = document.getElementById('receipt-print-actions');
              const liveActions = document.getElementById('settle-live-actions');
              const settleBtn = document.getElementById('settle-bill-btn');
+             const refundBtn = document.getElementById('receipt-refund-btn');
 
              if (mode === 'live') {
                  printActions?.classList.add('hidden');
                  liveActions?.classList.remove('hidden');
+                 refundBtn?.classList.add('hidden');
+                 currentRefundContext = null;
                  if (tableId) settleBtn?.setAttribute('onclick', `settleTableBill(${tableId})`);
                  return;
              }
@@ -1408,6 +1450,111 @@
              printActions?.classList.remove('hidden');
              liveActions?.classList.add('hidden');
              resetSettleDiscountUi();
+             if (refundContext?.refundable) {
+                 currentRefundContext = refundContext;
+                 refundBtn?.classList.remove('hidden');
+             } else {
+                 currentRefundContext = null;
+                 refundBtn?.classList.add('hidden');
+             }
+         }
+
+         let currentRefundContext = null;
+
+         function openRefundModal(context = null) {
+             if (context) currentRefundContext = context;
+             if (!currentRefundContext?.refundable) return;
+             const modal = document.getElementById('refund-modal');
+             const summary = document.getElementById('refund-modal-summary');
+             const reasonInput = document.getElementById('refund-reason-input');
+             const stockCheckbox = document.getElementById('refund-restore-stock');
+             if (reasonInput) reasonInput.value = '';
+             if (stockCheckbox) stockCheckbox.checked = false;
+             if (summary) {
+                 const amount = formatKs(currentRefundContext.amount || 0);
+                 if (currentRefundContext.type === 'order') {
+                     const kind = currentRefundContext.kind === 'entry' ? t('refund.kind_entry') : t('refund.kind_counter');
+                     summary.textContent = t('refund.summary_order', { kind, amount });
+                 } else {
+                     summary.textContent = t('refund.summary_table', {
+                         table: currentRefundContext.tableLabel || currentRefundContext.tableId,
+                         amount,
+                     });
+                 }
+             }
+             if (typeof ManagerI18n !== 'undefined') ManagerI18n.apply();
+             modal?.classList.remove('hidden');
+         }
+
+         function closeRefundModal() {
+             document.getElementById('refund-modal')?.classList.add('hidden');
+         }
+
+         async function submitRefund() {
+             if (!currentRefundContext?.refundable) return;
+             const btn = document.getElementById('refund-submit-btn');
+             if (btn) btn.disabled = true;
+             const reason = document.getElementById('refund-reason-input')?.value?.trim() || '';
+             const restoreStock = Boolean(document.getElementById('refund-restore-stock')?.checked);
+             try {
+                 let response;
+                 if (currentRefundContext.type === 'order') {
+                     response = await fetch(`${API_BASE}/manager/orders/${currentRefundContext.orderId}/refund`, {
+                         method: 'POST',
+                         headers: getAuthHeaders(),
+                         body: JSON.stringify({ reason, restore_stock: restoreStock }),
+                     });
+                 } else {
+                     response = await fetch(`${API_BASE}/manager/tables/${currentRefundContext.tableId}/refund`, {
+                         method: 'POST',
+                         headers: getAuthHeaders(),
+                         body: JSON.stringify({
+                             settled_at: currentRefundContext.settledAt,
+                             reason,
+                             restore_stock: restoreStock,
+                         }),
+                     });
+                 }
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) {
+                     const err = await response.json();
+                     showToast(err.detail || t('refund.fail'), 'error');
+                     return;
+                 }
+                 const data = await response.json();
+                 closeRefundModal();
+                 toggleReceiptModal(false);
+                 showToast(t('refund.done', { amount: formatKs(data.amount) }), 'success');
+                 currentRefundContext = null;
+                 fetchAnalytics();
+                 fetchSettledTablesHistory();
+                 fetchOrdersLog();
+             } catch (err) {
+                 showToast(t('refund.fail'), 'error');
+             } finally {
+                 if (btn) btn.disabled = false;
+             }
+         }
+
+         function quickRefundOrder(orderId, amount, kind) {
+             openRefundModal({
+                 type: 'order',
+                 orderId,
+                 amount,
+                 kind,
+                 refundable: true,
+             });
+         }
+
+         function quickRefundTable(tableId, settledAt, amount, tableLabel) {
+             openRefundModal({
+                 type: 'table',
+                 tableId,
+                 settledAt,
+                 amount,
+                 tableLabel,
+                 refundable: true,
+             });
          }
 
          function showManagerPanel(panelId) {
@@ -2424,7 +2571,7 @@
                  tbody.innerHTML = "";
          
                  if (history.length === 0) {
-                     tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 italic text-sm">${t('settled.empty')}</td></tr>`;
+                     tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 italic text-sm">${t('settled.empty')}</td></tr>`;
                      return;
                  }
          
@@ -2444,6 +2591,11 @@
                          : row.settled_at
                          ? `loadHistoricalTableBill(${row.table_id}, '${row.settled_at}')`
                          : `loadDailyTableBill(${row.table_id}, '${row.date}')`;
+                     const refundBtn = row.is_counter_sale && row.order_id
+                         ? `<button type="button" onclick="quickRefundOrder(${row.order_id}, ${row.total_amount}, 'counter')" class="text-xs font-bold text-rose-700 hover:text-rose-900 px-2 py-1 rounded-lg hover:bg-rose-50 transition">${t('refund.action')}</button>`
+                         : row.settled_at && !row.is_counter_sale
+                         ? `<button type="button" onclick="quickRefundTable(${row.table_id}, '${row.settled_at}', ${row.total_amount}, '${escapeHtml(row.table_number).replace(/'/g, "\\'")}')" class="text-xs font-bold text-rose-700 hover:text-rose-900 px-2 py-1 rounded-lg hover:bg-rose-50 transition">${t('refund.action')}</button>`
+                         : '—';
                      tr.innerHTML = `
                          <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(label)}</td>
                          <td class="py-3 px-2 text-center text-slate-600">${row.order_count}</td>
@@ -2451,7 +2603,8 @@
                          <td class="py-3 px-2 text-right text-xs font-semibold text-amber-700">${discountLabel}</td>
                          <td class="py-3 px-4 text-right">
                              <button onclick="${receiptAction}" class="fin-receipt-btn transition">${t('common.receipt')}</button>
-                         </td>`;
+                         </td>
+                         <td class="py-3 px-2 text-right">${refundBtn}</td>`;
                      tbody.appendChild(tr);
                  });
              } catch (err) {
@@ -2494,7 +2647,14 @@
                      title: 'HISTORICAL TABLE SESSION RECEIPT'
                  });
                  document.getElementById('receipt-summary').innerHTML = '';
-                 configureReceiptModalActions('historical');
+                 configureReceiptModalActions('historical', null, {
+                     type: 'table',
+                     tableId,
+                     settledAt: settledAtIso,
+                     tableLabel: bill.table_number,
+                     amount: bill.refund_amount || bill.grand_total,
+                     refundable: Boolean(bill.is_refundable),
+                 });
                  toggleReceiptModal(true);
              } catch (err) {
                  showToast('Could not load historical receipt.', 'error');
@@ -3059,13 +3219,19 @@
                      const card = document.createElement("div");
                      card.className = "mgr-card flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3";
                      const created = order.created_at ? new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                     const isCounterSale = order.table?.label === 'Counter';
+                     const canRefund = isCounterSale && order.settled_at && order.status !== 'refunded' && order.status !== 'cancelled';
+                     const actionsHtml = `
+                         <div class="flex flex-wrap gap-2 shrink-0 self-start sm:self-auto">
+                             <button type="button" onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition">${t('common.receipt')}</button>
+                             ${canRefund ? `<button type="button" onclick="quickRefundOrder(${order.id}, ${order.total_price}, 'counter')" class="text-xs font-bold text-rose-700 hover:text-rose-900 px-3 py-2 rounded-lg hover:bg-rose-50 transition border border-rose-200">${t('refund.action')}</button>` : ''}
+                         </div>`;
                      card.innerHTML = `
                          <div class="min-w-0">
                              <p class="font-bold text-slate-800">${t('orders.order_line', { id: order.id, table: order.table.label })}</p>
                              <p class="text-xs text-slate-400">${created ? `${created} · ` : ''}${t('orders.total_status', { total: formatKs(order.total_price), status: ManagerI18n.statusLabel(order.status) })}</p>
                          </div>
-                         <button onclick="loadReceipt(${order.id})" class="fin-receipt-btn transition shrink-0 self-start sm:self-auto">${t('common.receipt')}</button>
-                     `;
+                         ${actionsHtml}`;
                      container.appendChild(card);
                  });
              } catch (err) {
@@ -3087,7 +3253,13 @@
                      title: receipt.voucher_id || 'ORDER RECEIPT'
                  });
                  document.getElementById('receipt-summary').innerHTML = '';
-                 configureReceiptModalActions('historical');
+                 configureReceiptModalActions('historical', null, {
+                     type: 'order',
+                     orderId,
+                     kind: receipt.refund_kind,
+                     amount: receipt.refund_amount || receipt.grand_total,
+                     refundable: Boolean(receipt.is_refundable),
+                 });
                  toggleReceiptModal(true);
              } catch (err) {
                  showToast('Receipt compilation failed.', 'error');
@@ -3352,6 +3524,29 @@
              renderCounterCart();
          }
 
+         function getCounterCartSubtotal() {
+             return counterCart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
+         }
+
+         function getCounterCartAmounts() {
+             const subtotal = getCounterCartSubtotal();
+             const pct = Math.max(
+                 0,
+                 Math.min(100, parseFloat(document.getElementById('counter-discount-input')?.value || '0') || 0)
+             );
+             const discountAmount = pct > 0 ? Math.round(subtotal * pct / 100) : 0;
+             return {
+                 subtotal,
+                 discount_percent: pct,
+                 discount_amount: discountAmount,
+                 grand_total: subtotal - discountAmount,
+             };
+         }
+
+         function onCounterDiscountInput() {
+             renderCounterCart();
+         }
+
          function renderCounterCart() {
              const container = document.getElementById('counter-cart-lines');
              const checkoutBtn = document.getElementById('counter-checkout-btn');
@@ -3360,6 +3555,8 @@
              if (counterCart.length === 0) {
                  container.innerHTML = `<p class="text-slate-400 italic text-xs">${t('counter.tap_to_add')}</p>`;
                  document.getElementById('counter-cart-total').innerText = formatKs(0);
+                 document.getElementById('counter-cart-subtotal-row')?.classList.add('hidden');
+                 document.getElementById('counter-cart-discount-row')?.classList.add('hidden');
                  if (checkoutBtn) checkoutBtn.disabled = true;
                  return;
              }
@@ -3380,24 +3577,52 @@
                      </div>
                  </div>`).join('');
 
-             const total = counterCart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
-             document.getElementById('counter-cart-total').innerText = formatKs(total);
+             const amounts = getCounterCartAmounts();
+             const subtotalRow = document.getElementById('counter-cart-subtotal-row');
+             const discountRow = document.getElementById('counter-cart-discount-row');
+             if (amounts.discount_amount > 0) {
+                 subtotalRow?.classList.remove('hidden');
+                 discountRow?.classList.remove('hidden');
+                 const subtotalEl = document.getElementById('counter-cart-subtotal');
+                 const discountLabel = document.getElementById('counter-cart-discount-label');
+                 const discountAmountEl = document.getElementById('counter-cart-discount-amount');
+                 if (subtotalEl) subtotalEl.textContent = formatKs(amounts.subtotal);
+                 if (discountLabel) discountLabel.textContent = t('receipt.discount_line', { percent: amounts.discount_percent });
+                 if (discountAmountEl) discountAmountEl.textContent = `-${formatKs(amounts.discount_amount)}`;
+             } else {
+                 subtotalRow?.classList.add('hidden');
+                 discountRow?.classList.add('hidden');
+             }
+             document.getElementById('counter-cart-total').innerText = formatKs(amounts.grand_total);
              if (checkoutBtn) checkoutBtn.disabled = false;
          }
 
          function clearCounterCart() {
              counterCart = [];
+             const discountInput = document.getElementById('counter-discount-input');
+             const descInput = document.getElementById('counter-sale-description');
+             if (discountInput) discountInput.value = '';
+             if (descInput) descInput.value = '';
              renderCounterCart();
          }
 
          async function submitCounterSale() {
+             if (window.__counterSaleInFlight) return;
              if (!counterCart.length) return;
+             window.__counterSaleInFlight = true;
+             const checkoutBtn = document.getElementById('counter-checkout-btn');
+             if (checkoutBtn) checkoutBtn.disabled = true;
+
+             const amounts = getCounterCartAmounts();
+             const description = document.getElementById('counter-sale-description')?.value?.trim() || '';
              const payload = {
                  items: counterCart.map(line => ({
                      menu_item_id: line.menu_item_id,
                      quantity: line.quantity,
                      modifier_ids: line.modifier_ids,
                  })),
+                 discount_percent: amounts.discount_percent,
+                 description: description || null,
              };
 
              try {
@@ -3421,6 +3646,9 @@
                  loadReceipt(order.id);
              } catch (err) {
                  showToast('Network error completing sale.', 'error');
+             } finally {
+                 window.__counterSaleInFlight = false;
+                 renderCounterCart();
              }
          }
 

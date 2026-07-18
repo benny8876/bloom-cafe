@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BLOOM CAFÉ — Finance</title>
-<link rel="manifest" href="/manifest-finance.json">
-<meta name="theme-color" content="#4338ca">
+<title>BLOOM CAFÉ — Management</title>
+<link rel="manifest" href="/manifest-management.json">
+<meta name="theme-color" content="#0f766e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Finance">
+<meta name="apple-mobile-web-app-title" content="Management">
 <link rel="apple-touch-icon" href="/static/bloom-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
@@ -19,13 +19,13 @@
          .bloom-logo-img { width: 3.25rem; height: 3.25rem; object-fit: contain; }
 
          .panel-tab { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 700; transition: all 0.15s ease; white-space: nowrap; }
-         .panel-tab-active { background: #4338ca; color: #fff; }
+         .panel-tab-active { background: #0f766e; color: #fff; }
          .panel-tab-inactive { background: #f1f5f9; color: #475569; }
          .panel-tab-inactive:hover { background: #e2e8f0; }
          html.dark .panel-tab-inactive { background: #334155; color: #cbd5e1; }
          html.dark .panel-tab-inactive:hover { background: #475569; }
-         html.dark .panel-tab-active { background: #6366f1; color: #fff; }
-         #fin-subnav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+         html.dark .panel-tab-active { background: #0d9488; color: #fff; }
+         #mgmt-subnav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
          .stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1.25rem 1.5rem; }
          #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 200; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
          .toast { pointer-events: auto; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; box-shadow: 0 4px 14px rgba(15,23,42,0.12); animation: toast-in 0.2s ease; max-width: 320px; }
@@ -381,8 +381,8 @@
       <div id="login-view" class="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
          <div class="absolute top-4 right-4 z-[60] flex items-center gap-2">
             <div class="lang-switch" role="group" aria-label="Language">
-               <button type="button" data-lang-btn="en" onclick="FinanceI18n.setLang('en')">EN</button>
-               <button type="button" data-lang-btn="mm" onclick="FinanceI18n.setLang('mm')">MM</button>
+               <button type="button" data-lang-btn="en" onclick="ManagementI18n.setLang('en')">EN</button>
+               <button type="button" data-lang-btn="mm" onclick="ManagementI18n.setLang('mm')">MM</button>
             </div>
             <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn">
                <span id="login-dark-mode-icon">🌙</span>
@@ -395,9 +395,9 @@
                <img src="/static/bloom-logo.png" alt="BLOOM CAFÉ" class="bloom-logo-img mx-auto" />
                <div>
                   <h2 class="text-2xl bloom-brand">BLOOM CAFÉ</h2>
-                  <p class="text-xs font-semibold text-slate-400 tracking-widest uppercase mt-1">Finance</p>
+                  <p class="text-xs font-semibold text-slate-400 tracking-widest uppercase mt-1">Management</p>
                </div>
-               <p class="text-xs text-slate-400" data-i18n="login.hint">Owner login — income &amp; expenses</p>
+               <p class="text-xs text-slate-400" data-i18n="login.hint">Manager login — sales, expenses &amp; reports</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                <input type="text" id="login-username" required data-i18n-placeholder="common.username" placeholder="Username" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
@@ -414,8 +414,8 @@
          <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-5 text-center">
             <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img mx-auto" aria-hidden="true" />
             <div>
-               <h2 class="text-xl font-bold text-slate-800" data-i18n="access.title">Owner access only</h2>
-               <p class="text-sm text-slate-500 mt-2" data-i18n="access.body">Finance is restricted to the shop owner account (admin). Floor managers should use Operations at /manager.</p>
+               <h2 class="text-xl font-bold text-slate-800" data-i18n="access.title">Staff login required</h2>
+               <p class="text-sm text-slate-500 mt-2" data-i18n="access.body">Please sign in with a manager or owner account to open Management.</p>
             </div>
             <a href="/manager" class="block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg text-sm" data-i18n="access.go_ops">Go to Operations</a>
             <button type="button" onclick="handleLogout()" class="w-full text-sm font-bold text-rose-600 hover:bg-rose-50 py-2 rounded-lg" data-i18n="access.sign_out">Sign out</button>
@@ -428,18 +428,18 @@
                   <div class="flex items-center gap-3">
                      <img src="/static/bloom-logo.png" alt="" class="bloom-logo-img hidden sm:block" aria-hidden="true" />
                      <div>
-                        <h1 class="text-xl bloom-brand leading-tight">BLOOM CAFÉ <span class="text-slate-400 font-medium text-sm tracking-widest">Finance</span></h1>
-                        <p class="text-xs text-slate-400 mt-0.5" data-i18n="app.subtitle">Income, outcome &amp; net profit</p>
+                        <h1 class="text-xl bloom-brand leading-tight">BLOOM CAFÉ <span class="text-slate-400 font-medium text-sm tracking-widest">Management</span></h1>
+                        <p class="text-xs text-slate-400 mt-0.5" data-i18n="app.subtitle">Sales by station, income, expenses &amp; net profit</p>
                      </div>
                   </div>
                   <div class="flex items-center gap-2 flex-wrap">
                      <div class="lang-switch" role="group" aria-label="Language">
-                        <button type="button" data-lang-btn="en" onclick="FinanceI18n.setLang('en')">EN</button>
-                        <button type="button" data-lang-btn="mm" onclick="FinanceI18n.setLang('mm')">MM</button>
+                        <button type="button" data-lang-btn="en" onclick="ManagementI18n.setLang('en')">EN</button>
+                        <button type="button" data-lang-btn="mm" onclick="ManagementI18n.setLang('mm')">MM</button>
                      </div>
                      <button type="button" id="pwa-install-header-btn" onclick="showPwaInstallPanel()" class="hidden text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-2 rounded-lg hover:bg-indigo-50 transition border border-indigo-200" data-i18n="common.install_app">Install app</button>
                      <a href="/manager" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-50 transition" data-i18n="nav.operations">Operations →</a>
-                     <a href="/management" class="text-xs font-bold text-teal-700 hover:text-teal-900 px-3 py-2 rounded-lg hover:bg-teal-50 transition" data-i18n="nav.management">Management →</a>
+                     <a href="/finance" id="mgmt-finance-link" class="hidden text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition" data-i18n="nav.finance">Finance →</a>
                      <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn">
                         <span id="dark-mode-icon">🌙</span>
                         <span id="dark-mode-label" data-i18n="theme.dark">Dark</span>
@@ -468,11 +468,11 @@
                      <button type="button" onclick="exportFinanceReport('week')" class="fin-export-btn" data-i18n="export.week">Week</button>
                      <button type="button" onclick="exportFinanceReport('month')" class="fin-export-btn" data-i18n="export.month">Month</button>
                   </div>
-                  <button id="fin-expense-toolbar-btn" onclick="toggleExpenseModal(true)" class="hidden bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg text-xs" data-i18n="btn.add_expense">+ Expense</button>
+                  <button id="mgmt-expense-toolbar-btn" onclick="toggleExpenseModal(true)" class="hidden bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg text-xs" data-i18n="btn.add_expense">+ Expense</button>
                </div>
-               <nav id="fin-subnav" aria-label="Finance sections">
+               <nav id="mgmt-subnav" aria-label="Management sections">
                   <button type="button" data-panel="overview" class="panel-tab panel-tab-active" data-i18n="tab.overview">ခြုံငုံ</button>
-                  <button type="button" data-panel="income" class="panel-tab panel-tab-inactive" data-i18n="tab.income">ဝင်ငွေ</button>
+                  <button type="button" data-panel="sales" class="panel-tab panel-tab-inactive" data-i18n="tab.sales">အရောင်း</button>
                   <button type="button" data-panel="expenses" class="panel-tab panel-tab-inactive" data-i18n="tab.expenses">အသုံးစရိတ်</button>
                   <button type="button" data-panel="refunds" class="panel-tab panel-tab-inactive" data-i18n="tab.refunds">ငွေပြန်ပေး</button>
                </nav>
@@ -481,7 +481,7 @@
 
 <div id="finance-dashboard" >
             <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
-               <div id="panel-overview" class="fin-panel space-y-8">
+               <div id="panel-overview" class="mgmt-panel space-y-8">
                <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                   <div class="stat-card">
                      <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider" data-i18n="stats.income">Income (Sales)</span>
@@ -505,8 +505,8 @@
                   </div>
                </section>
 
-               <section class="grid grid-cols-1 gap-6">
-                  <article class="fin-chart-card max-w-xl">
+               <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <article class="fin-chart-card">
                      <div class="fin-chart-header">
                         <div>
                            <h3 data-i18n="chart.income_vs_outcome">Income vs Outcome</h3>
@@ -522,34 +522,99 @@
                         <div class="fin-chart-legend" id="fin-overview-legend"></div>
                      </div>
                   </article>
+                  <article class="fin-chart-card">
+                     <div class="fin-chart-header">
+                        <div>
+                           <h3 data-i18n="income.title">Income — Sales by Table</h3>
+                           <p data-i18n="income.subtitle">Daily total per table (counted when bill was settled)</p>
+                        </div>
+                     </div>
+                     <div class="fin-table-wrap !border-0 !rounded-none max-h-72 overflow-y-auto">
+                        <table class="fin-table w-full text-left text-sm">
+                           <thead>
+                              <tr class="text-[10px] uppercase">
+                                 <th class="py-2.5 px-4 font-bold" data-i18n="income.col.table">Table</th>
+                                 <th class="py-2.5 px-2 font-bold text-center" data-i18n="income.col.orders">Orders</th>
+                                 <th class="py-2.5 px-2 font-bold" data-i18n="income.col.last_settled">Last settled</th>
+                                 <th class="py-2.5 px-4 font-bold text-right" data-i18n="income.col.total">Total sales</th>
+                              </tr>
+                           </thead>
+                           <tbody id="finance-income-tbody"></tbody>
+                        </table>
+                     </div>
+                  </article>
                </section>
                </div>
 
-               <div id="panel-income" class="fin-panel hidden space-y-6">
-               <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                  <div class="flex items-center justify-between mb-4">
+               <div id="panel-sales" class="mgmt-panel hidden space-y-6">
+               <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-6">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                      <div>
-                        <h2 class="text-base font-bold text-slate-800" data-i18n="income.title">Income — Sales by Table</h2>
-                        <p class="text-xs text-slate-400" data-i18n="income.subtitle">Daily total per table (counted when bill was settled)</p>
+                        <h2 class="text-base font-bold text-slate-800" data-i18n="sales.title">Item sales — Coffee &amp; Kitchen</h2>
+                        <p class="text-xs text-slate-400" data-i18n="sales.subtitle">What sold this period, by station</p>
+                     </div>
+                     <p id="sales-period-total" class="text-sm font-bold text-teal-700 shrink-0">—</p>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <article class="fin-chart-card !p-4">
+                        <div class="fin-chart-header !mb-2 !pb-2">
+                           <div>
+                              <h3 class="!text-sm" data-i18n="sales.split_title">Coffee vs Kitchen</h3>
+                              <p class="text-[10px] text-slate-400" data-i18n="sales.split_sub">Revenue share</p>
+                           </div>
+                        </div>
+                        <div class="fin-donut-wrap" id="sales-split-chart"></div>
+                        <div class="fin-chart-legend" id="sales-split-legend"></div>
+                     </article>
+                     <article class="fin-chart-card !p-4 md:col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
+                           <div>
+                              <div class="flex items-center justify-between mb-2">
+                                 <h3 class="text-sm font-bold text-amber-800" data-i18n="sales.coffee_title">☕ Coffee bar</h3>
+                                 <span id="sales-coffee-stat" class="text-xs font-bold text-amber-700">—</span>
+                              </div>
+                              <div id="sales-coffee-bars" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+                           </div>
+                           <div>
+                              <div class="flex items-center justify-between mb-2">
+                                 <h3 class="text-sm font-bold text-teal-800" data-i18n="sales.food_title">🍳 Food kitchen</h3>
+                                 <span id="sales-food-stat" class="text-xs font-bold text-teal-700">—</span>
+                              </div>
+                              <div id="sales-food-bars" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+                           </div>
+                        </div>
+                     </article>
+                  </div>
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                     <div class="fin-table-wrap">
+                        <table class="fin-table w-full text-left text-sm">
+                           <thead>
+                              <tr class="text-[10px] uppercase">
+                                 <th class="py-2.5 px-4 font-bold" data-i18n="sales.col.item">Item</th>
+                                 <th class="py-2.5 px-2 font-bold text-center" data-i18n="sales.col.qty">Qty</th>
+                                 <th class="py-2.5 px-4 font-bold text-right" data-i18n="sales.col.revenue">Revenue</th>
+                              </tr>
+                           </thead>
+                           <tbody id="sales-coffee-tbody"></tbody>
+                        </table>
+                     </div>
+                     <div class="fin-table-wrap">
+                        <table class="fin-table w-full text-left text-sm">
+                           <thead>
+                              <tr class="text-[10px] uppercase">
+                                 <th class="py-2.5 px-4 font-bold" data-i18n="sales.col.item">Item</th>
+                                 <th class="py-2.5 px-2 font-bold text-center" data-i18n="sales.col.qty">Qty</th>
+                                 <th class="py-2.5 px-4 font-bold text-right" data-i18n="sales.col.revenue">Revenue</th>
+                              </tr>
+                           </thead>
+                           <tbody id="sales-food-tbody"></tbody>
+                        </table>
                      </div>
                   </div>
-                  <div class="fin-table-wrap">
-                     <table class="fin-table w-full text-left text-sm">
-                        <thead>
-                           <tr class="text-[10px] uppercase">
-                              <th class="py-2.5 px-4 font-bold" data-i18n="income.col.table">Table</th>
-                              <th class="py-2.5 px-2 font-bold text-center" data-i18n="income.col.orders">Orders</th>
-                              <th class="py-2.5 px-2 font-bold" data-i18n="income.col.last_settled">Last settled</th>
-                              <th class="py-2.5 px-4 font-bold text-right" data-i18n="income.col.total">Total sales</th>
-                           </tr>
-                        </thead>
-                        <tbody id="finance-income-tbody"></tbody>
-                     </table>
-                  </div>
                </section>
                </div>
 
-               <div id="panel-expenses" class="fin-panel hidden space-y-6">
+               <div id="panel-expenses" class="mgmt-panel hidden space-y-6">
                   <article class="fin-chart-card">
                      <div class="fin-chart-header">
                         <div>
@@ -587,7 +652,7 @@
                   </section>
                </div>
 
-               <div id="panel-refunds" class="fin-panel hidden space-y-6">
+               <div id="panel-refunds" class="mgmt-panel hidden space-y-6">
                <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
@@ -691,7 +756,7 @@
             <button onclick="window.print()" class="w-full mt-4 shrink-0 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm print:hidden" data-i18n="receipt.print">Print Receipt</button>
          </div>
       </div>
-      <script src="/static/finance-i18n.js?v=20260717b"></script>
+      <script src="/static/management-i18n.js?v=20260717b"></script>
       <script src="/static/login-remember.js"></script>
       <script>
          const API_BASE = `${window.location.origin}/api/v1`;
@@ -869,7 +934,7 @@ function setDefaultDatePicker() {
 
          async function loadExpenseCategories() {
              try {
-                 const response = await fetch(`${API_BASE}/finance/categories`, { headers: getAuthHeaders() });
+                 const response = await fetch(`${API_BASE}/management/categories`, { headers: getAuthHeaders() });
                  if (response.status === 401) { handleLogout(); return; }
                  if (response.ok) {
                      const data = await response.json();
@@ -988,7 +1053,7 @@ function setDefaultDatePicker() {
              };
 
              try {
-                 const url = id ? `${API_BASE}/finance/expenses/${id}` : `${API_BASE}/finance/expenses`;
+                 const url = id ? `${API_BASE}/management/expenses/${id}` : `${API_BASE}/management/expenses`;
                  const response = await fetch(url, {
                      method: id ? 'PUT' : 'POST',
                      headers: getAuthHeaders(),
@@ -1016,7 +1081,7 @@ function setDefaultDatePicker() {
          async function deleteExpense(expenseId) {
              if (!confirm(t('confirm.delete_expense'))) return;
              try {
-                 const response = await fetch(`${API_BASE}/finance/expenses/${expenseId}`, {
+                 const response = await fetch(`${API_BASE}/management/expenses/${expenseId}`, {
                      method: 'DELETE',
                      headers: getAuthHeaders()
                  });
@@ -1031,33 +1096,33 @@ function setDefaultDatePicker() {
          }
 
 
-         const FIN_PANEL_KEY = 'finance_panel';
+         const MGMT_PANEL_KEY = 'management_panel';
 
-         function showFinancePanel(panelId) {
-             const valid = ['overview', 'income', 'expenses', 'refunds'];
+         function showManagementPanel(panelId) {
+             const valid = ['overview', 'sales', 'expenses', 'refunds'];
              const active = valid.includes(panelId) ? panelId : 'overview';
-             document.querySelectorAll('.fin-panel').forEach((panel) => {
+             document.querySelectorAll('.mgmt-panel').forEach((panel) => {
                  panel.classList.toggle('hidden', panel.id !== ('panel-' + active));
              });
-             document.querySelectorAll('#fin-subnav .panel-tab').forEach((btn) => {
+             document.querySelectorAll('#mgmt-subnav .panel-tab').forEach((btn) => {
                  const on = btn.dataset.panel === active;
                  btn.className = on ? 'panel-tab panel-tab-active' : 'panel-tab panel-tab-inactive';
                  const key = btn.getAttribute('data-i18n');
                  if (key) btn.textContent = t(key);
              });
-             const expenseBtn = document.getElementById('fin-expense-toolbar-btn');
+             const expenseBtn = document.getElementById('mgmt-expense-toolbar-btn');
              if (expenseBtn) {
                  expenseBtn.classList.toggle('hidden', active !== 'expenses');
                  expenseBtn.textContent = t('btn.add_expense');
              }
-             sessionStorage.setItem(FIN_PANEL_KEY, active);
+             sessionStorage.setItem(MGMT_PANEL_KEY, active);
          }
 
-         function initFinanceNavigation() {
-             document.querySelectorAll('#fin-subnav .panel-tab').forEach((btn) => {
-                 btn.addEventListener('click', () => showFinancePanel(btn.dataset.panel));
+         function initManagementNavigation() {
+             document.querySelectorAll('#mgmt-subnav .panel-tab').forEach((btn) => {
+                 btn.addEventListener('click', () => showManagementPanel(btn.dataset.panel));
              });
-             showFinancePanel(sessionStorage.getItem(FIN_PANEL_KEY) || 'overview');
+             showManagementPanel(sessionStorage.getItem(MGMT_PANEL_KEY) || 'overview');
          }
 
          function checkAuthState() {
@@ -1077,15 +1142,17 @@ function setDefaultDatePicker() {
                window.refreshPwaInstallUi?.();
                return;
             }
-            if (role !== 'owner') {
+            if (role !== 'owner' && role !== 'manager') {
                deniedView.classList.remove('hidden');
                window.refreshPwaInstallUi?.();
                return;
             }
             dashboardView.classList.remove('hidden');
+            const finLink = document.getElementById('mgmt-finance-link');
+            if (finLink) finLink.classList.toggle('hidden', LoginRemember.getRole() !== 'owner');
             setDefaultDatePicker();
-            FinanceI18n.apply();
-            initFinanceNavigation();
+            ManagementI18n.apply();
+            initManagementNavigation();
             fetchFinanceSummary();
             loadExpenseCategories();
 
@@ -1202,6 +1269,100 @@ function renderFinanceLegend(containerId, segments) {
              return label === key ? kind : label;
          }
 
+
+         function renderSalesBars(containerId, items, color) {
+             const el = document.getElementById(containerId);
+             if (!el) return;
+             if (!items || !items.length) {
+                 el.innerHTML = `<p class="text-xs text-slate-400 italic py-4 text-center">${t('sales.empty_station')}</p>`;
+                 return;
+             }
+             const maxQty = Math.max(...items.map((i) => i.qty), 1);
+             el.innerHTML = items.slice(0, 8).map((item) => {
+                 const pct = Math.round((item.qty / maxQty) * 100);
+                 return `<div>
+                     <div class="flex justify-between text-[11px] mb-0.5 gap-2">
+                         <span class="font-semibold text-slate-700 truncate">${escapeHtml(item.name)}</span>
+                         <span class="shrink-0 text-slate-500">${item.qty} · ${formatKs(item.revenue)}</span>
+                     </div>
+                     <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                         <span class="block h-full rounded-full" style="width:${pct}%;background:${color}"></span>
+                     </div>
+                 </div>`;
+             }).join('');
+         }
+
+         function renderStationTable(tbodyId, items, emptyKey) {
+             const tbody = document.getElementById(tbodyId);
+             if (!tbody) return;
+             tbody.innerHTML = '';
+             if (!items || !items.length) {
+                 tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-slate-400 italic text-sm">${t(emptyKey)}</td></tr>`;
+                 return;
+             }
+             items.forEach((item) => {
+                 const tr = document.createElement('tr');
+                 tr.className = 'fin-table-row';
+                 tr.innerHTML = `
+                     <td class="py-2.5 px-4 font-medium text-slate-800 text-xs">${escapeHtml(item.name)}</td>
+                     <td class="py-2.5 px-2 text-center font-bold text-slate-700">${item.qty}</td>
+                     <td class="py-2.5 px-4 text-right font-bold text-emerald-600">${formatKs(item.revenue)}</td>`;
+                 tbody.appendChild(tr);
+             });
+         }
+
+         async function fetchItemSales() {
+             try {
+                 const params = buildFinanceQueryParams();
+                 const response = await fetch(`${API_BASE}/management/item-sales?${params.toString()}`, {
+                     headers: getAuthHeaders()
+                 });
+                 if (response.status === 401) { handleLogout(); return; }
+                 if (!response.ok) return;
+                 const data = await response.json();
+                 const coffee = data.coffee || { items: [], total_qty: 0, total_revenue: 0 };
+                 const food = data.food || { items: [], total_qty: 0, total_revenue: 0 };
+
+                 const totalEl = document.getElementById('sales-period-total');
+                 if (totalEl) {
+                     totalEl.textContent = t('sales.period_total', {
+                         qty: data.total_qty || 0,
+                         amount: formatKs(data.total_revenue || 0),
+                     });
+                 }
+                 const coffeeStat = document.getElementById('sales-coffee-stat');
+                 const foodStat = document.getElementById('sales-food-stat');
+                 if (coffeeStat) coffeeStat.textContent = `${coffee.total_qty || 0} · ${formatKs(coffee.total_revenue || 0)}`;
+                 if (foodStat) foodStat.textContent = `${food.total_qty || 0} · ${formatKs(food.total_revenue || 0)}`;
+
+                 const cRev = coffee.total_revenue || 0;
+                 const fRev = food.total_revenue || 0;
+                 const splitTotal = cRev + fRev;
+                 const segments = [];
+                 if (cRev > 0) segments.push({
+                     label: t('sales.coffee_title'),
+                     value: cRev,
+                     color: '#d97706',
+                     pct: splitTotal ? Math.round((cRev / splitTotal) * 100) : 0,
+                 });
+                 if (fRev > 0) segments.push({
+                     label: t('sales.food_title'),
+                     value: fRev,
+                     color: '#0d9488',
+                     pct: splitTotal ? Math.round((fRev / splitTotal) * 100) : 0,
+                 });
+                 renderFinanceDonut('sales-split-chart', segments, t('sales.items_sold'), String(data.total_qty || 0));
+                 renderFinanceLegend('sales-split-legend', segments);
+
+                 renderSalesBars('sales-coffee-bars', coffee.items || [], '#d97706');
+                 renderSalesBars('sales-food-bars', food.items || [], '#0d9488');
+                 renderStationTable('sales-coffee-tbody', coffee.items || [], 'sales.empty_coffee');
+                 renderStationTable('sales-food-tbody', food.items || [], 'sales.empty_food');
+             } catch (err) {
+                 console.error('Could not fetch item sales.');
+             }
+         }
+
          function renderRefundsTable(refunds, refundsTotal) {
              const tbody = document.getElementById('refunds-tbody');
              const totalEl = document.getElementById('refunds-period-total');
@@ -1246,7 +1407,7 @@ function renderFinanceLegend(containerId, segments) {
              const range = document.getElementById('finance-range')?.value || 'day';
              const selectedDate = document.getElementById('finance-date').value;
              const dateObj = new Date(selectedDate);
-             const locale = FinanceI18n.getLang() === 'mm' ? 'my-MM' : 'en-US';
+             const locale = ManagementI18n.getLang() === 'mm' ? 'my-MM' : 'en-US';
              const monthLabel = dateObj.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
              document.getElementById('fin-month-label').innerText = t('stats.month_net', { month: monthLabel });
 
@@ -1256,7 +1417,7 @@ function renderFinanceLegend(containerId, segments) {
 
              try {
                  const params = buildFinanceQueryParams();
-                 const response = await fetch(`${API_BASE}/finance/summary?${params.toString()}`, {
+                 const response = await fetch(`${API_BASE}/management/summary?${params.toString()}`, {
                      headers: getAuthHeaders()
                  });
                  if (response.status === 401) { handleLogout(); return; }
@@ -1314,6 +1475,7 @@ function renderFinanceLegend(containerId, segments) {
 
                  renderFinanceCharts(data);
                  renderRefundsTable(data.refunds || [], data.refunds_total || 0);
+                 fetchItemSales();
 
                  const incTbody = document.getElementById('finance-income-tbody');
                  incTbody.innerHTML = '';
@@ -1345,7 +1507,7 @@ function renderFinanceLegend(containerId, segments) {
                  const financeDate = document.getElementById('finance-date')?.value
                      || new Date().toLocaleDateString('en-CA');
                  const params = new URLSearchParams({ date: financeDate, range });
-                 const response = await fetch(`${API_BASE}/finance/export?${params.toString()}`, {
+                 const response = await fetch(`${API_BASE}/management/export?${params.toString()}`, {
                      headers: getAuthHeaders()
                  });
                  if (response.status === 401) { handleLogout(); return; }
@@ -1355,7 +1517,7 @@ function renderFinanceLegend(containerId, segments) {
                      const anchor = document.createElement('a');
                      anchor.href = downloadUrl;
                      const safeLabel = financeDate.replace(/[^0-9-]/g, '');
-                     anchor.download = `finance_${range}_${safeLabel}.pdf`;
+                     anchor.download = `management_${range}_${safeLabel}.pdf`;
                      document.body.appendChild(anchor);
                      anchor.click();
                      anchor.remove();
@@ -1395,20 +1557,21 @@ function renderFinanceLegend(containerId, segments) {
 
          window.onFinanceLanguageChange = function () {
              updateDarkModeUi();
-             FinanceI18n.apply();
-             if (LoginRemember.getToken() && LoginRemember.getRole() === 'owner') {
+             ManagementI18n.apply();
+             const role = LoginRemember.getRole();
+             if (LoginRemember.getToken() && (role === 'owner' || role === 'manager')) {
                  fetchFinanceSummary();
              }
          };
 
-         FinanceI18n.apply();
+         ManagementI18n.apply();
          updateDarkModeUi();
          document.addEventListener('DOMContentLoaded', checkAuthState);
       </script>
       <script>
          window.PWA_CONFIG = {
-            swPath: '/sw-finance.js',
-            dismissKey: 'pwa_install_dismiss_finance'
+            swPath: '/sw-management.js',
+            dismissKey: 'pwa_install_dismiss_management'
          };
       </script>
       <script src="/static/pwa-install.js"></script>
